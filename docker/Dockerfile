@@ -2,9 +2,7 @@ FROM ubuntu:20.04
 
 RUN <<EOF
     apt update
-    apt install -y -q g++
-    apt update && apt install -y -q gdb
-    apt install -y -q python3-dbg
+    apt install -y -q g++ gdb python3-dbg
 EOF
 
 WORKDIR /app
@@ -12,4 +10,4 @@ WORKDIR /app
 COPY run.sh gdb.py .
 # COPY example.cpp main.cpp
 
-ENTRYPOINT /bin/bash /app/run.sh
+CMD ["/bin/bash", "/app/run.sh"]
