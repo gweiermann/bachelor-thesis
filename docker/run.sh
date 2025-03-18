@@ -1,3 +1,6 @@
 #!/bin/bash
-clang++-19 -g /input/main.cpp -o /output/a.out
-./test.py
+
+path=/app/algorithms/$1
+
+clang++-19 -g $path/main.cpp -o /tmp/a.out
+python3 $path/analyze.py

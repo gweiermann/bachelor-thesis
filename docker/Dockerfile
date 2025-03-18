@@ -14,4 +14,4 @@ WORKDIR /app
 ENV LLDB_DEBUGSERVER_PATH=/usr/bin/lldb-server-19
 ENV PYTHONPATH=/usr/lib/python3/dist-packages
 
-CMD ["/bin/bash", "run.sh"]
+ENTRYPOINT ["/bin/bash", "run.sh"]

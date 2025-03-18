@@ -5,5 +5,4 @@ services:
     tty: true        # docker run -t
     volumes:
       - ./:/app
-      - ../input:/input
       - ../dist:/output

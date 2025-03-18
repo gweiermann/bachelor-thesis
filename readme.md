@@ -3,5 +3,14 @@ This is for my bachelor thesis. I am trying to achieve a code challenge website 
 I want my core feature to be that running the code will also visualize, what your own code does, using animations.
 
 # Current Goal
-As the visualization is my core feature, I'm trying to start with creating a docker image that collects runtime information about the user's program using gdb.  
-See [command.sh](command.sh) to run it.
+As the visualization is my core feature, I'm trying to start with creating a docker image that collects runtime information about the user's program using gdb.
+
+# Current State
+At the moment there's a script that can watch a bubble sort algorithm that sorts an array with a size of max 32 byte.
+It's using hardware watchpoints that have a hard limit of 32 byte unforunately.
+
+How to run it:
+```sh
+cd docker
+docker compose run --rm app bubbleSort
+```
