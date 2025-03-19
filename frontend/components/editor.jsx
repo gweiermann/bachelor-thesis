@@ -12,27 +12,28 @@ export default function Editor({ functionProtoype, placeholder, onChange }) {
 
         const constrainedInstance = constrainedEditor(monaco);
         const model = editor.getModel();
-        let restrictions = []
         constrainedInstance.initializeIn(editor);
-        restrictions.push({
-            range: [1, 1, 2, 1],
-            allowMultiline: true
-        });
+
+        const numberOfLines = (placeholder.match(/\n/g) || []).length + 1;
 
         constrainedInstance.addRestrictionsTo(model, [
             {
-                range: [3, 1, 4, 1],
+                range: [3, 1, 3 + numberOfLines, 1],
                 allowMultiline: true,
             }
         ])
+
+        onChange?.(model.getValue())
     }
+
+    const defaultValue = `${functionProtoype}\n{\n  ${placeholder}\n}`
 
     return (
         <MonacoEditor
             height="90vh"
             language="cpp"
             onMount={handleEditorDidMount}
-            defaultValue={`${functionProtoype}\n{\n  ${placeholder}\n}`}
+            defaultValue={defaultValue}
             options={{
                 minimap: {
                     enabled: false

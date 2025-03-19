@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Suspense } from "react"
-import LoadingSpinner from "@/components/loading-spinner"
+import { FullLoadingSpinner } from "@/components/loading-spinner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Suspense fallback={<LoadingSpinner />}>
+        <Suspense fallback={<div className="size-full fixed"><FullLoadingSpinner /></div>}>
           {children}
         </Suspense>
       </body>

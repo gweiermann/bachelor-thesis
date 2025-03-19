@@ -5,16 +5,27 @@ import { Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Editor from '@/components/editor'
-import { analyzeCode } from '@/lib/code-analysis'
-import { useState } from 'react'
+import { useState, } from 'react'
+import { InlineLoadingSpinner } from '@/components/loading-spinner'
+import Visualization from './visualization'
 
 export default function Task({ task }) {
     const [code, setCode] = useState(task.code.functionPrototype)
+    const [codeToAnalyse, setCodeToAnalyse] = useState(null)
+    const [isAnalyzing, setIsAnalyzing] = useState(false)
 
-    async function runCode() {
+    // const placeholder = `// your code here`
+    const placeholder = `for (int i = 0; i < n-1; i++) {
+      for (int j = 0; j < n-i-1; j++) {
+          if (arr[j] > arr[j+1]) {
+              std::swap(arr[j], arr[j+1]);
+          }
+      }
+  }`
+
+    function runCode() {
         const codeWithoutPrototype = code.split('\n').slice(2, -1).join('\n')
-        const result = await analyzeCode(task.name, codeWithoutPrototype)
-        console.log(result)
+        setCodeToAnalyse(codeWithoutPrototype)
     }
 
     return (
@@ -51,17 +62,21 @@ export default function Task({ task }) {
                         <div className="border rounded-lg overflow-hidden bg-card">
                             <div className="flex items-center justify-between p-3 border-b bg-muted">
                             <span className="font-medium">Code Editor</span>
-                            <Button size="sm" onClick={runCode}>Run</Button>
+                            <Button size="sm" onClick={runCode}>
+                                Run {isAnalyzing && <InlineLoadingSpinner />}
+                            </Button>
                             </div>
                             <div className="py-4">
-                                <Editor functionProtoype={task.code.functionPrototype} placeholder={'// your code here'} onChange={setCode}/>
+                                <Editor functionProtoype={task.code.functionPrototype} placeholder={placeholder} onChange={setCode}/>
                             </div>
                         </div>
                 
                         {/* Right Column - Visualization */}
                         <div className="border rounded-lg overflow-hidden bg-card">
                             <div className="h-full flex items-center justify-center p-4">
-                            <p className="text-center text-muted-foreground">Hit {'"Run"'} to see the code visualization</p>
+                                {!codeToAnalyse ? 
+                                    <p className="text-center text-muted-foreground"> Hit {'"Run"'} to visualize your code. </p> :
+                                    <Visualization code={codeToAnalyse} task={task} onIsLoading={setIsAnalyzing} />}
                             </div>
                         </div>
                     </section>
