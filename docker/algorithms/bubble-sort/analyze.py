@@ -29,14 +29,14 @@ def extract_vars(frame):
         raise Exception("n is None")
     return array_ptr, array_size
 
-def get_array(frame):
+def get_array():
     array, _size = get_vars()
     size = int(_size.GetValue(), 0)
     return [int(array.GetChildAtIndex(i, lldb.eDynamicCanRunTarget, True).GetValue(), 0) for i in range(size)]
 
 
 def watchpoint_callback(frame, wp, internal_dict):
-    result_list.append(get_array(frame))
+    result_list.append(get_array())
     return False
 
 if __name__ == "__main__":
@@ -89,8 +89,11 @@ if __name__ == "__main__":
         raise Exception(f"Failed to watch array: {error.GetCString()}")
     debugger.HandleCommand(f"watchpoint command add -F watchpoint_callback {wp.GetID()}")
 
+    # add initial state
+    result_list.append(get_array())
+
     process.Continue()
 
     print(json.dumps({ "result": result_list }))
     debugger.Terminate()
-    
+
