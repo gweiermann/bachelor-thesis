@@ -94,6 +94,6 @@ if __name__ == "__main__":
 
     process.Continue()
 
-    print(json.dumps({ "result": result_list }))
+    print(json.dumps({ "steps": result_list }))
     debugger.Terminate()
 
