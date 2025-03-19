@@ -39,6 +39,9 @@ def watchpoint_callback(frame, wp, internal_dict):
     result_list.append(get_array())
     return False
 
+def deduplicate(steps):
+    return list(dict.fromkeys((tuple(step) for step in steps)))
+
 if __name__ == "__main__":
     exe = "/tmp/a.out"
 
@@ -94,6 +97,6 @@ if __name__ == "__main__":
 
     process.Continue()
 
-    print(json.dumps({ "steps": result_list }))
+    print(json.dumps({ "steps": deduplicate(result_list) }))
     debugger.Terminate()
 
