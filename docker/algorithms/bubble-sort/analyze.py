@@ -2,9 +2,12 @@
 
 import lldb
 import os
+import json
 
 array_var = None
 size_var = None
+
+result_list = []
 
 def get_vars():
     global array_var
@@ -33,7 +36,7 @@ def get_array(frame):
 
 
 def watchpoint_callback(frame, wp, internal_dict):
-    print(get_array(frame))
+    result_list.append(get_array(frame))
     return False
 
 if __name__ == "__main__":
@@ -87,3 +90,7 @@ if __name__ == "__main__":
     debugger.HandleCommand(f"watchpoint command add -F watchpoint_callback {wp.GetID()}")
 
     process.Continue()
+
+    print(json.dumps({ "result": result_list }))
+    debugger.Terminate()
+    

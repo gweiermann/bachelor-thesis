@@ -5,7 +5,7 @@ import path from 'node:path'
 import { getTask } from './tasks'
 import stream from 'stream'
 
-export async function analyzeCode(challengeName, codeWithoutPrototype) {
+export async function analyzeCode(challengeName, codeWithoutPrototype) {   
     const task = await getTask(challengeName)
     if (!task) {
         throw new Error("Task not found!")
@@ -25,8 +25,6 @@ export async function analyzeCode(challengeName, codeWithoutPrototype) {
         }
     `
 
-    console.log(code)
-
     return new Promise((resolve, reject) => {
         const child = execFile(
             'docker',
@@ -36,8 +34,13 @@ export async function analyzeCode(challengeName, codeWithoutPrototype) {
                 if (err) {
                     reject(err)
                 }
-            
-                resolve(stdout)
+
+                try {
+                    const result = JSON.parse(stdout)
+                    resolve(result)
+                } catch (e) {
+                    reject(new Error(`Invalid response from code analysis: ${stdout}`))
+                }
         });
 
         var codeStream = new stream.Readable();
