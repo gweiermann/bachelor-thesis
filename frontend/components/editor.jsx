@@ -4,7 +4,7 @@ import { constrainedEditor } from "constrained-editor-plugin";
 import MonacoEditor from '@monaco-editor/react';
 import { useRef } from 'react'
 
-export default function Editor({ functionProtoype, placeholder }) {
+export default function Editor({ functionProtoype, placeholder, onChange }) {
     const monacoRef = useRef(null);
 
     function handleEditorDidMount(editor, monaco) {
@@ -36,12 +36,13 @@ export default function Editor({ functionProtoype, placeholder }) {
             options={{
                 minimap: {
                     enabled: false
-                }
+                },
+                scrollBeyondLastLine: false
             }}
+            onChange={onChange}
         />
     )
 }
-// Within React Component
 
 
 
