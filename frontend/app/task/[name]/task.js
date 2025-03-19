@@ -61,10 +61,10 @@ export default function Task({ task }) {
                         {/* Left Column - Code Editor */}
                         <div className="border rounded-lg overflow-hidden bg-card">
                             <div className="flex items-center justify-between p-3 border-b bg-muted">
-                            <span className="font-medium">Code Editor</span>
-                            <Button size="sm" onClick={runCode}>
-                                Run {isAnalyzing && <InlineLoadingSpinner />}
-                            </Button>
+                                <span className="font-medium">Code Editor</span>
+                                <Button size="sm" onClick={runCode}>
+                                    Run {isAnalyzing && <InlineLoadingSpinner />}
+                                </Button>
                             </div>
                             <div className="py-4">
                                 <Editor functionProtoype={task.code.functionPrototype} placeholder={placeholder} onChange={setCode}/>
