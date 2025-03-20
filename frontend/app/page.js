@@ -20,7 +20,7 @@ export default function HeroSection() {
 
   return (
     <ClientOnly>
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-20 md:py-32">
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-20 md:py-32 h-full">
         {/* Animated background elements */}
         <div className="absolute inset-0 z-0 opacity-20">
           <div className="absolute top-20 left-10 h-40 w-40 rounded-full bg-purple-500 blur-[80px]" />
