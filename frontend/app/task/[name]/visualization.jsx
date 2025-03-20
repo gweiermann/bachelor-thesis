@@ -5,6 +5,7 @@ import { FullLoadingSpinner } from '@/components/loading-spinner'
 import { useEffect, useState, useMemo } from 'react'
 import { analyzeCode } from '@/lib/code-analysis'
 import { AnimatePresence, motion } from 'motion/react'
+import AnimationControlBar from './animation-control-bar'
 
 function getChangedIndex(first, second, startIndex = 0) {
     const index = first.slice(startIndex).findIndex((value, index) => value !== second[index + startIndex])
@@ -91,6 +92,9 @@ export default function Visualization({ code, task, onIsLoading }) {
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps)), [analysis])
 
+    const [isPlaying, setIsPlaying] = useState(false)
+    const [playbackSpeed, setPlaybackSpeed] = useState(1)
+
     useEffect(() => {
         onIsLoading?.(isLoading)
     }, [onIsLoading, isLoading])
@@ -99,24 +103,7 @@ export default function Visualization({ code, task, onIsLoading }) {
         setCurrentStepIndex(0)
     }, [steps])
 
-    useEffect(() => {
-        if (!steps) {
-            return
-        }
-
-        let timeout;
-        if (currentStepIndex >= steps.length - 1) {
-            timeout = setTimeout(() => {
-                setCurrentStepIndex(0)
-            }, 5000);
-        } else {
-            timeout = setTimeout(() => {
-                setCurrentStepIndex(currentStepIndex => currentStepIndex + 1)
-            }, 1000);
-        }
-
-        return () => clearTimeout(timeout)
-    }, [steps, currentStepIndex])
+    
 
     if (isLoading) {
         return <FullLoadingSpinner />
@@ -151,7 +138,12 @@ export default function Visualization({ code, task, onIsLoading }) {
                     )}
                 
             </ul>
-            <p>Step {currentStepIndex + 1} of {steps.length}</p>
+            <AnimationControlBar
+                totalSteps={steps.length}
+                onPlayPause={setIsPlaying}
+                onStepChange={setCurrentStepIndex}
+                onSpeedChange={setPlaybackSpeed}
+            />
         </div>
     )
 }
