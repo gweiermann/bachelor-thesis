@@ -21,7 +21,6 @@ function getChangedIndex(first, second, startIndex = 0) {
  */
 export function fixSwapping(steps) {
     // note: array got deduplicated in the backend
-    console.log('begin', steps)
     const len = steps.length
     const mask = new Array(len).fill(true)
     for (let i = 0; i < len - 2;) {
@@ -38,7 +37,6 @@ export function fixSwapping(steps) {
         }
         i += 1
     }
-    console.log('after', steps.filter((_, index) => mask[index]))
     return steps.filter((_, index) => mask[index])
 }
 
