@@ -32,15 +32,15 @@ def extract_vars(frame):
 def get_array():
     array, _size = get_vars()
     size = int(_size.GetValue(), 0)
-    return [int(array.GetChildAtIndex(i, lldb.eDynamicCanRunTarget, True).GetValue(), 0) for i in range(size)]
+    return tuple(int(array.GetChildAtIndex(i, lldb.eDynamicCanRunTarget, True).GetValue(), 0) for i in range(size))
 
 
 def watchpoint_callback(frame, wp, internal_dict):
-    result_list.append(get_array())
+    new_step = get_array()
+    if result_list[-1] != new_step:
+        result_list.append(new_step)
     return False
 
-def deduplicate(steps):
-    return list(dict.fromkeys((tuple(step) for step in steps)))
 
 if __name__ == "__main__":
     exe = "/tmp/a.out"
@@ -97,6 +97,6 @@ if __name__ == "__main__":
 
     process.Continue()
 
-    print(json.dumps({ "steps": deduplicate(result_list) }))
+    print(json.dumps({ "steps": result_list }))
     debugger.Terminate()
 

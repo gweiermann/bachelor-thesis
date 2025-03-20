@@ -29,7 +29,8 @@ export function fixSwapping(steps) {
         }
         i += 1
     }
-    return steps.filter((_, index) => mask[index])
+    const result = steps.filter((_, index) => mask[index])
+    return result
 }
 
 export default function Visualization({ code, task, onIsLoading }) {
@@ -42,12 +43,16 @@ export default function Visualization({ code, task, onIsLoading }) {
     }, [onIsLoading, isLoading])
 
     useEffect(() => {
+        setCurrentStepIndex(0)
+    }, [steps])
+
+    useEffect(() => {
         if (!steps) {
             return
         }
 
         let timeout;
-        if (currentStepIndex === steps.length - 1) {
+        if (currentStepIndex >= steps.length - 1) {
             timeout = setTimeout(() => {
                 setCurrentStepIndex(0)
             }, 5000);
