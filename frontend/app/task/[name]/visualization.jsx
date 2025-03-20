@@ -92,18 +92,13 @@ export default function Visualization({ code, task, onIsLoading }) {
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps)), [analysis])
 
-    const [isPlaying, setIsPlaying] = useState(false)
-    const [playbackSpeed, setPlaybackSpeed] = useState(1)
-
     useEffect(() => {
         onIsLoading?.(isLoading)
     }, [onIsLoading, isLoading])
 
     useEffect(() => {
         setCurrentStepIndex(0)
-    }, [steps])
-
-    
+    }, [steps])    
 
     if (isLoading) {
         return <FullLoadingSpinner />
@@ -116,14 +111,15 @@ export default function Visualization({ code, task, onIsLoading }) {
     return (
         <div className="flex flex-col items-center justify-center gap-8">
             <ul className="flex space-x-4">
-                
                     {steps[currentStepIndex].map((item, index) => 
                         <motion.li
                             key={item.orderId}
                             layout
-                            transition={{type: 'spring', stiffness: 300, damping: 30, duration: 0.25}}
+                            initial={{ y: -50, opacity: 0, scale: 0.5 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            transition={{type: 'spring', stiffness: 300, damping: 30, duration: 0.05, delay: 0.05 * index}}
                             className="relative size-16">
-                                <AnimatePresence>
+                                <AnimatePresence initial={false}>
                                     <motion.div
                                         key={item.id}
                                         transition={{type: 'spring', stiffness: 300, damping: 30, duration: 1}}
@@ -140,9 +136,7 @@ export default function Visualization({ code, task, onIsLoading }) {
             </ul>
             <AnimationControlBar
                 totalSteps={steps.length}
-                onPlayPause={setIsPlaying}
                 onStepChange={setCurrentStepIndex}
-                onSpeedChange={setPlaybackSpeed}
             />
         </div>
     )
