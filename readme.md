@@ -12,5 +12,14 @@ It's using hardware watchpoints that have a hard limit of 32 byte unforunately.
 How to run it:
 ```sh
 cd docker
-docker compose run --rm app bubbleSort
+echo "int main() { return 0; }" | docker compose run --rm app bubbleSort
 ```
+
+# Frontend
+There's also a frontend which is quite handy and runs the command for you. To start use the following commands:
+```sh
+cd frontend
+npm install
+npm run dev
+```
+Visit [http://localhost:3000](http://localhost:3000).
