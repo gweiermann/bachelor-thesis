@@ -11,7 +11,9 @@ import {
 import { ChevronLeft, ChevronRight, RotateCw, Pause, Play } from "lucide-react";
 
 export default function AnimationControlBar({
-  totalSteps = 10,
+  defaultStartIndex,
+  totalSteps,
+  timePerStep,
   onPlayPause,
   onStepChange,
   onSpeedChange,
@@ -24,8 +26,15 @@ export default function AnimationControlBar({
     () => currentStep >= totalSteps - 1,
     [currentStep, totalSteps]
   )
+  const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
   const speedOptions = [0.5, 0.75, 1, 1.5, 2]
+
+  useEffect(() => setCurrentStep(0), [])
+
+  useEffect(() => {
+    onSpeedChange?.(playbackSpeed)
+  }, [])
 
   useEffect(() => {
     onPlayPause?.(isPlaying);
@@ -39,20 +48,20 @@ export default function AnimationControlBar({
     onSpeedChange?.(playbackSpeed);
   }, [playbackSpeed])
 
-  useEffect(() => {
-    if (!isPlaying) {
-      return;
+  const incrementStepByPlayback = () => {
+    if (currentStep >= totalSteps - 1) {
+      setIsPlaying(false)
+      return
     }
+    setCurrentStep((currentStep) => currentStep + 1)
+  }
 
-    let timeout = setTimeout(() => {
-      if (currentStep >= totalSteps - 1) {
-        return;
-      }
-      setCurrentStep((currentStep) => currentStep + 1);
-    }, 1000 * 1 / playbackSpeed);
-
-    return () => clearTimeout(timeout);
-  }, [isPlaying, currentStep])
+  useEffect(() => {
+    if (isPlaying) {
+      let timeout = setTimeout(incrementStepByPlayback, derivedTimePerStep * 1000)
+      return () => clearTimeout(timeout)
+    }    
+  }, [currentStep, isPlaying])
 
   const handlePlayPauseRestart = () => {
     if (finished) {
@@ -61,6 +70,9 @@ export default function AnimationControlBar({
     } else {
       const newPlayingState = !isPlaying
       setIsPlaying(newPlayingState)
+      if (newPlayingState) {
+        incrementStepByPlayback()
+      }
     }
   }
 
