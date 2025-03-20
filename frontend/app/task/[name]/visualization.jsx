@@ -88,17 +88,17 @@ export function keepTrackOfItems(steps) {
 }
 
 export default function Visualization({ code, task, onIsLoading }) {
+    const timePerStep = 1
+
     const { data: analysis, isLoading, error } = useSWR(['analyzeCode', task.name, code], () => analyzeCode(task.name, code), { revalidateOnFocus: false, suspense: false })
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps)), [analysis])
+    const [playbackSpeed, setPlaybackSpeed] = useState(1)
+    const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
     useEffect(() => {
         onIsLoading?.(isLoading)
     }, [onIsLoading, isLoading])
-
-    useEffect(() => {
-        setCurrentStepIndex(0)
-    }, [steps])    
 
     if (isLoading) {
         return <FullLoadingSpinner />
@@ -115,28 +115,39 @@ export default function Visualization({ code, task, onIsLoading }) {
                         <motion.li
                             key={item.orderId}
                             layout
-                            initial={{ y: -50, opacity: 0, scale: 0.5 }}
-                            animate={{ y: 0, opacity: 1, scale: 1 }}
-                            transition={{type: 'spring', stiffness: 300, damping: 30, duration: 0.05, delay: 0.05 * index}}
-                            className="relative size-16">
-                                <AnimatePresence initial={false}>
-                                    <motion.div
-                                        key={item.id}
-                                        transition={{type: 'spring', stiffness: 300, damping: 30, duration: 1}}
-                                        initial={{ y: -100, opacity: 0, scale: 0.5 }}
-                                        animate={{ y: 0, opacity: 1, scale: 1  }}
-                                        exit={{ y: 100, opacity: 0, scale: 0.5  }}
-                                        className="absolute size-full bg-muted border rounded-sm flex items-center justify-center">
-                                        {item.value}
-                                    </motion.div>
-                                </AnimatePresence>
+                            transition={{
+                                duration: derivedTimePerStep,
+                                type: 'spring',
+                                bounce: 0.25
+                            }}
+                            className="size-16"
+                            >
+                                <motion.div
+                                    initial={{ y: -50, opacity: 0, scale: 0.5 }}
+                                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                                    transition={{type: 'spring', duration: 0.05, delay: 0.05 * index}}
+                                    className="relative size-full">
+                                    <AnimatePresence initial={false}>
+                                        <motion.div
+                                            key={item.id}
+                                            transition={{ type: 'spring', duration: derivedTimePerStep }}
+                                            initial={{ y: -100, opacity: 0, scale: 0.5 }}
+                                            animate={{ y: 0, opacity: 1, scale: 1  }}
+                                            exit={{ y: 100, opacity: 0, scale: 0.5  }}
+                                            className="absolute size-full bg-muted border rounded-sm flex items-center justify-center">
+                                            {item.value}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </motion.div>
                             </motion.li>
                     )}
                 
             </ul>
             <AnimationControlBar
                 totalSteps={steps.length}
+                timePerStep={timePerStep}
                 onStepChange={setCurrentStepIndex}
+                onSpeedChange={setPlaybackSpeed}
             />
         </div>
     )
