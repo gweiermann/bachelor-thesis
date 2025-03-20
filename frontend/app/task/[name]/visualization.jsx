@@ -5,6 +5,7 @@ import { FullLoadingSpinner } from '@/components/loading-spinner'
 import { useEffect, useState, useMemo } from 'react'
 import { analyzeCode } from '@/lib/code-analysis'
 import { AnimatePresence, motion } from 'motion/react'
+import AnimationControlBar from './animation-control-bar'
 
 function getChangedIndex(first, second, startIndex = 0) {
     const index = first.slice(startIndex).findIndex((value, index) => value !== second[index + startIndex])
@@ -97,26 +98,7 @@ export default function Visualization({ code, task, onIsLoading }) {
 
     useEffect(() => {
         setCurrentStepIndex(0)
-    }, [steps])
-
-    useEffect(() => {
-        if (!steps) {
-            return
-        }
-
-        let timeout;
-        if (currentStepIndex >= steps.length - 1) {
-            timeout = setTimeout(() => {
-                setCurrentStepIndex(0)
-            }, 5000);
-        } else {
-            timeout = setTimeout(() => {
-                setCurrentStepIndex(currentStepIndex => currentStepIndex + 1)
-            }, 1000);
-        }
-
-        return () => clearTimeout(timeout)
-    }, [steps, currentStepIndex])
+    }, [steps])    
 
     if (isLoading) {
         return <FullLoadingSpinner />
@@ -129,14 +111,15 @@ export default function Visualization({ code, task, onIsLoading }) {
     return (
         <div className="flex flex-col items-center justify-center gap-8">
             <ul className="flex space-x-4">
-                
                     {steps[currentStepIndex].map((item, index) => 
                         <motion.li
                             key={item.orderId}
                             layout
-                            transition={{type: 'spring', stiffness: 300, damping: 30, duration: 0.25}}
+                            initial={{ y: -50, opacity: 0, scale: 0.5 }}
+                            animate={{ y: 0, opacity: 1, scale: 1 }}
+                            transition={{type: 'spring', stiffness: 300, damping: 30, duration: 0.05, delay: 0.05 * index}}
                             className="relative size-16">
-                                <AnimatePresence>
+                                <AnimatePresence initial={false}>
                                     <motion.div
                                         key={item.id}
                                         transition={{type: 'spring', stiffness: 300, damping: 30, duration: 1}}
@@ -151,7 +134,10 @@ export default function Visualization({ code, task, onIsLoading }) {
                     )}
                 
             </ul>
-            <p>Step {currentStepIndex + 1} of {steps.length}</p>
+            <AnimationControlBar
+                totalSteps={steps.length}
+                onStepChange={setCurrentStepIndex}
+            />
         </div>
     )
 }

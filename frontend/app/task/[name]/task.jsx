@@ -55,9 +55,9 @@ export default function Task({ task }) {
                     </article>
                 </div>
 
-                <div className="h-10vh">
+                <div className="pb-8">
                     {/* Code and Visualization Section */}
-                    <section className="mt-12 mb-8 grid md:grid-cols-2 gap-6 h-[80vh]">
+                    <section className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6 h-[80vh]">
                         {/* Left Column - Code Editor */}
                         <div className="border rounded-lg overflow-hidden bg-card">
                             <div className="flex items-center justify-between p-3 border-b bg-muted">
