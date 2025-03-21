@@ -15,16 +15,23 @@ result_list = []
 function_line_number = None
 function_frame_index = None
 
-def process_step(frame, line_number):
-    global function_line_number
+def get_variables(frame):
+    varlist = frame.GetVariables(True, True, True, True)
+    return {var.GetName(): var.GetValue()
+            for var in varlist}
+
+def append_array_to_result(array, frame):
+    global result_list
+    result_list.append({
+        "line": frame.GetLineEntry().GetLine() - function_line_number,
+        "array": array,
+        "scope": get_variables(frame)
+    })
+
+def process_step(frame):
     array = get_array()
-    print('processing step')
-    if array != result_list[-1]:
-        result_list.append({
-            "line": line_number - function_line_number,
-            "array": array,
-            "scope": str(frame.GetVariables())
-        }.items())
+    if array != result_list[-1]['array']:
+        append_array_to_result(array, frame)
 
 class ArrayWatcher:
     def __init__(self, thread_plan, dict):
@@ -137,36 +144,40 @@ if __name__ == "__main__":
     array = int(_array.GetValue(), 0)
     size = int(_size.GetValue(), 0) * _array.Dereference().GetByteSize()
 
-    # error = lldb.SBError()
-    # options = lldb.SBWatchpointOptions()
-    # options.SetWatchpointTypeWrite(True)
-    # wp = target.WatchpointCreateByAddress(array, size, options, error)
-    # if error.Fail():
-    #     raise Exception(f"Failed to watch array: {error.GetCString()}")
-    # debugger.HandleCommand(f"watchpoint command add -F watchpoint_callback {wp.GetID()}")
-
-    # debugger.HandleCommand("thread step-scripted -C ArrayWatcher")
-
     # save frame index
     function_frame_index = frame.GetFrameID()
+    function_frame = frame
 
     # get initial line number
     function_line_number = frame.GetLineEntry().GetLine()
 
     # add initial state
-    initial_state = get_array()
+    append_array_to_result(get_array(), frame)
 
-    debugger.HandleCommand("script import __main__")
-    debugger.HandleCommand("thread step-scripted -C __main__.ArrayWatcher")
+    while process.GetState() == lldb.eStateStopped:
+        frame = thread.GetFrameAtIndex(0)
 
-    process.Continue()
+        line_entry = frame.GetLineEntry()
+        file_name = line_entry.GetFileSpec().GetFilename()
+        line_number = line_entry.GetLine()
+        current_function_name = frame.GetFunction().GetDisplayName()
 
-    print("resultlist", result_list)
+        if file_name is None or current_function_name is None:
+            thread.StepOver()
+            continue
 
-    # print(json.dumps({
-    #     "initial_state": initial_state,
-    #     "steps": map(dict, result_list)
-    # }))
+        current_function_name = current_function_name.split('(', 1)[0]
+        base_source_filename = os.path.basename(source_filename)
+
+        if file_name == base_source_filename and current_function_name == function_name:
+            process_step(frame)
+            thread.StepOver()
+        else:
+            thread.StepOut()
+
+    print(json.dumps({
+        "steps": result_list
+    }))
 
     debugger.Terminate()
 

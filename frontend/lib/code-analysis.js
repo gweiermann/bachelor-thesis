@@ -32,6 +32,7 @@ export async function analyzeCode(challengeName, codeWithoutPrototype) {
             { cwd: path.join(process.cwd(), '../docker')},
             (err, stdout, stderr) => {
                 if (err) {
+                    console.log('stdout', stdout)
                     reject(err)
                 }
 

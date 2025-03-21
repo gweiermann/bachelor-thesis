@@ -92,7 +92,8 @@ export default function Visualization({ code, task, onIsLoading }) {
 
     const { data: analysis, isLoading, error } = useSWR(['analyzeCode', task.name, code], () => analyzeCode(task.name, code), { revalidateOnFocus: false, suspense: false })
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
-    const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps)), [analysis])
+
+    const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps.map(step => step.array))), [analysis])
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
@@ -105,7 +106,7 @@ export default function Visualization({ code, task, onIsLoading }) {
     }
 
     if (error) {
-        return <div>Error: {error.message}</div>
+        return <div>Error: <pre>{error.message}</pre></div>
     }
 
     // Prevent bug from crashing, needs further investigation
@@ -117,6 +118,8 @@ export default function Visualization({ code, task, onIsLoading }) {
             </div>
         )
     }
+
+    console.log(analysis)
     
     return (
         <div className="flex flex-col items-center justify-center gap-8">
