@@ -18,7 +18,7 @@ export default function Editor({ functionProtoype, placeholder, onChange }) {
 
         constrainedInstance.addRestrictionsTo(model, [
             {
-                range: [3, 1, 3 + numberOfLines, 1],
+                range: [2, 2, 3 + numberOfLines, 1],
                 allowMultiline: true,
             }
         ])
