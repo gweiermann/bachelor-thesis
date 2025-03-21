@@ -25,9 +25,9 @@ export function fixSwapping(steps) {
     const len = steps.length
     const mask = new Array(len).fill(true)
     for (let i = 0; i < len - 2;) {
-        const first = steps[i]
-        const second = steps[i + 1]
-        const third = steps[i + 2]
+        const first = steps[i].array
+        const second = steps[i + 1].array
+        const third = steps[i + 2].array
         const changeAtSecond = getChangedIndex(first, second)
         const changeAtThird = getChangedIndex(second, third)
         
@@ -53,32 +53,36 @@ export function keepTrackOfItems(steps) {
         return []
     }
     let id = 0
-    let previous = steps[0].map(item => ({ id: id, value: item, orderId: id++ }))
+    let previous = {
+        ...steps[0],
+        array: steps[0].array.map(item => ({ id: id, value: item, orderId: id++ }))
+    }
     return [previous, ...steps.slice(1).map(step => {
-        const previousValues = previous.map(item => item.value)
-        const current = previous.slice()
+        const previousValues = previous.array.map(item => item.value)
+        const current = { ...step, array: previous.array.slice() }
+        const values = step.array
         
-        const firstChange = getChangedIndex(previousValues, step)
+        const firstChange = getChangedIndex(previousValues, values)
         if (firstChange === -1) {
             throw new Error('The steps are supposed to be different each step')
         }
-        const secondChange = getChangedIndex(previousValues, step, firstChange + 1)
+        const secondChange = getChangedIndex(previousValues, values, firstChange + 1)
         
         if (secondChange === -1) {
             // no swap behaviour, only one item changed, so we assume a new item got added
-            current[firstChange] = { id: id++, value: step[firstChange], orderId: previous[firstChange].orderId }
+            current.array[firstChange] = { id: id++, value: values[firstChange], orderId: previous.array[firstChange].orderId }
         } else {
-            if (getChangedIndex(step, previousValues, secondChange + 1) !== -1) {
-                throw new Error(`It's not supposed that a step can have more than two changes`)
+            if (getChangedIndex(values, previousValues, secondChange + 1) !== -1) {
+                throw new Error(`It's unexpected that a step can have more than two changes`)
             }
             // potential swap behaviour
-            if (previous[firstChange].value === step[secondChange] && previous[secondChange].value === step[firstChange]) {
+            if (previous.array[firstChange].value === values[secondChange] && previous.array[secondChange].value === step.array[firstChange]) {
                 // it's indeed a swap
-                current[firstChange] = previous[secondChange]
-                current[secondChange] = previous[firstChange]
+                current.array[firstChange] = previous.array[secondChange]
+                current.array[secondChange] = previous.array[firstChange]
             } else {
                 // both items are new
-                throw new Error(`It's not supposed that a step can have more than two new items that are not swapped`)
+                throw new Error(`It's unexpected that a step can have more than one new item that is not swapped with another item`)
             }
         }
 
@@ -93,7 +97,7 @@ export default function Visualization({ code, task, onIsLoading }) {
     const { data: analysis, isLoading, error } = useSWR(['analyzeCode', task.name, code], () => analyzeCode(task.name, code), { revalidateOnFocus: false, suspense: false })
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
-    const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps.map(step => step.array))), [analysis])
+    const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps)), [analysis])
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
@@ -109,6 +113,8 @@ export default function Visualization({ code, task, onIsLoading }) {
         return <div>Error: <pre>{error.message}</pre></div>
     }
 
+    console.log(steps.map(step => step.scope))
+
     // Prevent bug from crashing, needs further investigation
     if (!steps || steps.some(step => !step)) {
         console.error('Analysis result is malformed', {steps, analysis})
@@ -118,13 +124,11 @@ export default function Visualization({ code, task, onIsLoading }) {
             </div>
         )
     }
-
-    console.log(analysis)
     
     return (
         <div className="flex flex-col items-center justify-center gap-8">
             <ul className="flex space-x-4">
-                    {steps[currentStepIndex].map((item, index) => 
+                    {steps[currentStepIndex].array.map((item, index) => 
                         <motion.li
                             key={item.orderId}
                             layout
@@ -162,6 +166,14 @@ export default function Visualization({ code, task, onIsLoading }) {
                 onStepChange={setCurrentStepIndex}
                 onSpeedChange={setPlaybackSpeed}
             />
+            <div>
+                <p>Line: {currentStepIndex > 0 && (steps[currentStepIndex].line)}</p>
+                <hr />
+                <p>Variables:</p>
+                <ul>
+                    {currentStepIndex > 0 && Object.entries(steps[currentStepIndex].scope).map(([name, value]) => <li key={name}>{name}: {value}</li>)}
+                </ul>
+            </div>
         </div>
     )
 }

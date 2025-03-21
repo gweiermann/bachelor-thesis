@@ -16,61 +16,24 @@ function_line_number = None
 function_frame_index = None
 
 def get_variables(frame):
-    varlist = frame.GetVariables(True, True, True, True)
+    varlist = frame.GetVariables(False, True, False, False)
     return {var.GetName(): var.GetValue()
             for var in varlist}
 
-def append_array_to_result(array, frame):
+def append_array_to_result(array, frame, line_number):
     global result_list
+    global function_line_number
     result_list.append({
-        "line": frame.GetLineEntry().GetLine() - function_line_number,
+        "line": line_number - function_line_number,
         "array": array,
         "scope": get_variables(frame)
     })
 
-def process_step(frame):
+def process_step(frame, line_number):
     array = get_array()
     if array != result_list[-1]['array']:
-        append_array_to_result(array, frame)
-
-class ArrayWatcher:
-    def __init__(self, thread_plan, dict):
-        self.thread_plan = thread_plan
-
-    def should_stop(self, event):
-        """Each step this function is called. Returning True means: control to user, False means: continue with the step-scripting"""
-        return False
-        
-    def should_step(self):
-        """Returning False means wait for next breakpoint. Returning True means we continue stepping"""
-        thread = self.thread_plan.GetThread()
-        target = thread.GetProcess().GetTarget()
-        frame = thread.GetFrameAtIndex(0)
-
-        line_entry = frame.GetLineEntry()
-        file_name = line_entry.GetFileSpec().GetFilename()
-        line_number = line_entry.GetLine()
-        current_function_name = frame.GetFunctionName()
-
-        global source_filename
-        global function_name
-        global function_frame_index
-
-        if file_name == source_filename and current_function_name == function_name:
-            process_step(frame, line_number)
-        else:
-            print("step out")
-            self.thread_plan.QueueThreadPlanForStepOut(function_frame_index)
-        return True
-
-    def explains_stop(self, event):
-        """Are we the reason it has stopped?"""
-        return True
-
+        append_array_to_result(array, frame, line_number)
     
-    
-    
-
 def get_vars():
     global array_var
     global size_var
@@ -96,15 +59,8 @@ def get_array():
     size = int(_size.GetValue(), 0)
     return tuple(int(array.GetChildAtIndex(i, lldb.eDynamicCanRunTarget, True).GetValue(), 0) for i in range(size))
 
-# def watchpoint_callback(frame, wp, internal_dict):
-#     new_step = get_array()
-#     if result_list[-1] != new_step:
-#         result_list.append(new_step)
-#     return False
-
 
 if __name__ == "__main__":
-
     debugger = lldb.SBDebugger.Create()
     debugger.SetAsync(False)
     target = debugger.CreateTarget(exe)
@@ -149,10 +105,12 @@ if __name__ == "__main__":
     function_frame = frame
 
     # get initial line number
-    function_line_number = frame.GetLineEntry().GetLine()
+    function_line_number = frame.GetLineEntry().GetLine() - 3
 
     # add initial state
-    append_array_to_result(get_array(), frame)
+    append_array_to_result(get_array(), frame, function_line_number)
+
+    previous_line_number = function_line_number
 
     while process.GetState() == lldb.eStateStopped:
         frame = thread.GetFrameAtIndex(0)
@@ -170,10 +128,12 @@ if __name__ == "__main__":
         base_source_filename = os.path.basename(source_filename)
 
         if file_name == base_source_filename and current_function_name == function_name:
-            process_step(frame)
+            process_step(frame, previous_line_number)
             thread.StepOver()
         else:
             thread.StepOut()
+        
+        previous_line_number = line_number
 
     print(json.dumps({
         "steps": result_list
