@@ -107,6 +107,16 @@ export default function Visualization({ code, task, onIsLoading }) {
     if (error) {
         return <div>Error: {error.message}</div>
     }
+
+    // Prevent bug from crashing, needs further investigation
+    if (!steps || steps.some(step => !step)) {
+        console.error('Analysis result is malformed', {steps, analysis})
+        return (
+            <div>
+                <div>Error: Analysis result is malformed. See console for further information.</div>
+            </div>
+        )
+    }
     
     return (
         <div className="flex flex-col items-center justify-center gap-8">
