@@ -91,7 +91,7 @@ export function keepTrackOfItems(steps) {
     })]
 }
 
-export default function Visualization({ code, task, onIsLoading }) {
+export default function Visualization({ code, task, onIsLoading, onActiveLineChange }) {
     const timePerStep = 1
 
     const { data: analysis, isLoading, error } = useSWR(['analyzeCode', task.name, code], () => analyzeCode(task.name, code), { revalidateOnFocus: false, suspense: false })
@@ -101,9 +101,15 @@ export default function Visualization({ code, task, onIsLoading }) {
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
+    const activeLine = useMemo(() => currentStepIndex > 0 && steps && steps[currentStepIndex].line, [currentStepIndex, steps])
+
     useEffect(() => {
         onIsLoading?.(isLoading)
     }, [onIsLoading, isLoading])
+
+    useEffect(() => {
+        onActiveLineChange?.(activeLine)
+    }, [activeLine])
 
     if (isLoading) {
         return <FullLoadingSpinner />
