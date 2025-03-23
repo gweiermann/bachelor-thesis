@@ -70,7 +70,7 @@ export default function Task({ task }) {
                     {/* Code and Visualization Section */}
                     <section className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6 auto-cols-auto auto-rows-auto">
                         {/* Left Column - Code Editor */}
-                        <div className="border rounded-lg bg-card">
+                        <div className="border rounded-lg bg-card overflow-hidden">
                             <div className="flex items-center justify-between p-3 border-b bg-muted gap-8">
                                 <span className="font-medium">Code Editor</span>
                                 <Button size="sm" onClick={runCode} disabled={!codeHasChanged && previousCode}>
