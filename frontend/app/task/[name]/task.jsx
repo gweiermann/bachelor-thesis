@@ -4,7 +4,7 @@ import Markdown from 'react-markdown'
 import { Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import Editor from '@/components/editor'
+import Editor from '@/components/editor/editor'
 import { useState, } from 'react'
 import { InlineLoadingSpinner } from '@/components/loading-spinner'
 import Visualization from './visualization'
@@ -13,6 +13,7 @@ export default function Task({ task }) {
     const [code, setCode] = useState(task.code.functionPrototype)
     const [codeToAnalyse, setCodeToAnalyse] = useState(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [activeLine, setActiveLine] = useState(null)
 
     // const placeholder = `// your code here`
     const placeholder = `for (int i = 0; i < n-1; i++) {
@@ -67,7 +68,11 @@ export default function Task({ task }) {
                                 </Button>
                             </div>
                             <div className="py-4">
-                                <Editor functionProtoype={task.code.functionPrototype} placeholder={placeholder} onChange={setCode}/>
+                                <Editor
+                                    functionProtoype={task.code.functionPrototype}
+                                    placeholder={placeholder}
+                                    onChange={setCode}
+                                    activeLine={activeLine} />
                             </div>
                         </div>
                 
@@ -76,7 +81,7 @@ export default function Task({ task }) {
                             <div className="h-full flex items-center justify-center p-4">
                                 {!codeToAnalyse ? 
                                     <p className="text-center text-muted-foreground"> Hit {'"Run"'} to visualize your code. </p> :
-                                    <Visualization code={codeToAnalyse} task={task} onIsLoading={setIsAnalyzing} />}
+                                    <Visualization code={codeToAnalyse} task={task} onIsLoading={setIsAnalyzing} onActiveLineChange={setActiveLine} />}
                             </div>
                         </div>
                     </section>

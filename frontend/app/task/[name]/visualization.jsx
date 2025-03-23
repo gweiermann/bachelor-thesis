@@ -6,6 +6,15 @@ import { useEffect, useState, useMemo } from 'react'
 import { analyzeCode } from '@/lib/code-analysis'
 import { AnimatePresence, motion } from 'motion/react'
 import AnimationControlBar from './animation-control-bar'
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+  } from "@/components/ui/table"
 
 function getChangedIndex(first, second, startIndex = 0) {
     const index = first.slice(startIndex).findIndex((value, index) => value !== second[index + startIndex])
@@ -91,7 +100,7 @@ export function keepTrackOfItems(steps) {
     })]
 }
 
-export default function Visualization({ code, task, onIsLoading }) {
+export default function Visualization({ code, task, onIsLoading, onActiveLineChange }) {
     const timePerStep = 1
 
     const { data: analysis, isLoading, error } = useSWR(['analyzeCode', task.name, code], () => analyzeCode(task.name, code), { revalidateOnFocus: false, suspense: false })
@@ -101,9 +110,20 @@ export default function Visualization({ code, task, onIsLoading }) {
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
+    const activeLine = useMemo(() => currentStepIndex > 0 && steps && steps[currentStepIndex].line, [currentStepIndex, steps])
+    const allVariableNames = useMemo(() => !steps ? [] : [...steps.reduce((result, current) => {
+        console.log(current)
+        Object.keys(current.scope).map(key => result.add(key))
+        return result
+    }, new Set())], [steps])
+
     useEffect(() => {
         onIsLoading?.(isLoading)
     }, [onIsLoading, isLoading])
+
+    useEffect(() => {
+        onActiveLineChange?.(activeLine)
+    }, [activeLine])
 
     if (isLoading) {
         return <FullLoadingSpinner />
@@ -166,14 +186,20 @@ export default function Visualization({ code, task, onIsLoading }) {
                 onStepChange={setCurrentStepIndex}
                 onSpeedChange={setPlaybackSpeed}
             />
-            <div>
-                <p>Line: {currentStepIndex > 0 && (steps[currentStepIndex].line)}</p>
-                <hr />
-                <p>Variables:</p>
-                <ul>
-                    {currentStepIndex > 0 && Object.entries(steps[currentStepIndex].scope).map(([name, value]) => <li key={name}>{name}: {value}</li>)}
-                </ul>
-            </div>
+            <Table>
+                <TableCaption>{currentStepIndex > 0 ? 'The current state of local variables.' : 'Play the animation to see the current state of local variables.'}
+                    </TableCaption>
+                <TableHeader>
+                    <TableRow>
+                        {allVariableNames.map(name => <TableHead key={name}>{name}</TableHead>)}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow>
+                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope[key] : '-'}</TableCell>)}
+                    </TableRow>
+                </TableBody>
+            </Table>
         </div>
     )
 }

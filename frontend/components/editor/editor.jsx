@@ -2,10 +2,31 @@
 
 import { constrainedEditor } from "constrained-editor-plugin";
 import MonacoEditor from '@monaco-editor/react';
-import { useRef } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import './style.css'
 
-export default function Editor({ functionProtoype, placeholder, onChange }) {
+function highlightLine(editor, line) {
+    return editor.createDecorationsCollection([
+        {
+            range: {
+                startLineNumber: line,
+                startColumn: 1,
+                endLineNumber: line,
+                endColumn: 1,
+            },
+            options: {
+                isWholeLine: true,
+                className: 'code-editor__active-line',
+                lineNumberClassName: 'code-editor__active-line',
+                linesDecorationsClassName: "code-editor__active-line-symbol",
+            },
+        }
+    ]);
+}
+
+export default function Editor({ functionProtoype, placeholder, onChange, activeLine = null }) {
     const monacoRef = useRef(null);
+    const [previousLineDecoration, setPreviousLineDecoration] = useState(null)
 
     function handleEditorDidMount(editor, monaco) {
         monacoRef.current = editor;
@@ -27,6 +48,14 @@ export default function Editor({ functionProtoype, placeholder, onChange }) {
     }
 
     const defaultValue = `${functionProtoype}\n{\n  ${placeholder}\n}`
+
+    useEffect(() => {
+        previousLineDecoration?.clear()
+        if (activeLine && monacoRef.current) {
+            setPreviousLineDecoration(highlightLine(monacoRef.current, activeLine))
+            monacoRef.current.revealLine(activeLine)
+        }
+    }, [activeLine, monacoRef])
 
     return (
         <MonacoEditor

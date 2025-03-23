@@ -1,0 +1,17 @@
+@reference 'tailwindcss';
+
+.code-editor__active-line,
+.code-editor__active-line-symbol {
+  @apply bg-cyan-100;
+}
+
+.code-editor__active-line-symbol {
+  position: relative;
+}
+
+.code-editor__active-line-symbol::after {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  content: '\2192';
+}
