@@ -24,6 +24,11 @@ function highlightLine(editor, line) {
     ]);
 }
 
+function extractCodeFromFunction(code) {
+    // Same function in editor.jsx, should be combined into one
+    return code.split('\n').slice(2, -1).join('\n');
+}
+
 export default function Editor({ functionProtoype, placeholder, onChange, activeLine = null }) {
     const monacoRef = useRef(null);
     const [previousLineDecoration, setPreviousLineDecoration] = useState(null)
@@ -47,7 +52,7 @@ export default function Editor({ functionProtoype, placeholder, onChange, active
         onChange?.(model.getValue())
     }
 
-    const defaultValue = `${functionProtoype}\n{\n  ${placeholder}\n}`
+    const defaultValue = `${functionProtoype}\n{\n    ${placeholder}\n}`
 
     useEffect(() => {
         previousLineDecoration?.clear()

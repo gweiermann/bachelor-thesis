@@ -13,30 +13,30 @@ import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 
 export default function Task({ task }) {
+    // const placeholder = `// your code here`
+    const placeholder = `for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (arr[j] > arr[j+1]) {
+                std::swap(arr[j], arr[j+1]);
+            }
+        }
+    }`
+
     const [code, setCode] = useState(null)
-    const [previousCode, setPreviousCode] = useState(code)
+    const [previousCode, setPreviousCode] = useState(null)
     const [codeToAnalyse, setCodeToAnalyse] = useState(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [activeLine, setActiveLine] = useState(null)
     const codeHasChanged = useMemo(() => code !== previousCode && previousCode !== null, [code, previousCode])
 
-    // const placeholder = `// your code here`
-    const placeholder = `for (int i = 0; i < n-1; i++) {
-      for (int j = 0; j < n-i-1; j++) {
-          if (arr[j] > arr[j+1]) {
-              std::swap(arr[j], arr[j+1]);
-          }
-      }
-  }`
-
-    function runCode() {
-        const codeWithoutPrototype = code.split('\n').slice(2, -1).join('\n')
-        setCodeToAnalyse(codeWithoutPrototype)
-        setPreviousCode(code)
+    function extractCodeFromFunction(code) {
+        return code.split('\n').slice(2, -1).join('\n');
     }
 
-    function undoCodeChanges() {
-        // TODO: Implement undo code changes
+    function runCode() {
+        const codeWithoutPrototype = extractCodeFromFunction(code)
+        setCodeToAnalyse(codeWithoutPrototype)
+        setPreviousCode(code)
     }
 
     return (
@@ -79,25 +79,22 @@ export default function Task({ task }) {
                             </div>
                             <div className="py-4">
                                 <div className={cn('overflow-hidden max-h-0 transition-all duration-100 mx-4 ease-linear', codeHasChanged && 'max-h-20 mb-4')}>
-                                    <WarningAlert
-                                        className='py-1'
-                                        actionButton={<Button variant='ghost' onClick={undoCodeChanges}>Undo changes</Button>}>
-                                            The code has been changed since the visualization was build.
+                                    <WarningAlert>
+                                        The code has been changed since the visualization was build. Hit 'Run' to update it.
                                     </WarningAlert>
                                 </div>
                                 <Editor
                                     functionProtoype={task.code.functionPrototype}
                                     placeholder={placeholder}
                                     onChange={setCode}
-                                    activeLine={activeLine} />
+                                    activeLine={!codeHasChanged && activeLine} />
                             </div>
                         </div>
                 
                         {/* Right Column - Visualization */}
                         <div className="border rounded-lg bg-card h-full flex flex-col">
                             <div className='m-4'>
-                                <WarningAlert
-                                    className={cn(!codeHasChanged && 'invisible')}>
+                                <WarningAlert className={cn(!codeHasChanged && 'invisible')}>
                                     The code has been changed since the visualization was build. Hit 'Run' to update it.
                                 </WarningAlert>
                             </div>
