@@ -58,10 +58,10 @@ export default function Task({ task }) {
 
                 <div className="pb-8">
                     {/* Code and Visualization Section */}
-                    <section className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6 h-[80vh]">
+                    <section className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6 auto-cols-auto auto-rows-auto">
                         {/* Left Column - Code Editor */}
                         <div className="border rounded-lg bg-card">
-                            <div className="flex items-center justify-between p-3 border-b bg-muted">
+                            <div className="flex items-center justify-between p-3 border-b bg-muted gap-8">
                                 <span className="font-medium">Code Editor</span>
                                 <Button size="sm" onClick={runCode}>
                                     Run {isAnalyzing && <InlineLoadingSpinner />}
@@ -77,7 +77,7 @@ export default function Task({ task }) {
                         </div>
                 
                         {/* Right Column - Visualization */}
-                        <div className="border rounded-lg overflow-hidden bg-card">
+                        <div className="border rounded-lg bg-card">
                             <div className="h-full flex items-center justify-center p-4">
                                 {!codeToAnalyse ? 
                                     <p className="text-center text-muted-foreground"> Hit {'"Run"'} to visualize your code. </p> :

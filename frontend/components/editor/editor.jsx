@@ -59,7 +59,7 @@ export default function Editor({ functionProtoype, placeholder, onChange, active
 
     return (
         <MonacoEditor
-            height="90vh"
+            height="70vh"
             language="cpp"
             onMount={handleEditorDidMount}
             defaultValue={defaultValue}
