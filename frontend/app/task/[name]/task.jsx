@@ -8,12 +8,17 @@ import Editor from '@/components/editor/editor'
 import { useState, } from 'react'
 import { InlineLoadingSpinner } from '@/components/loading-spinner'
 import Visualization from './visualization'
+import WarningAlert from '@/components/warning-alert'
+import { useMemo } from 'react'
+import { cn } from '@/lib/utils'
 
 export default function Task({ task }) {
-    const [code, setCode] = useState(task.code.functionPrototype)
+    const [code, setCode] = useState(null)
+    const [previousCode, setPreviousCode] = useState(code)
     const [codeToAnalyse, setCodeToAnalyse] = useState(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [activeLine, setActiveLine] = useState(null)
+    const codeHasChanged = useMemo(() => code !== previousCode && previousCode !== null, [code, previousCode])
 
     // const placeholder = `// your code here`
     const placeholder = `for (int i = 0; i < n-1; i++) {
@@ -27,6 +32,11 @@ export default function Task({ task }) {
     function runCode() {
         const codeWithoutPrototype = code.split('\n').slice(2, -1).join('\n')
         setCodeToAnalyse(codeWithoutPrototype)
+        setPreviousCode(code)
+    }
+
+    function undoCodeChanges() {
+        // TODO: Implement undo code changes
     }
 
     return (
@@ -63,11 +73,18 @@ export default function Task({ task }) {
                         <div className="border rounded-lg bg-card">
                             <div className="flex items-center justify-between p-3 border-b bg-muted gap-8">
                                 <span className="font-medium">Code Editor</span>
-                                <Button size="sm" onClick={runCode}>
+                                <Button size="sm" onClick={runCode} disabled={!codeHasChanged && previousCode}>
                                     Run {isAnalyzing && <InlineLoadingSpinner />}
                                 </Button>
                             </div>
                             <div className="py-4">
+                                <div className={cn('overflow-hidden max-h-0 transition-all duration-100 mx-4 ease-linear', codeHasChanged && 'max-h-20 mb-4')}>
+                                    <WarningAlert
+                                        className='py-1'
+                                        actionButton={<Button variant='ghost' onClick={undoCodeChanges}>Undo changes</Button>}>
+                                            The code has been changed since the visualization was build.
+                                    </WarningAlert>
+                                </div>
                                 <Editor
                                     functionProtoype={task.code.functionPrototype}
                                     placeholder={placeholder}
@@ -77,8 +94,14 @@ export default function Task({ task }) {
                         </div>
                 
                         {/* Right Column - Visualization */}
-                        <div className="border rounded-lg bg-card">
-                            <div className="h-full flex items-center justify-center p-4">
+                        <div className="border rounded-lg bg-card h-full flex flex-col">
+                            <div className='m-4'>
+                                <WarningAlert
+                                    className={cn(!codeHasChanged && 'invisible')}>
+                                    The code has been changed since the visualization was build. Hit 'Run' to update it.
+                                </WarningAlert>
+                            </div>
+                            <div className="flex flex-grow flex-col items-center justify-center p-4">
                                 {!codeToAnalyse ? 
                                     <p className="text-center text-muted-foreground"> Hit {'"Run"'} to visualize your code. </p> :
                                     <Visualization code={codeToAnalyse} task={task} onIsLoading={setIsAnalyzing} onActiveLineChange={setActiveLine} />}

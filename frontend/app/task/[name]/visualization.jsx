@@ -110,7 +110,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
-    const activeLine = useMemo(() => currentStepIndex > 0 && steps && steps[currentStepIndex].line, [currentStepIndex, steps])
+    const activeLine = useMemo(() => currentStepIndex > 0 && steps && steps[currentStepIndex]?.line, [currentStepIndex, steps])
     const allVariableNames = useMemo(() => !steps ? [] : [...steps.reduce((result, current) => {
         console.log(current)
         Object.keys(current.scope).map(key => result.add(key))
@@ -180,7 +180,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
                     )}
                 
             </ul>
-            <Table>
+            <Table>               
                 <TableHeader>
                     <TableRow>
                         <TableHead>Variable</TableHead>
