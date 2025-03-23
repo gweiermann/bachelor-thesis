@@ -180,26 +180,26 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
                     )}
                 
             </ul>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Variable</TableHead>
+                        {allVariableNames.map(name => <TableHead key={name}>{name}</TableHead>)}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow>
+                        <TableHead>Value</TableHead>
+                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope[key] : '-'}</TableCell>)}
+                    </TableRow>
+                </TableBody>
+            </Table>
             <AnimationControlBar
                 totalSteps={steps.length}
                 timePerStep={timePerStep}
                 onStepChange={setCurrentStepIndex}
                 onSpeedChange={setPlaybackSpeed}
             />
-            <Table>
-                <TableCaption>{currentStepIndex > 0 ? 'The current state of local variables.' : 'Play the animation to see the current state of local variables.'}
-                    </TableCaption>
-                <TableHeader>
-                    <TableRow>
-                        {allVariableNames.map(name => <TableHead key={name}>{name}</TableHead>)}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    <TableRow>
-                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope[key] : '-'}</TableCell>)}
-                    </TableRow>
-                </TableBody>
-            </Table>
         </div>
     )
 }
