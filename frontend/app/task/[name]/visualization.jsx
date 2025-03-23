@@ -112,10 +112,13 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
 
     const activeLine = useMemo(() => currentStepIndex > 0 && steps && steps[currentStepIndex].line, [currentStepIndex, steps])
     const allVariableNames = useMemo(() => !steps ? [] : [...steps.reduce((result, current) => {
-        console.log(current)
         Object.keys(current.scope).map(key => result.add(key))
         return result
     }, new Set())], [steps])
+
+    useEffect(() => {
+        setCurrentStepIndex(0)
+    }, [analysis])
 
     useEffect(() => {
         onIsLoading?.(isLoading)
@@ -132,8 +135,6 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     if (error) {
         return <div>Error: <pre>{error.message}</pre></div>
     }
-
-    console.log(steps.map(step => step.scope))
 
     // Prevent bug from crashing, needs further investigation
     if (!steps || steps.some(step => !step)) {
@@ -180,7 +181,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
                     )}
                 
             </ul>
-            <Table>
+            <Table>               
                 <TableHeader>
                     <TableRow>
                         <TableHead>Variable</TableHead>
@@ -197,6 +198,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
             <AnimationControlBar
                 totalSteps={steps.length}
                 timePerStep={timePerStep}
+                currentStepIndex={currentStepIndex}
                 onStepChange={setCurrentStepIndex}
                 onSpeedChange={setPlaybackSpeed}
             />

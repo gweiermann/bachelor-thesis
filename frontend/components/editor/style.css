@@ -2,7 +2,7 @@
 
 .code-editor__active-line,
 .code-editor__active-line-symbol {
-  @apply bg-cyan-100;
+  @apply bg-cyan-300/40;
 }
 
 .code-editor__active-line-symbol {

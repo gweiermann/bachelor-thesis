@@ -11,8 +11,8 @@ import {
 import { ChevronLeft, ChevronRight, RotateCw, Pause, Play } from "lucide-react";
 
 export default function AnimationControlBar({
-  defaultStartIndex,
   totalSteps,
+  currentStepIndex,
   timePerStep,
   onPlayPause,
   onStepChange,
@@ -35,6 +35,14 @@ export default function AnimationControlBar({
   useEffect(() => {
     onSpeedChange?.(playbackSpeed)
   }, [])
+
+  useEffect(() => {
+    if (currentStepIndex === currentStep) {
+      return
+    }
+    setCurrentStep(currentStepIndex)
+    setIsPlaying(false)
+  }, [currentStepIndex])
 
   useEffect(() => {
     onPlayPause?.(isPlaying);
@@ -66,7 +74,6 @@ export default function AnimationControlBar({
   const handlePlayPauseRestart = () => {
     if (finished) {
       setCurrentStep(0)
-      setIsPlaying(false)
     } else {
       const newPlayingState = !isPlaying
       setIsPlaying(newPlayingState)
@@ -78,17 +85,13 @@ export default function AnimationControlBar({
 
   const handlePrevStep = () => {
     if (currentStep > 0) {
-      setIsPlaying(false)
-      const newStep = currentStep - 1
-      setCurrentStep(newStep)
+      setCurrentStep(currentStep - 1)
     }
   };
 
   const handleNextStep = () => {
     if (currentStep < totalSteps - 1) {
-      setIsPlaying(false)
-      const newStep = currentStep + 1
-      setCurrentStep(newStep)
+      setCurrentStep(currentStep + 1)
     }
   };
 
