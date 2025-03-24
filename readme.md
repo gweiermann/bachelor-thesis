@@ -18,8 +18,8 @@ echo "int main() { return 0; }" | docker compose run --rm app bubbleSort
 # Frontend
 There's also a frontend which is quite handy and runs the command for you. To start use the following commands:
 ```sh
-cd frontend
-npm install
-npm run dev
+docker compose up --watch
 ```
 Visit [http://localhost:3000](http://localhost:3000).
+
+For now the frontend won't be able to run the visualization until a jenkins container will be up and running.
