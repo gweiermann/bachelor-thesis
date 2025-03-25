@@ -1,14 +1,6 @@
 # This is for development puposes only
 
 services:
-
-  task-queue:
-    image: rabbitmq:3
-    restart: unless-stopped
-
-  task-runner:
-    build: ./task-runner
-
   frontend:
     build: ./frontend
     restart: unless-stopped

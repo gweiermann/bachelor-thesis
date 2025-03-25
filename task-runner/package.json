@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "amqplib": "^0.10.5",
-    "uuid": "^11.1.0"
-  }
-}
