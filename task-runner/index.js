@@ -1,6 +1,6 @@
 import { WebSocketServer } from 'ws'
 import path from 'node:path'
-import { execFile } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import stream from 'node:stream'
 
 const wss = new WebSocketServer({ port: 80 });
@@ -55,10 +55,10 @@ wss.on('connection', ws => {
             }
 
             taskIsRunning = true
-            const result = await runAnalysis(taskName, code, status => {
+            const result = await runAnalysis(taskName, code, message => {
                 ws.send(JSON.stringify({
                     type: 'status',
-                    status
+                    message
                 }))
             })
             ws.send(JSON.stringify({
@@ -70,7 +70,7 @@ wss.on('connection', ws => {
                 ws.send(JSON.stringify({
                     type: 'error',
                     errorType: e.type,
-                    errorMessage: e.message
+                    message: e.message
                 }))
             }
             else {
@@ -78,7 +78,7 @@ wss.on('connection', ws => {
                 ws.send(JSON.stringify({
                     type: 'error',
                     errorType: 'internalServerError',
-                    errorMessage: e.message
+                    message: e.message
                 }))
             }
         }
@@ -93,7 +93,7 @@ wss.on('connection', ws => {
 
 function runAnalysis(taskName, code, onStatusUpdate) {
     return new Promise((resolve, reject) => {
-        const child = execFile(
+        const child = spawn(
             'docker', ['run', '--rm', '-i', 'worker', taskName],
             { cwd: path.join(process.cwd(), './analysis')},
             (err, stdout, stderr) => {
@@ -110,7 +110,34 @@ function runAnalysis(taskName, code, onStatusUpdate) {
                 }
         });
 
-        var codeStream = new stream.Readable();
+        child.stdout.on('data', raw => {
+            try {
+                const data = JSON.parse(raw.toString('utf-8'))
+                if (data.type === 'status') {
+                    onStatusUpdate?.(data.message)
+                }
+                else if (data.type === 'error') {
+                    reject(new Error(data.message))
+                }
+                else if (data.type === 'result') {
+                    resolve(data.result)
+                }
+                else {
+                    throw new Error('Invalid message type')
+                }
+            }
+            catch(e) {
+                console.error('Invalid process message received', raw.toString('utf-8'))
+                reject(new Error('Received invalid message from build process.'))
+            }
+        })
+
+        child.stdout.on('close', code => {
+            // Will only trigger if resolve haven't been called yet
+            reject(new Error('Process closed unexpectedly'))
+        })
+
+        const codeStream = new stream.Readable();
         codeStream.push(code);
         codeStream.push(null);
         codeStream.pipe(child.stdin);

@@ -34,14 +34,14 @@ export async function analyzeCode(taskName, codeWithoutPrototype, onStatusUpdate
             }));
         });
 
-        ws.addEventListener('message', ({ data }) => {
-            const message = JSON.parse(data)
-            if (message.type === 'result') {
-                resolve(message.result)
-            } else if (message.type === 'status') {
-                onStatusUpdate?.(message.status)
-            } else if (message.type === 'error') {
-                reject(new Error(message.errorMessage))
+        ws.addEventListener('message', ({ data: raw }) => {
+            const data = JSON.parse(raw)
+            if (data.type === 'result') {
+                resolve(data.result)
+            } else if (data.type === 'status') {
+                onStatusUpdate?.(data.message)
+            } else if (data.type === 'error') {
+                reject(new Error(medatassage.message))
             }
         });
 
