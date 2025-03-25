@@ -33,6 +33,7 @@ def process_step(frame, line_number):
     array = get_array()
     if array != result_list[-1]['array']:
         append_array_to_result(array, frame, line_number)
+        print(json.dumps({ "type": "status", "message": f"Found sorting step {len(result_list)}" }))
     
 def get_vars():
     global array_var

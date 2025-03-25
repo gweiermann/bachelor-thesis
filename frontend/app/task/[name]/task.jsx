@@ -61,7 +61,7 @@ export default function Task({ task }) {
                         <h1 className="text-3xl font-bold mb-12 text-center">Task: Bubble Sort</h1>
         
                         <section className="mb-8 prose">
-                            <Markdown>{task.description}</Markdown>
+                            {/* <Markdown>{task.description}</Markdown> */}
                         </section>
                     </article>
                 </div>

@@ -22,4 +22,5 @@ docker compose up --watch
 ```
 Visit [http://localhost:3000](http://localhost:3000).
 
-For now the frontend won't be able to run the visualization until a jenkins container will be up and running.
+Note: Running the command above will create an image `task-runner-worker` on your host machine.
+This will be tackled soon.

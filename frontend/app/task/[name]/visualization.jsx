@@ -47,8 +47,6 @@ export function fixSwapping(steps) {
         }
         i += 1
     }
-    console.log('mask', mask)
-    console.log('end', steps.filter((_, index) => mask[index]).map(step => step.array))
     return steps.filter((_, index) => mask[index])
 }
 
