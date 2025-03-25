@@ -41,7 +41,7 @@ export async function analyzeCode(taskName, codeWithoutPrototype, onStatusUpdate
             } else if (data.type === 'status') {
                 onStatusUpdate?.(data.message)
             } else if (data.type === 'error') {
-                reject(new Error(medatassage.message))
+                reject(new Error(data.message))
             }
         });
 
