@@ -111,6 +111,9 @@ function runAnalysis(taskName, code, onStatusUpdate) {
                 }
         });
 
+        let stderr = ''
+        child.stderr.on('data', data => stderr += data.toString('utf-8'))
+
         child.stdout
             .pipe(split2())
             .on('data', line => {
@@ -140,9 +143,9 @@ function runAnalysis(taskName, code, onStatusUpdate) {
                 }
             })
 
-        child.stdout.on('close', code => {
+        child.stdout.on('close', () => {
             // Will only trigger if resolve haven't been called yet
-            reject(new Error('Process closed unexpectedly'))
+            reject(new Error('Process closed unexpectedly: ' + stderr))
         })
 
         const codeStream = new stream.Readable();
