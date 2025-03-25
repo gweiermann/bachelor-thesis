@@ -1,57 +1,20 @@
 # This is for development puposes only
 
 services:
-  drone-ci:
-    image: drone/drone:2
-    volumes:
-      - /data
-    environment:
-      DRONE_SERVER_HOST: "localhost"
-      DRONE_SERVER_PROTO: "http"
-      DRONE_RPC_SECRET: "some-secret"
-      DRONE_BITBUCKET_CLIENT_ID: "none"
-    ports:
-      - "8080:80"
-
-  drone-runner:
-    image: drone/drone-runner-docker:1
+  frontend:
+    build: ./frontend
     restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+        - action: rebuild
+          path: package.json
+    ports:
+      - "3000:3000"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /data
-    environment:
-      DRONE_RPC_HOST: "drone-ci"
-      DRONE_RPC_PROTO: "http"
-      DRONE_RPC_SECRET: "some-secret"
-      DRONE_RUNNER_CAPACITY: "2"
-      DRONE_RUNNER_NAME: "drone-runner-1"
-
-  # jenkins:
-  #   build: ./jenkins
-  #   restart: unless-stopped
-  #   ports:
-  #     # TODO: remove ports later as they should only be exposed to the docker network
-  #     - "8080:8080"
-
-  # jenkin-agent:
-  #   build: ./jenkins/agent
-  #   privileged: true
-  #   restart: unless-stopped
-
-  # frontend:
-  #   build: ./frontend
-  #   restart: unless-stopped
-  #   develop:
-  #     watch:
-  #       - action: sync
-  #         path: ./frontend
-  #         target: /app
-  #       - action: rebuild
-  #         path: package.json
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - /app/node_modules
-  #     - /app/.next
-  #   depends_on:
-  #     - jenkins
+      - /app/node_modules
+      - /app/.next
+    # depends_on:
+    #   - backend

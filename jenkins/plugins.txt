@@ -1,2 +1,0 @@
-docker-plugin:latest
-configuration-as-code:latest
