@@ -4,6 +4,12 @@ import lldb
 import os
 import json
 
+class ExecutionError(Exception):
+    def __init__(self, message):
+        self.message = message
+        print(json.dumps({ "type": "error", "message": message }))
+        super().__init__(message)
+
 source_filename = "/tmp/main.cpp"
 exe = "/tmp/a.out"
 function_name = "bubbleSort"
@@ -78,22 +84,22 @@ if __name__ == "__main__":
 
     # Make sure the launch went ok
     if not process:
-        raise Exception("process is None")
+        raise ExecutionError("process is None")
 
     state = process.GetState()
 
     if state != lldb.eStateStopped:
-        raise Exception("Didn't stop unfortunately. Check if there was an error launching the process")
+        raise ExecutionError("Didn't stop unfortunately. Check if there was an error launching the process")
 
     # Get the first thread
     thread = process.GetThreadAtIndex(0)
     if not thread:
-        raise Exception("thread is None")
+        raise ExecutionError("thread is None")
 
     # Get the first frame
     frame = thread.GetFrameAtIndex (0)
     if not frame:
-        raise Exception("frame is None")
+        raise ExecutionError("frame is None")
 
     _array, _size = extract_vars(frame)
     set_vars(_array, _size)
@@ -142,6 +148,8 @@ if __name__ == "__main__":
             "steps": result_list
         }
     }))
+
+    print()
 
     debugger.Terminate()
 
