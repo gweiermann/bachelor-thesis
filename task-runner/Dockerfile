@@ -10,4 +10,5 @@ COPY . .
 
 EXPOSE 80
 
-CMD docker build -t worker ./analysis && node index.js
+CMD docker build -t task-runner-worker ./analysis && node index.js
+# CMD ["docker", "build", "-t", "task-runner-worker", "./analysis", "&&", "node", "index.js"]

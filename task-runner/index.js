@@ -2,6 +2,7 @@ import { WebSocketServer } from 'ws'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import stream from 'node:stream'
+import split2 from 'split2'
 
 const wss = new WebSocketServer({ port: 80 });
 
@@ -94,7 +95,7 @@ wss.on('connection', ws => {
 function runAnalysis(taskName, code, onStatusUpdate) {
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', 'worker', taskName],
+            'docker', ['run', '--rm', '-i', 'task-runner-worker', taskName],
             { cwd: path.join(process.cwd(), './analysis')},
             (err, stdout, stderr) => {
                 if (err) {
@@ -110,27 +111,31 @@ function runAnalysis(taskName, code, onStatusUpdate) {
                 }
         });
 
-        child.stdout.on('data', raw => {
-            try {
-                const data = JSON.parse(raw.toString('utf-8'))
-                if (data.type === 'status') {
-                    onStatusUpdate?.(data.message)
+        child.stdout
+            .pipe(split2())
+            .on('data', line => {
+                try {
+                    const data = JSON.parse(line)
+                    if (data.type === 'status') {
+                        onStatusUpdate?.(data.message)
+                    }
+                    else if (data.type === 'error') {
+                        reject(new Error(data.message))
+                        return
+                    }
+                    else if (data.type === 'result') {
+                        resolve(data.result)
+                        return
+                    }
+                    else {
+                        throw new Error('Invalid message type')
+                    }
                 }
-                else if (data.type === 'error') {
-                    reject(new Error(data.message))
+                catch(e) {
+                    console.error('Invalid process message received', line.toString('utf-8'))
+                    reject(new Error('Received invalid message from build process.'))
                 }
-                else if (data.type === 'result') {
-                    resolve(data.result)
-                }
-                else {
-                    throw new Error('Invalid message type')
-                }
-            }
-            catch(e) {
-                console.error('Invalid process message received', raw.toString('utf-8'))
-                reject(new Error('Received invalid message from build process.'))
-            }
-        })
+            })
 
         child.stdout.on('close', code => {
             // Will only trigger if resolve haven't been called yet
