@@ -1,12 +1,7 @@
-'use server'
-
-import { execFile } from 'node:child_process'
-import path from 'node:path'
 import { getTask } from './tasks'
-import stream from 'stream'
 
-export async function analyzeCode(challengeName, codeWithoutPrototype) {   
-    const task = await getTask(challengeName)
+export async function analyzeCode(taskName, codeWithoutPrototype, onStatusUpdate) {   
+    const task = await getTask(taskName)
     if (!task) {
         throw new Error("Task not found!")
     }
@@ -26,27 +21,32 @@ export async function analyzeCode(challengeName, codeWithoutPrototype) {
     `
 
     return new Promise((resolve, reject) => {
-        const child = execFile(
-            'docker',
-            ['compose', 'run', '--rm', 'app', task.name],
-            { cwd: path.join(process.cwd(), '../docker')},
-            (err, stdout, stderr) => {
-                if (err) {
-                    console.log('stdout', stdout)
-                    reject(err)
-                }
+        const endpoint = '/ws-api/visualize'
+        const url = ((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + endpoint
+        const ws = new WebSocket(url)
 
-                try {
-                    const result = JSON.parse(stdout)
-                    resolve(result)
-                } catch (e) {
-                    reject(new Error(`Invalid response from code analysis: ${stdout}`))
-                }
+        ws.addEventListener('error', e => reject(new Error('Service unavailable')))
+
+        ws.addEventListener('open', function open() {
+            ws.send(JSON.stringify({
+                taskName,
+                code
+            }));
         });
 
-        var codeStream = new stream.Readable();
-        codeStream.push(code);
-        codeStream.push(null);
-        codeStream.pipe(child.stdin);
+        ws.addEventListener('message', ({ data: raw }) => {
+            const data = JSON.parse(raw)
+            if (data.type === 'result') {
+                resolve(data.result)
+            } else if (data.type === 'status') {
+                onStatusUpdate?.(data.message)
+            } else if (data.type === 'error') {
+                reject(new Error(medatassage.message))
+            }
+        });
+
+        ws.addEventListener('close', function open() {
+            reject(new Error('Connection closed'));
+        });
     })
 }

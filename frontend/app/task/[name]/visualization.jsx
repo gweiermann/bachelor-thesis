@@ -103,7 +103,15 @@ export function keepTrackOfItems(steps) {
 export default function Visualization({ code, task, onIsLoading, onActiveLineChange }) {
     const timePerStep = 1
 
-    const { data: analysis, isLoading, error } = useSWR(['analyzeCode', task.name, code], () => analyzeCode(task.name, code), { revalidateOnFocus: false, suspense: false })
+    const firstLoadingMessage = 'Waiting for compilation...'
+
+    const [loadingMessage, setLoadingMessage] = useState(firstLoadingMessage)
+
+    const { data: analysis, isLoading, error } = useSWR(
+        ['analyzeCode', task.name, code],
+        () => analyzeCode(task.name, code, setLoadingMessage),
+        { revalidateOnFocus: false, suspense: false }
+    )
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
     const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps)), [analysis])
@@ -122,6 +130,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
 
     useEffect(() => {
         onIsLoading?.(isLoading)
+        setLoadingMessage(firstLoadingMessage)
     }, [onIsLoading, isLoading])
 
     useEffect(() => {
@@ -129,7 +138,12 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     }, [activeLine])
 
     if (isLoading) {
-        return <FullLoadingSpinner />
+        return (
+            <div className="flex flex-col gap-4">
+                <div>{loadingMessage}</div>
+                <FullLoadingSpinner />
+            </div>
+        )
     }
 
     if (error) {

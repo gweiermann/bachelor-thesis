@@ -136,7 +136,10 @@ if __name__ == "__main__":
         previous_line_number = line_number
 
     print(json.dumps({
-        "steps": result_list
+        "type": "result",
+        "result": {
+            "steps": result_list
+        }
     }))
 
     debugger.Terminate()
