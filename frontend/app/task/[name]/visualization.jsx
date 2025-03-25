@@ -40,13 +40,15 @@ export function fixSwapping(steps) {
         const changeAtSecond = getChangedIndex(first, second)
         const changeAtThird = getChangedIndex(second, third)
         
-        if (second[changeAtSecond] === second[changeAtThird] && first[changeAtSecond] === third[changeAtThird]) {
+        if (changeAtSecond !== changeAtThird && second[changeAtSecond] === second[changeAtThird] && first[changeAtSecond] === third[changeAtThird]) {
             mask[i + 1] = false
             i += 2
             continue
         }
         i += 1
     }
+    console.log('mask', mask)
+    console.log('end', steps.filter((_, index) => mask[index]).map(step => step.array))
     return steps.filter((_, index) => mask[index])
 }
 
