@@ -114,6 +114,9 @@ function runAnalysis(taskName, code, onStatusUpdate) {
         child.stdout
             .pipe(split2())
             .on('data', line => {
+                if (!line.trim()) {
+                    return
+                }
                 try {
                     const data = JSON.parse(line)
                     if (data.type === 'status') {
