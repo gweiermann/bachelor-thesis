@@ -10,7 +10,7 @@ RUN apt update -yq
 RUN apt install -yq clang-${llvmVersion} lldb-${llvmVersion} lld-${llvmVersion} python3 python3-clang-${llvmVersion}
 
 ENV LLDB_DEBUGSERVER_PATH=/usr/bin/lldb-server-19
-ENV PYTHONPATH=/usr/lib/python3/dist-packages
+ENV PYTHONPATH=/usr/lib/python3/dist-packages:/app
 
 WORKDIR /app
 COPY . .
