@@ -95,7 +95,7 @@ wss.on('connection', ws => {
 function runAnalysis(taskName, code, onStatusUpdate) {
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', 'task-runner-worker', taskName],
+            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', taskName],
             { cwd: path.join(process.cwd(), './analysis')},
             (err, stdout, stderr) => {
                 if (err) {
