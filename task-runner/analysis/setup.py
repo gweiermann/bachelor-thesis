@@ -36,3 +36,16 @@ def setup_debugger(function_name, *, executable_filename='/tmp/a.out', source_fi
         raise Exception("Couldn't run debugger: frame is None")
     
     return frame, process, thread, debugger
+
+
+def steps_of_function(frame, process, thread):
+    frame_id = frame.GetFrameID()
+
+    while process.GetState() == lldb.eStateStopped:
+        frame = thread.GetFrameAtIndex(0)
+        if (frame.GetFrameID() != frame_id):
+            return
+
+        yield frame
+
+        thread.StepOver()
