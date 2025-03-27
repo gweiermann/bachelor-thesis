@@ -56,7 +56,7 @@ function_name = "bubbleSort"
 if __name__ == "__main__":
     try:
         print_status("Launching Analysis...")
-        frame, process, thread, debugger = setup_debugger(function_name)
+        frame, process, thread, debugger = setup_debugger(function_name, exe)
 
         collectors = init_collectors(setup['collect'], frame)
         collect_manager = CollectorManager(collectors)

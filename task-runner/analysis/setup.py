@@ -1,7 +1,7 @@
 import lldb
 import os
 
-def setup_debugger(function_name, *, executable_filename='/tmp/a.out', source_filename='/tmp/main.cpp'):
+def setup_debugger(function_name, executable_filename):
     debugger = lldb.SBDebugger.Create()
     debugger.SetAsync(False)
     target = debugger.CreateTarget(executable_filename)
