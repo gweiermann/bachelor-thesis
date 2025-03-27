@@ -1,4 +1,3 @@
-from errors import ExecutionError
 import lldb
 
 class Array:
@@ -10,13 +9,13 @@ class Array:
     def __get_size(frame, size_name):
         size = frame.FindVariable(size_name)
         if not size:
-            raise ExecutionError(f"Can't find size variable `{size_name}` in scope.")
+            raise Exception(f"Can't find size variable `{size_name}` in scope.")
         return int(size.GetValue(), 0)
 
     def __get_array_ref(frame, array_name):
         array_ref = frame.FindVariable(array_name)
         if not array_ref:
-            raise ExecutionError(f"Can't find array variable `{array_name}` in scope.")
+            raise Exception(f"Can't find array variable `{array_name}` in scope.")
         return array_ref
     
     def get(self):

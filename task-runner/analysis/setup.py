@@ -1,6 +1,5 @@
 import lldb
 import os
-from errors import ExecutionError
 
 def setup_debugger(function_name, *, executable_filename='/tmp/a.out', source_filename='/tmp/main.cpp'):
     debugger = lldb.SBDebugger.Create()
@@ -8,7 +7,7 @@ def setup_debugger(function_name, *, executable_filename='/tmp/a.out', source_fi
     target = debugger.CreateTarget(executable_filename)
 
     if not target:
-        raise ExecutionError("Couldn't run debugger: target is None")
+        raise Exception("Couldn't run debugger: target is None")
 
     # Set Breakpoint at beginning of the algorithm
     target.BreakpointCreateByName(function_name, target.GetExecutable().GetFilename())
@@ -19,21 +18,21 @@ def setup_debugger(function_name, *, executable_filename='/tmp/a.out', source_fi
 
     # Make sure the launch went ok
     if not process:
-        raise ExecutionError("Couldn't run debugger: process is None")
+        raise Exception("Couldn't run debugger: process is None")
 
     state = process.GetState()
 
     if state != lldb.eStateStopped:
-        raise ExecutionError("Couldn't run debugger: Check if there was an error launching the process")
+        raise Exception("Couldn't run debugger: Check if there was an error launching the process")
 
     # Get the first thread
     thread = process.GetThreadAtIndex(0)
     if not thread:
-        raise ExecutionError("Couldn't run debugger: thread is None")
+        raise Exception("Couldn't run debugger: thread is None")
 
     # Get the first frame
     frame = thread.GetFrameAtIndex(0)
     if not frame:
-        raise ExecutionError("Couldn't run debugger: frame is None")
+        raise Exception("Couldn't run debugger: frame is None")
     
     return frame, process, thread, debugger

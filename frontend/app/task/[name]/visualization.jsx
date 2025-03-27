@@ -114,7 +114,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     )
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
-    const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis.steps)), [analysis])
+    const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis)), [analysis])
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
@@ -147,7 +147,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     }
 
     if (error) {
-        return <div>Error: <pre>{error.message}</pre></div>
+        return <div><pre>Error: {error.message}</pre></div>
     }
 
     // Prevent bug from crashing, needs further investigation

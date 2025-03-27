@@ -96,23 +96,13 @@ function runAnalysis(taskName, code, onStatusUpdate) {
     return new Promise((resolve, reject) => {
         const child = spawn(
             'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', taskName],
-            { cwd: path.join(process.cwd(), './analysis')},
-            (err, stdout, stderr) => {
-                if (err) {
-                    console.log('stdout', stdout)
-                    reject(err)
-                }
+            { cwd: path.join(process.cwd(), './analysis')}
+        );
 
-                try {
-                    const result = JSON.parse(stdout)
-                    resolve(result)
-                } catch (e) {
-                    reject(`Invalid response from code analysis: ${stdout}`)
-                }
-        });
+        // let stderr = ''
+        // child.stderr.on('data', data => stderr += data.toString('utf-8'))
 
-        let stderr = ''
-        child.stderr.on('data', data => stderr += data.toString('utf-8'))
+        // child.stdout.on('data', data => console.log(data.toString()))
 
         child.stdout
             .pipe(split2())
