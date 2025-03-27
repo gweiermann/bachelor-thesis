@@ -4,7 +4,7 @@ import lldb
 import os
 import json
 from setup import setup_debugger, steps_of_function
-from collectors import init_collector
+from collectors import init_collectors
 from collectors.collector import CollectorManager
 from output import print_result, print_error, print_status
 
@@ -20,7 +20,7 @@ setup = {
             'key': 'array'
         },
         {
-            'type': 'line',
+            'type': 'currentLine',
             'key': 'line'
         },
         {
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         print_status("Launching Analysis...")
         frame, process, thread, debugger = setup_debugger(function_name)
 
-        collectors = [init_collector(c, frame) for c in setup['collect']]
+        collectors = init_collectors(setup['collect'], frame)
         collect_manager = CollectorManager(collectors)
 
         print_status("Analysing...")

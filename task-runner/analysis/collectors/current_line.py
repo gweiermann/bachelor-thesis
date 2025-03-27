@@ -1,6 +1,6 @@
 from .collector import Collector
 
-class Line(Collector):
+class CurrentLine(Collector):
     def setup(self, frame):
         self.line_offset = frame.GetLineEntry().GetLine() - 3
         self.previous_line = 0
