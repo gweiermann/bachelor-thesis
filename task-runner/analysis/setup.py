@@ -1,25 +1,35 @@
 import lldb
-import os
 
 def setup_debugger(function_name, executable_filename):
     debugger = lldb.SBDebugger.Create()
     debugger.SetAsync(False)
-    target = debugger.CreateTarget(executable_filename)
+
+    error = lldb.SBError()
+    target = debugger.CreateTarget(executable_filename, None, None, True, error)
+
+    if error.Fail():
+        raise Exception(f"Error creating the target: {error.GetCString()}")
 
     if not target:
-        raise Exception("Couldn't run debugger: target is None")
+        raise Exception("Error creating the target: target is None")
 
     # Set Breakpoint at beginning of the algorithm
     target.BreakpointCreateByName(function_name, target.GetExecutable().GetFilename())
 
     # Launch the process. Since we specified synchronous mode, we won't return
     # from this function until we hit the breakpoint at main
-    process = target.LaunchSimple(None, None, os.getcwd())
+    launch_info = lldb.SBLaunchInfo(None)
+    launch_info.SetLaunchFlags(1 << lldb.eLaunchFlagDisableASLR)
+    error = lldb.SBError()
+    process = target.Launch(launch_info, error)
+
+    if error.Fail():
+        raise Exception(f"Error launching the process: {error.GetCString()}")
 
     # Make sure the launch went ok
     if not process:
-        raise Exception("Couldn't run debugger: process is None")
-
+        raise Exception("Error launching the process: process is None")
+    
     state = process.GetState()
 
     if state != lldb.eStateStopped:
