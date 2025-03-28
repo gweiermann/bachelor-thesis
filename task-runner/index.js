@@ -94,22 +94,35 @@ wss.on('connection', ws => {
 
 function runAnalysis(taskName, code, onStatusUpdate) {
     return new Promise((resolve, reject) => {
-        const child = spawn(
-            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', taskName],
-            { cwd: path.join(process.cwd(), './analysis')},
-            (err, stdout, stderr) => {
-                if (err) {
-                    console.log('stdout', stdout)
-                    reject(err)
-                }
+        const param = {
+            code,
+            config: {
+                functionName: 'bubbleSort',
+                collect: [
+                    {
+                        type: 'arrayWatcher',
+                        parameters: {
+                            name: 'arr',
+                            size: 'n',
+                        },
+                        key: 'array'
+                    },
+                    {
+                        type: 'currentLine',
+                        key: 'line'
+                    },
+                    {
+                        type: 'currentScope',
+                        key: 'scope'
+                    }
+                ],
+            }
+        }
 
-                try {
-                    const result = JSON.parse(stdout)
-                    resolve(result)
-                } catch (e) {
-                    reject(`Invalid response from code analysis: ${stdout}`)
-                }
-        });
+        const child = spawn(
+            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', 'analyse', JSON.stringify(param), taskName],
+            { cwd: path.join(process.cwd(), './analysis')}
+        );
 
         let stderr = ''
         child.stderr.on('data', data => stderr += data.toString('utf-8'))

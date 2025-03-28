@@ -1,6 +1,10 @@
 # This is for development puposes only
 
 services:
+  test-worker:
+    build: ./task-runner/analysis
+    entrypoint: /bin/bash test.sh
+
   task-runner:
     build: ./task-runner
     restart: unless-stopped
