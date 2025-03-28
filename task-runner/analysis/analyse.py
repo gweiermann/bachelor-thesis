@@ -2,50 +2,10 @@
 
 import lldb
 import os
-import json
 from setup import setup_debugger, steps_of_function
 from collectors import init_collectors
 from collectors.collector import CollectorManager
 from output import print_result, print_error, print_status
-
-setup = {
-    'functionName': 'bubbleSort',
-    'collect': [
-        {
-            'type': 'arrayWatcher',
-            'parameters': {
-                'name': 'arr',
-                'size': 'n',
-            },
-            'key': 'array'
-        },
-        {
-            'type': 'currentLine',
-            'key': 'line'
-        },
-        {
-            'type': 'currentScope',
-            'key': 'scope'
-        }
-    ],
-    'postProcess': [
-        {
-            'type': 'detectThreeWaySwap',
-            'parameters': {
-                'target': 'array'
-            },
-            'key': 'threeWaySwap'
-        },
-        {
-            'type': 'detectChange',
-            'parameters': {
-                'target': 'array',
-                'filter': 'threeWaySwap.ignore'
-            },
-            'key': 'change'
-        }
-    ]
-}
 
 
 source_filename = "/tmp/main.cpp"
