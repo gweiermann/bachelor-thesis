@@ -51,14 +51,27 @@ setup = {
 source_filename = "/tmp/main.cpp"
 exe = "/tmp/a.out"
 function_name = "bubbleSort"
+
+def compile(code):
+    """
+    Compile the C++ code to a binary executable.
+    """
+    print_status("Compiling...")
+    with open(source_filename, 'w') as f:
+        f.write(code)
+    os.system(f"clang++-19 -g -o {exe} {source_filename}")
     
 
-if __name__ == "__main__":
+def analyse(config):
     try:
+        function_name = config['functionName']
+        collect_configs = config['collect']
+        # post_process_configs = config['postProcess']
+
         print_status("Launching Analysis...")
         frame, process, thread, debugger = setup_debugger(function_name, exe)
 
-        collectors = init_collectors(setup['collect'], frame)
+        collectors = init_collectors(collect_configs, frame)
         collect_manager = CollectorManager(collectors)
 
         print_status("Analysing...")

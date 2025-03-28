@@ -15,4 +15,4 @@ ENV PYTHONPATH=/usr/lib/python3/dist-packages:/app
 WORKDIR /app
 COPY . .
 
-ENTRYPOINT ["/bin/bash", "/app/run.sh"]
+ENTRYPOINT ["python3", "/app/run.py"]

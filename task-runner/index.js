@@ -94,15 +94,38 @@ wss.on('connection', ws => {
 
 function runAnalysis(taskName, code, onStatusUpdate) {
     return new Promise((resolve, reject) => {
+        const param = {
+            code,
+            config: {
+                functionName: 'bubbleSort',
+                collect: [
+                    {
+                        type: 'arrayWatcher',
+                        parameters: {
+                            name: 'arr',
+                            size: 'n',
+                        },
+                        key: 'array'
+                    },
+                    {
+                        type: 'currentLine',
+                        key: 'line'
+                    },
+                    {
+                        type: 'currentScope',
+                        key: 'scope'
+                    }
+                ],
+            }
+        }
+
         const child = spawn(
-            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', taskName],
+            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', 'analyse', JSON.stringify(param), taskName],
             { cwd: path.join(process.cwd(), './analysis')}
         );
 
-        // let stderr = ''
-        // child.stderr.on('data', data => stderr += data.toString('utf-8'))
-
-        // child.stdout.on('data', data => console.log(data.toString()))
+        let stderr = ''
+        child.stderr.on('data', data => stderr += data.toString('utf-8'))
 
         child.stdout
             .pipe(split2())
