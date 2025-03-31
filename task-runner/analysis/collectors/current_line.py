@@ -15,4 +15,3 @@ class CurrentLine(Collector):
     
     def is_reason_for_new_step(self):
         return False
-    

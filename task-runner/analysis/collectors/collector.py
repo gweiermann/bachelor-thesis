@@ -1,6 +1,13 @@
 
-
 class Collector:
+    def from_dict(config, frame):
+        from .register import get_collector
+        collector_name = config['type']
+        collector = get_collector(collector_name)
+        key = config['key']
+        parameters = config.get('parameters', {})
+        return collector(key, parameters, frame)
+
     def __init__(self, key, parameters, frame):
         self.key = key
         self.parameters = parameters
@@ -13,7 +20,7 @@ class Collector:
 
     def setup(self, frame):
         """Init function of any collector. Parameters will be passed as kwargs."""
-        raise Exception("Collector hasn't implemented its setup function")
+        raise NotImplementedError("Collector hasn't implemented its setup function")
     
     def pre_step(self, frame):
         """Will be called for every collector for any step."""
@@ -25,35 +32,10 @@ class Collector:
         If it is a second-level-collector it will only be called if one of the first-level-collector had detected something useful (not `None`).
         The return value of this function will be taken into the result array and corresponds to the current step.
         """
-        raise Exception("Collector hasn't implemented its step function")
+        raise NotImplementedError("Collector hasn't implemented its step function")
     
     def is_reason_for_new_step():
         """
         If it is a first-level- or second-level-collector. Take a look at `step(...)` for more details
         """
-        raise Exception("Collector hasn't implemented its is_reason_for_new_step function")
-
-
-class CollectorManager:
-    def __init__(self, collectors):
-        self.first_level_collectors = [c for c in collectors if c.is_reason_for_new_step()]
-        self.second_level_collectors = [c for c in collectors if not c.is_reason_for_new_step()]
-        self.result = []
-
-    def prepare(self, frame):
-        for collector in self.first_level_collectors:
-            collector.pre_step(frame)
-        for collector in self.second_level_collectors:
-            collector.pre_step(frame)
-    
-    def collect(self, frame):
-        self.prepare(frame)
-        flc_results = dict( collector.process_step(frame) for collector in self.first_level_collectors )
-        if all(v is None for v in flc_results.values()):
-            return
-        slc_reults = dict( collector.process_step(frame) for collector in self.second_level_collectors )
-        self.result.append({**flc_results, **slc_reults})
-
-    def get_result_list(self):
-        return self.result
-    
+        raise NotImplementedError("Collector hasn't implemented its is_reason_for_new_step function")
