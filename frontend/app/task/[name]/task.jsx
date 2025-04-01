@@ -26,7 +26,7 @@ export default function Task({ task }) {
     const [previousCode, setPreviousCode] = useState(null)
     const [codeToAnalyse, setCodeToAnalyse] = useState(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
-    const [activeLine, setActiveLine] = useState(null)
+    const [activeLines, setActiveLines] = useState(null)
     const codeHasChanged = useMemo(() => code !== previousCode && previousCode !== null, [code, previousCode])
 
     function extractCodeFromFunction(code) {
@@ -87,7 +87,7 @@ export default function Task({ task }) {
                                     functionProtoype={task.code.functionPrototype}
                                     placeholder={placeholder}
                                     onChange={setCode}
-                                    activeLine={!codeHasChanged && activeLine} />
+                                    activeLines={codeHasChanged ? [] : activeLines} />
                             </div>
                         </div>
                 
@@ -101,7 +101,7 @@ export default function Task({ task }) {
                             <div className="flex flex-grow flex-col items-center justify-center p-4">
                                 {!codeToAnalyse ? 
                                     <p className="text-center text-muted-foreground"> Hit {'"Run"'} to visualize your code. </p> :
-                                    <Visualization code={codeToAnalyse} task={task} onIsLoading={setIsAnalyzing} onActiveLineChange={setActiveLine} />}
+                                    <Visualization code={codeToAnalyse} task={task} onIsLoading={setIsAnalyzing} onActiveLinesChange={setActiveLines} />}
                             </div>
                         </div>
                     </section>

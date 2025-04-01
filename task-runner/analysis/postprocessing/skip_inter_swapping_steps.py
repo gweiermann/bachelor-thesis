@@ -28,7 +28,7 @@ class SkipInterSwappingSteps(Postprocessor):
         change_at_third = self.find_changed_index(second, third)
 
         if change_at_second != change_at_third and second[change_at_second] == second[change_at_third] and first[change_at_second] == third[change_at_third]:
-            self.skip_information = current_step[self.array_key]
+            self.skip_information = current_step
             return None
 
         current_step = {**current_step, self.key: self.skip_information}

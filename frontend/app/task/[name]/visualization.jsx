@@ -39,7 +39,7 @@ function addIdsToItems(analysis) {
     ]
 }
 
-export default function Visualization({ code, task, onIsLoading, onActiveLineChange }) {
+export default function Visualization({ code, task, onIsLoading, onActiveLinesChange }) {
     const timePerStep = 1
 
     const firstLoadingMessage = 'Waiting for compilation...'
@@ -57,7 +57,19 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
-    const activeLine = useMemo(() => currentStepIndex > 0 && steps && steps[currentStepIndex].line, [currentStepIndex, steps])
+    const activeLines = useMemo(() => {
+        if (currentStepIndex === 0 || !steps) {
+            return []
+        }
+        const result = []
+        const step = steps[currentStepIndex]
+        result.push(step.line)
+        if (step.skippedStep) {
+            result.push(step.skippedStep.line)
+        }
+        return result
+    }, [currentStepIndex, steps])
+
     const allVariableNames = useMemo(() => !steps ? [] : [...steps.reduce((result, current) => {
         Object.keys(current.scope).map(key => result.add(key))
         return result
@@ -78,8 +90,8 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     }, [onIsLoading, isLoading])
 
     useEffect(() => {
-        onActiveLineChange?.(activeLine)
-    }, [activeLine])
+        onActiveLinesChange?.(activeLines)
+    }, [activeLines])
 
     if (isLoading) {
         return (

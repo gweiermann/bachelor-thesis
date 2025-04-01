@@ -122,7 +122,7 @@ function runAnalysis(taskName, code, onStatusUpdate) {
                         parameters: {
                             array: 'array'
                         },
-                        key: 'skippedLine'
+                        key: 'skippedStep'
                     },
                     {
                         type: 'keepTrackOfItems',
