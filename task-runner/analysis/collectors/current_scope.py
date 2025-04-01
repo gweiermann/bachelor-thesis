@@ -3,10 +3,16 @@ from .collector import Collector
 class CurrentScope(Collector):
     def setup(self, frame):
         self.line_offset = frame.GetLineEntry().GetLine() - 3
-    
-    def step(self, frame):
+        self.current_scope = {}
+        self.previous_scope = {}
+
+    def pre_step(self, frame):
+        self.current_scope = self.previous_scope
         varlist = frame.GetVariables(False, True, False, False)
-        return {var.GetName(): var.GetValue() for var in varlist}
+        self.previous_scope = {var.GetName(): var.GetValue() for var in varlist}
+
+    def step(self, frame):
+        return self.current_scope
     
     def is_reason_for_new_step(self):
         return False
