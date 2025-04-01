@@ -19,7 +19,7 @@ class SkipInterSwappingSteps(Postprocessor):
         """
 
         if index == 0 or index == len(collected_list) - 1:
-            return {**current_step, self.key: None}
+            return {**current_step, self.key: self.skip_information}
         
         first = collected_list[index - 1][self.array_key]
         second = collected_list[index - 0][self.array_key]
