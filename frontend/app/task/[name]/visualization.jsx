@@ -9,98 +9,37 @@ import AnimationControlBar from './animation-control-bar'
 import {
     Table,
     TableBody,
-    TableCaption,
     TableCell,
     TableHead,
     TableHeader,
     TableRow,
   } from "@/components/ui/table"
 
-function getChangedIndex(first, second, startIndex = 0) {
-    const index = first.slice(startIndex).findIndex((value, index) => value !== second[index + startIndex])
-    if (index === -1) {
-        return -1
-    }
-    return index + startIndex
-}
-
-/**
- * Because a swap operation could lead to a inbetween state where the swapping is not yet finished like in the following example:
- * [1, 3, 2, 4] -> [1, 2, 2, 4] -> [1, 2, 3, 4]
- * We want to skip the inbetween state and only show the final state of the swapping operation.
- */
-export function fixSwapping(steps) {
-    // note: array got deduplicated in the backend
-    const len = steps.length
-    const mask = new Array(len).fill(true)
-    for (let i = 0; i < len - 2;) {
-        const first = steps[i].array
-        const second = steps[i + 1].array
-        const third = steps[i + 2].array
-        const changeAtSecond = getChangedIndex(first, second)
-        const changeAtThird = getChangedIndex(second, third)
-        
-        if (changeAtSecond !== changeAtThird && second[changeAtSecond] === second[changeAtThird] && first[changeAtSecond] === third[changeAtThird]) {
-            mask[i + 1] = false
-            i += 2
-            continue
-        }
-        i += 1
-    }
-    return steps.filter((_, index) => mask[index])
-}
-
-/**
- * Since items could have the same value we need to keep track of which are which.
- * It can detect one simple swap of items. Otherwise it supposes a new item got added.
- * It enriches each item of a step with { id, value, orderId }, where id is unique for each item, value is the value of the item and orderId is the order of the item in the original list.
- * - When an item gets swapped, the id and the orderId will get swapped as well.
- * - When a new item gets added (value is replaced by a new value), it will generate a new id, but orderId will stay the same.
- */
-export function keepTrackOfItems(steps) {
-    if (!steps.length) {
-        return []
-    }
+function addIdsToItems(analysis) {
+    if (!analysis.length) return []
     let id = 0
-    let previous = {
-        ...steps[0],
-        array: steps[0].array.map(item => ({ id: id, value: item, orderId: id++ }))
-    }
-    return [previous, ...steps.slice(1).map(step => {
-        const previousValues = previous.array.map(item => item.value)
-        const current = { ...step, array: previous.array.slice() }
-        const values = step.array
-        
-        const firstChange = getChangedIndex(previousValues, values)
-        if (firstChange === -1) {
-            throw new Error('The steps are supposed to be different each step')
-        }
-        const secondChange = getChangedIndex(previousValues, values, firstChange + 1)
-        
-        if (secondChange === -1) {
-            // no swap behaviour, only one item changed, so we assume a new item got added
-            current.array[firstChange] = { id: id++, value: values[firstChange], orderId: previous.array[firstChange].orderId }
-        } else {
-            if (getChangedIndex(values, previousValues, secondChange + 1) !== -1) {
-                throw new Error(`It's unexpected that a step can have more than two changes`)
-            }
-            // potential swap behaviour
-            if (previous.array[firstChange].value === values[secondChange] && previous.array[secondChange].value === step.array[firstChange]) {
-                // it's indeed a swap
-                current.array[firstChange] = previous.array[secondChange]
-                current.array[secondChange] = previous.array[firstChange]
+    let current = { ...analysis[0], myArray: analysis[0].array.map((value, index) => ({value, id: id++, orderId: index})) }
+    return [
+        current,
+        ...analysis.slice(1).map(step => {
+            const event = step.event
+            current = { ...step, myArray: current.myArray.slice() }
+            if (event.type === 'replace') {
+                current.myArray[event.index].item = event.newValue
+                current.myArray[event.index].id = id++
+            } else if (event.type === 'swap') {
+                const temp = current.myArray[event.index1]
+                current.myArray[event.index1] = current.myArray[event.index2]
+                current.myArray[event.index2] = temp
             } else {
-                // both items are new
-                throw new Error(`It's unexpected that a step can have more than one new item that is not swapped with another item`)
+                throw new Error('Unknown event type: ' + event.type)
             }
-        }
-
-        previous = current
-        return current
-    })]
+            return current
+        })
+    ]
 }
 
-export default function Visualization({ code, task, onIsLoading, onActiveLineChange }) {
+export default function Visualization({ code, task, onIsLoading, onActiveLinesChange }) {
     const timePerStep = 1
 
     const firstLoadingMessage = 'Waiting for compilation...'
@@ -114,11 +53,23 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     )
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
 
-    const steps = useMemo(() => analysis && keepTrackOfItems(fixSwapping(analysis)), [analysis])
+    const steps = useMemo(() => analysis && addIdsToItems(analysis), [analysis])
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
-    const activeLine = useMemo(() => currentStepIndex > 0 && steps && steps[currentStepIndex].line, [currentStepIndex, steps])
+    const activeLines = useMemo(() => {
+        if (currentStepIndex === 0 || !steps) {
+            return []
+        }
+        const result = []
+        const step = steps[currentStepIndex]
+        result.push(step.line)
+        if (step.skippedStep) {
+            result.push(step.skippedStep.line)
+        }
+        return result
+    }, [currentStepIndex, steps])
+
     const allVariableNames = useMemo(() => !steps ? [] : [...steps.reduce((result, current) => {
         Object.keys(current.scope).map(key => result.add(key))
         return result
@@ -128,14 +79,19 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
         setCurrentStepIndex(0)
     }, [analysis])
 
+    // useEffect(() => {
+    //     console.log('analysis', analysis)
+    //     console.log('steps', steps)
+    // }, [steps])
+
     useEffect(() => {
         onIsLoading?.(isLoading)
         setLoadingMessage(firstLoadingMessage)
     }, [onIsLoading, isLoading])
 
     useEffect(() => {
-        onActiveLineChange?.(activeLine)
-    }, [activeLine])
+        onActiveLinesChange?.(activeLines)
+    }, [activeLines])
 
     if (isLoading) {
         return (
@@ -163,7 +119,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLineCha
     return (
         <div className="flex flex-col items-center justify-center gap-8">
             <ul className="flex space-x-4">
-                    {steps[currentStepIndex].array.map((item, index) => 
+                    {steps[currentStepIndex].myArray.map((item, index) => 
                         <motion.li
                             key={item.orderId}
                             layout

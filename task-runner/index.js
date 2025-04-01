@@ -116,6 +116,22 @@ function runAnalysis(taskName, code, onStatusUpdate) {
                         key: 'scope'
                     }
                 ],
+                postProcess: [
+                    {
+                        type: 'skipInterSwappingSteps',
+                        parameters: {
+                            array: 'array'
+                        },
+                        key: 'skippedStep'
+                    },
+                    {
+                        type: 'keepTrackOfItems',
+                        parameters: {
+                            array: 'array'
+                        },
+                        key: 'event'
+                    }
+                ]
             }
         }
 

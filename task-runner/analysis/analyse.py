@@ -3,8 +3,8 @@
 import lldb
 import os
 from setup import setup_debugger, steps_of_function
-from collectors import init_collectors
-from collectors.collector import CollectorManager
+from collectors import CollectorManager
+from postprocessing import PostprocessingManager
 from output import print_result, print_error, print_status
 
 
@@ -26,21 +26,24 @@ def analyse(config):
     try:
         function_name = config['functionName']
         collect_configs = config['collect']
-        # post_process_configs = config['postProcess']
+        post_process_configs = config.get('postProcess', {})
 
         print_status("Launching Analysis...")
         frame, process, thread, debugger = setup_debugger(function_name, exe)
 
-        collectors = init_collectors(collect_configs, frame)
-        collect_manager = CollectorManager(collectors)
+        collect_manager = CollectorManager.from_dict(collect_configs, frame)
 
         print_status("Analysing...")
         for frame in steps_of_function(frame, process, thread):
             collect_manager.collect(frame)
-
-        print_result(collect_manager.get_result_list())
-
+        
         debugger.Terminate()
+
+        collected = collect_manager.get_result_list()
+        postprocessing_manager = PostprocessingManager.from_dict(post_process_configs)
+        result_list = postprocessing_manager.process(collected)
+
+        print_result(result_list)
     except Exception as e:
         print_error(str(e))
         raise e
