@@ -1,11 +1,15 @@
 "use client"
 
+// @ts-ignore  
 import { constrainedEditor } from "constrained-editor-plugin";
-import MonacoEditor from '@monaco-editor/react';
-import { useRef, useEffect, useState } from 'react'
+import MonacoEditor, { type Monaco } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
+import { useRef, useEffect } from 'react'
 import './style.css'
 
-function highlightLines(editor, lines) {
+type EditorType = editor.IStandaloneCodeEditor
+
+function highlightLines(editor: EditorType, lines: number[]) {
     return editor.createDecorationsCollection(lines.map(line => ({
         range: {
             startLineNumber: line,
@@ -22,16 +26,18 @@ function highlightLines(editor, lines) {
     })));
 }
 
-function extractCodeFromFunction(code) {
-    // Same function in editor.jsx, should be combined into one
-    return code.split('\n').slice(2, -1).join('\n');
+interface EditorProps {
+    functionProtoype: string
+    placeholder: string
+    onChange?: (value: string) => void
+    activeLines?: number[]
 }
 
-export default function Editor({ functionProtoype, placeholder, onChange, activeLines = [] }) {
+export default function Editort({ functionProtoype, placeholder, onChange, activeLines = [] }: EditorProps) {
     const monacoRef = useRef(null);
-    const [previousLineDecoration, setPreviousLineDecoration] = useState(null)
+    const previousLineDecorationRef = useRef(null)
 
-    function handleEditorDidMount(editor, monaco) {
+    function handleEditorDidMount(editor: EditorType, monaco: Monaco) {
         monacoRef.current = editor;
 
         const constrainedInstance = constrainedEditor(monaco);
@@ -53,12 +59,12 @@ export default function Editor({ functionProtoype, placeholder, onChange, active
     const defaultValue = `${functionProtoype}\n{\n    ${placeholder}\n}`
 
     useEffect(() => {
-        previousLineDecoration?.clear()
+        previousLineDecorationRef.current?.clear()
         if (monacoRef.current && activeLines.length) {
-            setPreviousLineDecoration(highlightLines(monacoRef.current, activeLines))
+            previousLineDecorationRef.current = highlightLines(monacoRef.current, activeLines)
             monacoRef.current.revealLine(activeLines[0])
         }
-    }, [activeLines, monacoRef])
+    }, [activeLines, monacoRef, previousLineDecorationRef])
 
     return (
         <MonacoEditor

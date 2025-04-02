@@ -1,6 +1,19 @@
 import { getTask } from './tasks'
 
-export async function analyzeCode(taskName, codeWithoutPrototype, onStatusUpdate) {   
+export type AnalysisResult = AnalysisResultStep[]
+export interface AnalysisResultStep {
+    array: number[]
+    scope: Record<string, number>
+    line: number
+    skippedStep: AnalysisResultStep | null
+    event: AnalysisResultStepEvent
+}
+
+export type AnalysisResultStepEvent =
+    { type: 'swap', index1: number, index2: number } | 
+    { type: 'replace', index: number, oldValue: number, newValue: number }
+
+export async function analyzeCode(taskName: string, codeWithoutPrototype: string, onStatusUpdate: (message: string) => void): Promise<AnalysisResult> | never {   
     const task = await getTask(taskName)
     if (!task) {
         throw new Error("Task not found!")

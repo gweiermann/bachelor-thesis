@@ -1,10 +1,9 @@
 "use client"
 
 import dynamic from 'next/dynamic'
+import { ReactNode } from 'react';
 
-const ClientOnly = (props) => {
-  const { children } = props
-
+const ClientOnly = ({ children }: { children: ReactNode }) => {
   return children;
 };
 
