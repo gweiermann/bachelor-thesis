@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronLeft, ChevronRight, RotateCw, Pause, Play } from "lucide-react";
 
+interface AnimationControlBarProps {
+  totalSteps: number
+  onPlayPause?: (isPlaying: boolean) => void
+  onStepChange?: (step: number) => void
+  onSpeedChange?: (speed: number) => void
+  className?: string
+  currentStepIndex: number
+  timePerStep: number
+}
+
 export default function AnimationControlBar({
   totalSteps,
   currentStepIndex,
@@ -18,7 +28,7 @@ export default function AnimationControlBar({
   onStepChange,
   onSpeedChange,
   className = "",
-}) {
+}: AnimationControlBarProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
@@ -34,7 +44,7 @@ export default function AnimationControlBar({
 
   useEffect(() => {
     onSpeedChange?.(playbackSpeed)
-  }, [])
+  })
 
   useEffect(() => {
     if (currentStepIndex === currentStep) {
@@ -42,34 +52,34 @@ export default function AnimationControlBar({
     }
     setCurrentStep(currentStepIndex)
     setIsPlaying(false)
-  }, [currentStepIndex])
+  }, [currentStepIndex, currentStep])
 
   useEffect(() => {
     onPlayPause?.(isPlaying);
-  }, [isPlaying])
+  }, [isPlaying, onPlayPause])
 
   useEffect(() => {
     onStepChange?.(currentStep);
-  }, [currentStep])
+  }, [currentStep, onStepChange])
 
   useEffect(() => {
     onSpeedChange?.(playbackSpeed);
-  }, [playbackSpeed])
+  }, [playbackSpeed, onSpeedChange])
 
-  const incrementStepByPlayback = () => {
+  const incrementStepByPlayback = useCallback(() => {
     if (currentStep >= totalSteps - 1) {
       setIsPlaying(false)
       return
     }
     setCurrentStep((currentStep) => currentStep + 1)
-  }
+  }, [currentStep, totalSteps])
 
   useEffect(() => {
     if (isPlaying) {
       let timeout = setTimeout(incrementStepByPlayback, derivedTimePerStep * 1000)
       return () => clearTimeout(timeout)
     }    
-  }, [currentStep, isPlaying])
+  }, [currentStep, isPlaying, derivedTimePerStep, incrementStepByPlayback])
 
   const handlePlayPauseRestart = () => {
     if (finished) {
@@ -95,7 +105,7 @@ export default function AnimationControlBar({
     }
   };
 
-  const handleSpeedChange = (speed) => {
+  const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed)
   }
 
@@ -108,7 +118,7 @@ export default function AnimationControlBar({
           variant="ghost"
           size="icon"
           onClick={handlePlayPauseRestart}
-          aria-label={isPlaying ? "Pause" : "Play"}
+          aria-label={isPlaying ? "Pause" : "Play"}          
         >
           {finished ? (
             <RotateCw className="h-5 w-5" />
