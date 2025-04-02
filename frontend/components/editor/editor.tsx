@@ -33,7 +33,7 @@ interface EditorProps {
     activeLines?: number[]
 }
 
-export default function Editort({ functionProtoype, placeholder, onChange, activeLines = [] }: EditorProps) {
+export default function Editor({ functionProtoype, placeholder, onChange, activeLines = [] }: EditorProps) {
     const monacoRef = useRef(null);
     const previousLineDecorationRef = useRef(null)
 

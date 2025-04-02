@@ -2,6 +2,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Suspense } from "react"
 import { FullLoadingSpinner } from "@/components/loading-spinner"
+import { ReactNode } from "react"
+import Navigation from "@/components/navigation"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,14 +20,27 @@ export const metadata = {
   description: "A coding challenge platform that uses code analysis to give you feedback on your code.",
 }
 
-export default function RootLayout({ children }) {
+interface RootLayoutProps {
+  children: ReactNode
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen`}
       >
         <Suspense fallback={<div className="size-full fixed"><FullLoadingSpinner /></div>}>
-          {children}
+          <div>
+            <header>
+              <Navigation />
+            </header>
+            
+            <main>
+              {children}
+            </main>
+            
+          </div>
         </Suspense>
       </body>
     </html>
