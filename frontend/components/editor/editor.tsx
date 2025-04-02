@@ -1,5 +1,6 @@
 "use client"
 
+// @ts-ignore  
 import { constrainedEditor } from "constrained-editor-plugin";
 import MonacoEditor, { type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
