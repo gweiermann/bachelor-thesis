@@ -1,7 +1,11 @@
 import { getTask } from '@/lib/tasks'
 import Task from './task'
 
-export default async function Page({ params }) {
+interface PageProps {
+    params: Promise<{ name: string }>
+}
+
+export default async function Page({ params }: PageProps) {
     const { name } = await params
     const task = await getTask(name)
 
@@ -10,5 +14,4 @@ export default async function Page({ params }) {
     }
 
     return <Task task={task} />
-   
 }

@@ -47,12 +47,8 @@ export default function AnimationControlBar({
   })
 
   useEffect(() => {
-    if (currentStepIndex === currentStep) {
-      return
-    }
     setCurrentStep(currentStepIndex)
-    setIsPlaying(false)
-  }, [currentStepIndex, currentStep])
+  }, [currentStepIndex])
 
   useEffect(() => {
     onPlayPause?.(isPlaying);
@@ -96,12 +92,14 @@ export default function AnimationControlBar({
   const handlePrevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
+      setIsPlaying(false)
     }
   };
 
   const handleNextStep = () => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1)
+      setIsPlaying(false)
     }
   };
 

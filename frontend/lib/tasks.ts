@@ -1,5 +1,16 @@
 
-export async function getTask(name) {
+export interface Task {
+    name: string
+    longName: string
+    description: string
+    difficulty: string
+    code: {
+        functionPrototype: string
+        main: string
+    }
+}
+
+export async function getTask(name: string): Promise<Task | null> {
     if (name === 'bubble-sort') {
         return {
             name,

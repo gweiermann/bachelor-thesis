@@ -3,7 +3,7 @@
 import useSWR from 'swr'
 import { FullLoadingSpinner } from '@/components/loading-spinner'
 import { useEffect, useState, useMemo } from 'react'
-import { analyzeCode } from '@/lib/code-analysis'
+import { AnalysisResult, analyzeCode } from '@/lib/code-analysis'
 import { AnimatePresence, motion } from 'motion/react'
 import AnimationControlBar from './animation-control-bar'
 import {
@@ -14,8 +14,9 @@ import {
     TableHeader,
     TableRow,
   } from "@/components/ui/table"
+import { Task } from '@/lib/tasks'
 
-function addIdsToItems(analysis) {
+function addIdsToItems(analysis: AnalysisResult) {
     if (!analysis.length) return []
     let id = 0
     let current = { ...analysis[0], myArray: analysis[0].array.map((value, index) => ({value, id: id++, orderId: index})) }
@@ -25,7 +26,7 @@ function addIdsToItems(analysis) {
             const event = step.event
             current = { ...step, myArray: current.myArray.slice() }
             if (event.type === 'replace') {
-                current.myArray[event.index].item = event.newValue
+                current.myArray[event.index].value = event.newValue
                 current.myArray[event.index].id = id++
             } else if (event.type === 'swap') {
                 const temp = current.myArray[event.index1]
@@ -39,8 +40,15 @@ function addIdsToItems(analysis) {
     ]
 }
 
-export default function Visualization({ code, task, onIsLoading, onActiveLinesChange }) {
-    const timePerStep = 1
+interface VisualizationProps {
+    code: string
+    task: Task
+    onIsLoading?: (isLoading: boolean) => void
+    onActiveLinesChange?: (activeLines: number[]) => void
+}
+
+export default function Visualization({ code, task, onIsLoading, onActiveLinesChange }: VisualizationProps) {
+    const timePerStep = 1 // 1x means 1 second
 
     const firstLoadingMessage = 'Waiting for compilation...'
 
@@ -70,10 +78,14 @@ export default function Visualization({ code, task, onIsLoading, onActiveLinesCh
         return result
     }, [currentStepIndex, steps])
 
-    const allVariableNames = useMemo(() => !steps ? [] : [...steps.reduce((result, current) => {
-        Object.keys(current.scope).map(key => result.add(key))
-        return result
-    }, new Set())], [steps])
+    const allVariableNames = useMemo(() =>
+        !steps ? [] : [
+            ...steps.reduce((result, current) => {
+                Object.keys(current.scope).map(key => result.add(key))
+                return result
+            }, new Set<string>())
+        ]
+    , [steps])
 
     useEffect(() => {
         setCurrentStepIndex(0)
@@ -91,7 +103,7 @@ export default function Visualization({ code, task, onIsLoading, onActiveLinesCh
 
     useEffect(() => {
         onActiveLinesChange?.(activeLines)
-    }, [activeLines])
+    }, [activeLines, onActiveLinesChange])
 
     if (isLoading) {
         return (
