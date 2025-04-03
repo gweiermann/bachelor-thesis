@@ -49,7 +49,7 @@ export const useVisualization = create<VisualizationStore>(set => ({
     setActiveLines(activeLines: number[]) {
         set({ activeLines })
     },
-    runCode(code: string) {
-        set({ code })
+    runCode(codeToBeRun: string) {
+        set({ codeToBeRun })
     }
 }))
