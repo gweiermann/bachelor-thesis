@@ -108,11 +108,11 @@ export default function Visualization({ task }: VisualizationProps) {
     const timePerStep = 1 // 1x means 1 second
     const firstLoadingMessage = 'Waiting for compilation...'
     
-    const { code, setActiveLines, setState, state, setAnalysis, isDirty, loadingMessage, setLoadingMessage } = useVisualization()
+    const { codeToBeRun, setActiveLines, setState, state, setAnalysis, isDirty, loadingMessage, setLoadingMessage } = useVisualization()
 
     const { data: analysis, isLoading, error } = useSWR(
-        ['analyzeCode', task.name, code],
-        () => analyzeCode(task.name, code, setLoadingMessage),
+        ['analyzeCode', task.name, codeToBeRun],
+        () => analyzeCode(task.name, codeToBeRun, setLoadingMessage),
         { revalidateOnFocus: false, suspense: false }
     )
 
@@ -139,10 +139,10 @@ export default function Visualization({ task }: VisualizationProps) {
     , [steps])
 
     useEffect(() => {
-        if (!code) {
+        if (!codeToBeRun) {
             setState('unrun')
         }
-    }, [code, setState])
+    }, [codeToBeRun, setState])
 
     useEffect(() => {
         if (analysis) {
@@ -158,11 +158,11 @@ export default function Visualization({ task }: VisualizationProps) {
     // }, [steps])
 
     useEffect(() => {
-        if (isLoading && code) {
+        if (isLoading && codeToBeRun) {
             setState('loading')
             setLoadingMessage(firstLoadingMessage)
         }
-    }, [isLoading, setState, setLoadingMessage, code])
+    }, [isLoading, setState, setLoadingMessage, codeToBeRun])
 
     useEffect(() => {
         if (error) {

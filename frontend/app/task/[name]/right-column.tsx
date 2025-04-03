@@ -20,12 +20,12 @@ export default function RightColumn({ task }: RightColumnProps) {
         }
     }`
 
-    const { runCode, activeLines, code, setIsDirty, isDirty } = useVisualization()
+    const { runCode, activeLines, codeToBeRun, setIsDirty, isDirty } = useVisualization()
     const [currentCode, setCurrentCode] = useState<string | null>(defaultCode)
 
     useEffect(() => {
-        setIsDirty(currentCode !== code)
-    }, [currentCode, code, setIsDirty])
+        setIsDirty(currentCode !== codeToBeRun)
+    }, [currentCode, codeToBeRun, setIsDirty])
 
     function handleChange(codeFromEditor: string) {
         const codeWithoutPrototype = codeFromEditor.split('\n').slice(2, -1).join('\n')
