@@ -122,7 +122,7 @@ export default function Visualization({ task }: VisualizationProps) {
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
     const activeLines = useMemo(() => {
-        if (currentStepIndex === 0 || !steps) {
+        if (currentStepIndex === 0 || !steps || currentStepIndex >= steps.length) {
             return []
         }
         const step = steps[currentStepIndex]
