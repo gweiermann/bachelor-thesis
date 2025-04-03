@@ -1,8 +1,12 @@
 import Instructions from "./instructions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/lib/tasks";
-import { useEffect, useRef } from "react";
-
+import { useEffect, useMemo, useRef } from "react";
+import Visualization from "./visualization";
+import { useVisualization } from "./use-visualization";
+import { TestCases } from "./test-cases";
+import { InlineLoadingSpinner } from "@/components/loading-spinner";
+import { Eye } from "lucide-react";
 interface LeftColumnProps {
     task: Task
 }
@@ -24,6 +28,12 @@ export default function LeftColumn({ task }: LeftColumnProps) {
         return () => window.removeEventListener('resize', handler)
     }, [])
     // ---
+
+    const { state } = useVisualization()
+    const indicator = useMemo(() => 
+        state === 'loading' ? <InlineLoadingSpinner className="size-4" /> :
+        (state === 'ready' ? <Eye className="size-4" /> : null), [state])
+
     return (
         <div className="w-full">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -31,19 +41,25 @@ export default function LeftColumn({ task }: LeftColumnProps) {
             </h2>
             <Tabs defaultValue="instructions" className="flex flex-col overflow-auto">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="instructions">Instructions</TabsTrigger>
-                    <TabsTrigger value="visualization">Visualization</TabsTrigger>
-                    <TabsTrigger value="tests">Tests</TabsTrigger>
+                    <TabsTrigger value="instructions">
+                        Instructions
+                    </TabsTrigger>
+                    <TabsTrigger value="visualization">
+                        Visualization {indicator}
+                    </TabsTrigger>
+                    <TabsTrigger value="tests">
+                        Tests
+                    </TabsTrigger>
                 </TabsList>
                 <div className="mt-4 w-full flex flex-col overflow-y-auto" ref={container}>
                     <TabsContent value="instructions">
                         <Instructions description={task.description} />
                     </TabsContent>
                     <TabsContent value="visualization">
-                        <Instructions description={task.description} />
+                        <Visualization task={task} />
                     </TabsContent>
                     <TabsContent value="tests">
-                        <Instructions description={task.description} />
+                        <TestCases />
                     </TabsContent>
                 </div>
             </Tabs>
