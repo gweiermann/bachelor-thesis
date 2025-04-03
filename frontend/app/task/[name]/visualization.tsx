@@ -16,8 +16,15 @@ import {
   } from "@/components/ui/table"
 import { Task } from '@/lib/tasks'
 import { useVisualization } from './use-visualization'
+import { cn } from '@/lib/utils'
 
-function addIdsToItems(analysis: AnalysisResult) {
+interface AnnotatedAnalsisResultStep extends AnalysisResultStep {
+    myArray: { value: number, id: number, orderId: number, className?: string }[]
+}
+
+type AnnotatedAnalsisResult = AnnotatedAnalsisResultStep[]
+
+function addIdsToItems(analysis: AnalysisResult): AnnotatedAnalsisResult {
     if (!analysis.length) return []
     let id = 0
     let current = { ...analysis[0], myArray: analysis[0].array.map((value, index) => ({value, id: id++, orderId: index})) }
@@ -25,16 +32,16 @@ function addIdsToItems(analysis: AnalysisResult) {
         current,
         ...analysis.slice(1).map(step => {
             const event = step.event
-            current = { ...step, myArray: current.myArray.slice() }
+            current = { ...step, myArray: current.myArray.slice().map(item => ({ ...item })) }
             if (event.type === 'replace') {
                 const item = current.myArray[event.index]
-                current.myArray[event.index] = {
-                    ...current.myArray[event.index],
+                Object.assign(current.myArray[event.index],{
                     value: event.newValue,
-                    id: id++
-                }
+                    id: id++,
+                    className: 'bg-amber-400'
+                })
             } else if (event.type === 'swap') {
-                const temp = current.myArray[event.index1]
+                const temp = {...current.myArray[event.index1]}          
                 current.myArray[event.index1] = current.myArray[event.index2]
                 current.myArray[event.index2] = temp
             } else {
@@ -43,6 +50,47 @@ function addIdsToItems(analysis: AnalysisResult) {
             return current
         })
     ]
+}
+
+function addAnimationsToSteps(steps: AnnotatedAnalsisResult) {
+    return steps.map((step, index) => {
+        const event = step.event
+        const followingEvent = steps[index + 1]?.event
+
+        function getClassName(i: number) {
+            if (!event) {
+                return undefined
+            }
+            if (event.type === 'replace' && i === event.index) {
+                return 'bg-amber-400'
+            }
+            if (event.type === 'swap' && (i === event.index1 || i === event.index2)) {
+                return 'bg-sky-200'
+            }
+            return undefined
+        }
+
+        function getClassNameForFollowing(i: number) {
+            if (!followingEvent) {
+                return undefined
+            }
+            if (followingEvent.type === 'replace' && i === followingEvent.index) {
+                return 'border-2 border-dashed animate-wiggle'
+            }
+            if (followingEvent.type === 'swap' && (i === followingEvent.index1 || i === followingEvent.index2)) {
+                return 'border-2 border-dashed animate-wiggle'
+            }
+            return undefined
+        }
+
+        return {
+            ...step,
+            myArray: step.myArray.map((item, i) => ({
+                ...item,
+                className: cn(getClassName(i), getClassNameForFollowing(i))
+            }))
+        }
+    })
 }
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
@@ -70,7 +118,7 @@ export default function Visualization({ task }: VisualizationProps) {
 
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
-    const steps = useMemo(() => analysis && addIdsToItems(analysis), [analysis])
+    const steps = useMemo(() => analysis && addAnimationsToSteps(addIdsToItems(analysis)), [analysis])
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
     const activeLines = useMemo(() => {
@@ -183,9 +231,9 @@ export default function Visualization({ task }: VisualizationProps) {
                                                 key={item.id}
                                                 transition={{ type: 'spring', duration: derivedTimePerStep }}
                                                 initial={{ y: -100, opacity: 0, scale: 0.5 }}
-                                                animate={{ y: 0, opacity: 1, scale: 1  }}
-                                                exit={{ y: 100, opacity: 0, scale: 0.5  }}
-                                                className="absolute size-full bg-muted border rounded-sm flex items-center justify-center">
+                                                animate={{ y: 0, opacity: 1, scale: 1 }}
+                                                exit={{ y: 100, opacity: 0, scale: 0.5 }}
+                                                className={cn("absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center", item.className)}>
                                                 {item.value}
                                             </motion.div>
                                         </AnimatePresence>
