@@ -37,7 +37,7 @@ export default function RightColumn({ task }: RightColumnProps) {
     }
 
     return ( 
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-4">
             <div className="flex flex-row justify-end">
                 <Button variant="ghost">
                     <Maximize2 className="h-4 w-4" />
