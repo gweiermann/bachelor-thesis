@@ -13,7 +13,7 @@ export default function Navigation() {
 
                 <li className="flex-1">
                     <Link href="/" className="text-md font-semibold">
-                        Classes
+                        Courses
                     </Link>
                 </li>
                 
