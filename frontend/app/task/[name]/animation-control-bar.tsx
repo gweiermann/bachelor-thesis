@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronLeft, ChevronRight, RotateCw, Pause, Play } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AnimationControlBarProps {
   totalSteps: number
@@ -109,47 +110,49 @@ export default function AnimationControlBar({
 
   return (
     <div
-      className={`flex items-center justify-between p-2 bg-background border rounded-md shadow-sm ${className}`}
+      className={cn(`flex items-center justify-between p-2 bg-background border rounded-md shadow-sm`, className)}
     >
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handlePlayPauseRestart}
-          aria-label={isPlaying ? "Pause" : "Play"}          
-        >
-          {finished ? (
-            <RotateCw className="h-5 w-5" />
-          ) : isPlaying ? (
-            <Pause className="h-5 w-5" />
-          ) : (
-            <Play className="h-5 w-5" />
-          )}
-        </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handlePlayPauseRestart}
+        aria-label={isPlaying ? "Pause" : "Play"}          
+      >
+        {finished ? (
+          <RotateCw className="h-5 w-5" />
+        ) : isPlaying ? (
+          <Pause className="h-5 w-5" />
+        ) : (
+          <Play className="h-5 w-5" />
+        )}
+      </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handlePrevStep}
-          disabled={currentStep <= 0}
-          aria-label="Previous step"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
+      <div className="flex justify-center grow">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handlePrevStep}
+            disabled={currentStep <= 0}
+            aria-label="Previous step"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
 
-        <span className="text-sm font-medium px-2">
-          Step {currentStep + 1}/{totalSteps}
-        </span>
+          <span className="text-sm font-medium px-2">
+            Step {currentStep + 1}/{totalSteps}
+          </span>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNextStep}
-          disabled={currentStep >= totalSteps - 1}
-          aria-label="Next step"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleNextStep}
+            disabled={currentStep >= totalSteps - 1}
+            aria-label="Next step"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       <DropdownMenu>

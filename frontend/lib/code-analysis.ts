@@ -14,6 +14,10 @@ export type AnalysisResultStepEvent =
     { type: 'replace', index: number, oldValue: number, newValue: number }
 
 export async function analyzeCode(taskName: string, codeWithoutPrototype: string, onStatusUpdate: (message: string) => void): Promise<AnalysisResult> | never {   
+    if (!codeWithoutPrototype) {
+        return null
+    }
+
     const task = await getTask(taskName)
     if (!task) {
         throw new Error("Task not found!")
