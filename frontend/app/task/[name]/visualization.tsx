@@ -27,8 +27,12 @@ function addIdsToItems(analysis: AnalysisResult) {
             const event = step.event
             current = { ...step, myArray: current.myArray.slice() }
             if (event.type === 'replace') {
-                current.myArray[event.index].value = event.newValue
-                current.myArray[event.index].id = id++
+                const item = current.myArray[event.index]
+                current.myArray[event.index] = {
+                    ...current.myArray[event.index],
+                    value: event.newValue,
+                    id: id++
+                }
             } else if (event.type === 'swap') {
                 const temp = current.myArray[event.index1]
                 current.myArray[event.index1] = current.myArray[event.index2]
@@ -146,7 +150,7 @@ export default function Visualization({ task }: VisualizationProps) {
 
     // Prevent bug from crashing, needs further investigation
     if (!steps || steps.some(step => !step)) {
-        console.error('Analysis result is malformed', {steps, analysis})
+        console.log('Analysis result is malformed', {steps, analysis})
         return (
             <div>
                 <div>Error: Analysis result is malformed. See console for further information.</div>
