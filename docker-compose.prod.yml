@@ -14,14 +14,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
-    develop:
-      watch:
-        - action: sync
-          path: ./frontend
-          target: /app
-        - action: rebuild
-          path: package.json
+      dockerfile: Dockerfile.prod
     restart: unless-stopped
     ports:
       - "3000:80"
