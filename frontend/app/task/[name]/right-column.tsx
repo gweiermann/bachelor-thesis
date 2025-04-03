@@ -33,7 +33,7 @@ export default function RightColumn({ task }: RightColumnProps) {
     }
 
     function handleRunCode() {
-        runCode(code)
+        runCode(currentCode)
     }
 
     return ( 
