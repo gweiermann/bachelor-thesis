@@ -1,8 +1,8 @@
 'use client'
 
 import useSWR from 'swr'
-import { FullLoadingSpinner, InlineLoadingSpinner } from '@/components/loading-spinner'
-import { useEffect, useState, useMemo } from 'react'
+import { InlineLoadingSpinner } from '@/components/loading-spinner'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { AnalysisResult, AnalysisResultStep, analyzeCode } from '@/lib/code-analysis'
 import { AnimatePresence, motion } from 'motion/react'
 import AnimationControlBar from './animation-control-bar'
@@ -15,8 +15,8 @@ import {
     TableRow,
   } from "@/components/ui/table"
 import { Task } from '@/lib/tasks'
-import { useVisualization } from './use-visualization'
 import { cn } from '@/lib/utils'
+import { useUserCode, useVisualization } from './stores'
 
 interface AnnotatedAnalsisResultStep extends AnalysisResultStep {
     myArray: { value: number, id: number, orderId: number, className?: string }[]
@@ -108,9 +108,10 @@ export default function Visualization({ task }: VisualizationProps) {
     const timePerStep = 1 // 1x means 1 second
     const firstLoadingMessage = 'Waiting for compilation...'
     
-    const { codeToBeRun, setActiveLines, setState, state, setAnalysis, isDirty, loadingMessage, setLoadingMessage } = useVisualization()
+    const { codeToBeRun } = useUserCode()
+    const { loadingMessage, setLoadingMessage, setIsLoading, setErrorMessage, setResult, setActiveLines, state } = useVisualization()
 
-    const { data: analysis, isLoading, error } = useSWR(
+    const { data: analysisResult, isLoading, error } = useSWR(
         ['analyzeCode', task.name, codeToBeRun],
         () => analyzeCode(task.name, codeToBeRun, setLoadingMessage),
         { revalidateOnFocus: false, suspense: false }
@@ -118,7 +119,7 @@ export default function Visualization({ task }: VisualizationProps) {
 
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
-    const steps = useMemo(() => analysis && addAnimationsToSteps(addIdsToItems(analysis)), [analysis])
+    const steps = useMemo(() => analysisResult && addAnimationsToSteps(addIdsToItems(analysisResult)), [analysisResult])
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
     const activeLines = useMemo(() => {
@@ -139,18 +140,11 @@ export default function Visualization({ task }: VisualizationProps) {
     , [steps])
 
     useEffect(() => {
-        if (!codeToBeRun) {
-            setState('unrun')
-        }
-    }, [codeToBeRun, setState])
-
-    useEffect(() => {
-        if (analysis) {
-            setState('ready')
-            setAnalysis(analysis)
+        if (analysisResult) {
+            setResult(analysisResult)
             setCurrentStepIndex(0)
         }
-    }, [analysis, setState, setAnalysis])
+    }, [analysisResult, setResult])
 
     // useEffect(() => {
     //     console.log('analysis', analysis)
@@ -159,17 +153,19 @@ export default function Visualization({ task }: VisualizationProps) {
 
     useEffect(() => {
         if (isLoading && codeToBeRun) {
-            setState('loading')
             setLoadingMessage(firstLoadingMessage)
+            setIsLoading(true)
+        } else {
+            setLoadingMessage(null)
+            setIsLoading(false)
         }
-    }, [isLoading, setState, setLoadingMessage, codeToBeRun])
+    }, [isLoading, setIsLoading, setLoadingMessage, codeToBeRun])
 
     useEffect(() => {
         if (error) {
-            setState('error')
-            setLoadingMessage(error.message)
+            setErrorMessage(error.message)
         }
-    }, [error, setState, setLoadingMessage])
+    }, [error, setErrorMessage])
 
     useEffect(() => {
         setActiveLines(activeLines)
@@ -198,7 +194,7 @@ export default function Visualization({ task }: VisualizationProps) {
 
     // Prevent bug from crashing, needs further investigation
     if (!steps || steps.some(step => !step)) {
-        console.log('Analysis result is malformed', {steps, analysis})
+        console.log('Analysis result is malformed', {steps, analysis: analysisResult})
         return (
             <div>
                 <div>Error: Analysis result is malformed. See console for further information.</div>

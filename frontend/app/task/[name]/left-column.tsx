@@ -3,10 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/lib/tasks";
 import { useEffect, useMemo, useRef } from "react";
 import Visualization from "./visualization";
-import { useVisualization } from "./use-visualization";
 import { TestCases } from "./test-cases";
 import { InlineLoadingSpinner } from "@/components/loading-spinner";
 import { Eye } from "lucide-react";
+import { useVisualization } from "./stores";
 interface LeftColumnProps {
     task: Task
 }
@@ -29,7 +29,7 @@ export default function LeftColumn({ task }: LeftColumnProps) {
     }, [])
     // ---
 
-    const { state } = useVisualization()
+    const state = useVisualization(s => s.state)
     const indicator = useMemo(() => 
         state === 'loading' ? <InlineLoadingSpinner className="size-4" /> :
         (state === 'ready' ? <Eye className="size-4" /> : null), [state])

@@ -1,3 +1,9 @@
+export interface TestCase {
+    id: string
+    suite: string
+    input: number[]
+    expectedOutput: number[]
+}
 
 export interface Task {
     name: string
@@ -7,6 +13,10 @@ export interface Task {
     code: {
         functionPrototype: string
         main: string
+    },
+    testCases: {
+        public: TestCase[]
+        private: TestCase[]
     }
 }
 
@@ -22,6 +32,48 @@ export async function getTask(name: string): Promise<Task | null> {
                 main: `int arr[] = {64, 34, 25, 12, 22, 11, 90};
                        int n = sizeof(arr)/sizeof(arr[0]);
                        bubbleSort(arr, n);`
+            },
+            testCases: {
+                public: [
+                    {
+                        id: 'test-case-1',
+                        suite: 'public',
+                        input: [5, 1, 4, 2, 8],
+                        expectedOutput: [1, 2, 4, 5, 8]
+                    },
+                    {
+                        id: 'test-case-2',
+                        suite: 'public',
+                        input: [5, 1, 4, 2, 8],
+                        expectedOutput: [1, 2, 4, 5, 8]
+                    },
+                    {
+                        id: 'test-case-3',
+                        suite: 'public',
+                        input: [5, 1, 4, 2, 8],
+                        expectedOutput: [1, 2, 4, 5, 8]
+                    },
+                ],
+                private: [
+                    {
+                        id: 'test-case-4',
+                        suite: 'private',
+                        input: [5, 1, 4, 2, 8],
+                        expectedOutput: [1, 2, 4, 5, 8]
+                    },
+                    {
+                        id: 'test-case-5',
+                        suite: 'private',
+                        input: [5, 1, 4, 2, 8],
+                        expectedOutput: [1, 2, 4, 5, 8]
+                    },
+                    {
+                        id: 'test-case-6',
+                        suite: 'private',
+                        input: [5, 1, 4, 2, 8],
+                        expectedOutput: [1, 2, 4, 5, 8]
+                    },
+                ]
             }
         }
     }
