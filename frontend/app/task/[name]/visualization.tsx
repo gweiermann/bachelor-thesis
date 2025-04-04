@@ -1,9 +1,8 @@
 'use client'
 
-import useSWR from 'swr'
 import { InlineLoadingSpinner } from '@/components/loading-spinner'
-import { useEffect, useState, useMemo, useCallback } from 'react'
-import { AnalysisResult, AnalysisResultStep, analyzeCode } from '@/lib/code-analysis'
+import { useEffect, useState, useMemo } from 'react'
+import { AnalysisResult, AnalysisResultStep } from '@/lib/code-analysis'
 import { AnimatePresence, motion } from 'motion/react'
 import AnimationControlBar from './animation-control-bar'
 import {
@@ -106,20 +105,11 @@ interface VisualizationProps {
 
 export default function Visualization({ task }: VisualizationProps) {
     const timePerStep = 1 // 1x means 1 second
-    const firstLoadingMessage = 'Waiting for compilation...'
-    
-    const { codeToBeRun } = useUserCode()
-    const { loadingMessage, setLoadingMessage, setIsLoading, setErrorMessage, setResult, setActiveLines, state } = useVisualization()
 
-    const { data: analysisResult, isLoading, error } = useSWR(
-        ['analyzeCode', task.name, codeToBeRun],
-        () => analyzeCode(task.name, codeToBeRun, setLoadingMessage),
-        { revalidateOnFocus: false, suspense: false }
-    )
-
+    const { loadingMessage, errorMessage, setActiveLines, state, result } = useVisualization()
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
-    const steps = useMemo(() => analysisResult && addAnimationsToSteps(addIdsToItems(analysisResult)), [analysisResult])
+    const steps = useMemo(() => result && addAnimationsToSteps(addIdsToItems(result)), [result])
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
     const activeLines = useMemo(() => {
@@ -140,32 +130,16 @@ export default function Visualization({ task }: VisualizationProps) {
     , [steps])
 
     useEffect(() => {
-        if (analysisResult) {
-            setResult(analysisResult)
+        if (result) {
             setCurrentStepIndex(0)
         }
-    }, [analysisResult, setResult])
+    }, [result])
 
     // useEffect(() => {
     //     console.log('analysis', analysis)
     //     console.log('steps', steps)
     // }, [steps])
 
-    useEffect(() => {
-        if (isLoading && codeToBeRun) {
-            setLoadingMessage(firstLoadingMessage)
-            setIsLoading(true)
-        } else {
-            setLoadingMessage(null)
-            setIsLoading(false)
-        }
-    }, [isLoading, setIsLoading, setLoadingMessage, codeToBeRun])
-
-    useEffect(() => {
-        if (error) {
-            setErrorMessage(error.message)
-        }
-    }, [error, setErrorMessage])
 
     useEffect(() => {
         setActiveLines(activeLines)
@@ -189,12 +163,12 @@ export default function Visualization({ task }: VisualizationProps) {
     }
 
     if (state === 'error') {
-        return <div><pre>Error: {error.message}</pre></div>
+        return <div><pre>Error: {errorMessage}</pre></div>
     }
 
     // Prevent bug from crashing, needs further investigation
     if (!steps || steps.some(step => !step)) {
-        console.log('Analysis result is malformed', {steps, analysis: analysisResult})
+        console.log('Analysis result is malformed', {steps, analysis: result})
         return (
             <div>
                 <div>Error: Analysis result is malformed. See console for further information.</div>
