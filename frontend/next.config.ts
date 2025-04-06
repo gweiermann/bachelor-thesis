@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
     async rewrites() {
         return [
             {
-                source: '/ws-api/visualize',
+                source: '/ws-api/run',
                 destination: 'http://task-runner:80'
             }
         ]

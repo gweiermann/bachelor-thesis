@@ -35,17 +35,9 @@ wss.on('connection', ws => {
             }
     
             const dataStr = data.toString('utf-8')
-            let taskName, code
+            let config
             try {
-                const message = JSON.parse(dataStr);
-                taskName = message.taskName
-                code = message.code
-                if (!taskName || !code) {
-                    throw ({
-                        type: 'badRequest',
-                        message: 'Missing property taskName or code'
-                    })
-                }
+                config = JSON.parse(dataStr);
             } catch(e) {
                 console.error('Invalid request received', dataStr)
                 throw ({
@@ -56,7 +48,7 @@ wss.on('connection', ws => {
             }
 
             taskIsRunning = true
-            const result = await runAnalysis(taskName, code, message => {
+            const result = await runBuild(config, message => {
                 ws.send(JSON.stringify({
                     type: 'status',
                     message
@@ -92,51 +84,11 @@ wss.on('connection', ws => {
 });
 
 
-function runAnalysis(taskName, code, onStatusUpdate) {
+function runBuild(param, onStatusUpdate) {
     return new Promise((resolve, reject) => {
-        const param = {
-            code,
-            config: {
-                functionName: 'bubbleSort',
-                collect: [
-                    {
-                        type: 'arrayWatcher',
-                        parameters: {
-                            name: 'arr',
-                            size: 'n',
-                        },
-                        key: 'array'
-                    },
-                    {
-                        type: 'currentLine',
-                        key: 'line'
-                    },
-                    {
-                        type: 'currentScope',
-                        key: 'scope'
-                    }
-                ],
-                postProcess: [
-                    {
-                        type: 'skipInterSwappingSteps',
-                        parameters: {
-                            array: 'array'
-                        },
-                        key: 'skippedStep'
-                    },
-                    {
-                        type: 'keepTrackOfItems',
-                        parameters: {
-                            array: 'array'
-                        },
-                        key: 'event'
-                    }
-                ]
-            }
-        }
 
         const child = spawn(
-            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', 'analyse', JSON.stringify(param), taskName],
+            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', JSON.stringify(param)],
             { cwd: path.join(process.cwd(), './analysis')}
         );
 
@@ -176,10 +128,5 @@ function runAnalysis(taskName, code, onStatusUpdate) {
             // Will only trigger if resolve haven't been called yet
             reject(new Error('Process closed unexpectedly: ' + stderr))
         })
-
-        const codeStream = new stream.Readable();
-        codeStream.push(code);
-        codeStream.push(null);
-        codeStream.pipe(child.stdin);
     });
 }

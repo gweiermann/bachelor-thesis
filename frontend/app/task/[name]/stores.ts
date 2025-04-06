@@ -17,7 +17,7 @@ interface FetchStore<T> {
     setResult: (result: T) => void,
 }
 
-interface TestCaseResult {
+export interface TestCaseResult {
     testCase: TestCase
     output: number[]
     passed: boolean
@@ -27,7 +27,7 @@ interface TestsStore extends FetchStore<TestCaseResult[]> { }
 
 interface VisualizationStore extends FetchStore<AnalysisResult> {
     type: VisualizationType
-    activeLines?: number[]
+    activeLines: number[]
     setActiveLines: (activeLines: number[]) => void
 }
 
@@ -89,7 +89,7 @@ export const useFetchStore = <T>(
 
 export const useVisualization = create<VisualizationStore>((set, get) => ({
     type: 'sort',
-    activeLines: null,
+    activeLines: [],
     setActiveLines: (activeLines: number[]) => set({ activeLines }),
     ...useFetchStore(set, get),
 }))

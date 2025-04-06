@@ -9,41 +9,14 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { analyzeCode } from '@/lib/code-analysis'
 import useSWR from 'swr'
 import { useUserCode, useVisualization } from './stores'
+import LoadAnalysis from './load-analysis'
+import LoadTests from './load-tests'
 
 interface TaskProps {
     task: Task
 }
 
 export default function Task({ task }: TaskProps) {
-    const firstLoadingMessage = 'Waiting for compilation...'
-
-    const { codeToBeRun } = useUserCode()
-    const {  setLoadingMessage, setIsLoading, setErrorMessage, setResult } = useVisualization()
-
-    const { data: analysisResult, isLoading, error } = useSWR(
-        ['analyzeCode', task.name, codeToBeRun],
-        () => analyzeCode(task.name, codeToBeRun, setLoadingMessage),
-        { revalidateOnFocus: false, suspense: false }
-    )
-
-    useEffect(() => {
-        if (isLoading && codeToBeRun) {
-            setLoadingMessage(firstLoadingMessage)
-            setIsLoading(true)
-        } else {
-            setLoadingMessage(null)
-            setIsLoading(false)
-        }
-    }, [isLoading, setIsLoading, setLoadingMessage, codeToBeRun])
-
-    useEffect(() => {
-        setErrorMessage(error?.message)
-    }, [error, setErrorMessage])
-
-    useEffect(() => {
-        setResult(analysisResult)
-    }, [analysisResult, setResult])
-
     return (
         <div className="flex flex-col overflow-auto bg-background">
             <div className="overflow-auto">
@@ -61,6 +34,8 @@ export default function Task({ task }: TaskProps) {
                     </ResizablePanel>
                 </ResizablePanelGroup>
             </div>
+            <LoadAnalysis task={task} />
+            <LoadTests task={task} />
         </div>
     )
 }

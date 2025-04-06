@@ -36,7 +36,7 @@ export default function RightColumn({ task }: RightColumnProps) {
             </div>
             <div className="flex-1">
                 <Editor
-                    functionProtoype={task.code.functionPrototype}
+                    functionProtoype={task.analysis.functionPrototype}
                     placeholder={defaultCode}
                     onChange={handleChange}
                     activeLines={isDirty ? [] : activeLines} />
