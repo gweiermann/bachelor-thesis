@@ -99,7 +99,7 @@ export async function getTask(name: string): Promise<Task | null> {
                         id: 'test-case-1',
                         suite: 'public',
                         input: [5, 1, 4, 2, 8],
-                        expectedOutput: [1, 2, 4, 5, 8, 123]
+                        expectedOutput: [1, 2, 4, 5, 8]
                     },
                     {
                         id: 'test-case-2',

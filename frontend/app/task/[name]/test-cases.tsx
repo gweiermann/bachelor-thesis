@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   CheckCircle,
   XCircle,
@@ -23,6 +23,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useTests } from "./stores"
+import { InlineLoadingSpinner } from "@/components/loading-spinner"
 
 // Types for our test data
 interface TestCase {
@@ -42,7 +44,7 @@ interface TestSuite {
 }
 
 // Mock data for demonstration
-const mockTestData: Record<string, TestSuite> = {
+const testCases: Record<string, TestSuite> = {
   public: {
     name: "Public Tests",
     totalTests: 15,
@@ -154,12 +156,70 @@ const mockTestData: Record<string, TestSuite> = {
 
 export function TestCases() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const allTestsPassed = Object.values(mockTestData).every(
+  const { result, state, loadingMessage, errorMessage } = useTests()
+
+  const testCases = useMemo(() => {
+    if (!result) {
+      return null
+    }
+    const grouped = Object.groupBy(result, ({ testCase }) => testCase.suite)
+    const publicTests = grouped.public || []
+    const privateTests = grouped.private || []
+    return {
+      public: {
+        totalTests: publicTests.length,
+        passedTests: publicTests.filter(({ passed }) => passed).length,
+        failedTests: publicTests.filter(({ passed }) => !passed).length,
+        testCases: publicTests.map(({ testCase, passed, output }) => ({
+          name: `${testCase.input.join(', ')} \u2192  ${output.join(', ')}`,
+          errorMessage: 'Should be: ' + testCase.expectedOutput.join(', '),
+          testCase,
+          status: passed ? 'passed' : 'failed',
+          duration: 0
+        }))
+      },
+      private: {
+        totalTests: privateTests.length,
+        passedTests: privateTests.filter(({ passed }) => passed).length,
+        failedTests: privateTests.filter(({ passed }) => !passed).length,
+        testCases: privateTests.map(({ testCase, passed }) => ({
+          name: testCase.input.join(', '),
+          errorMessage: 'Should be: ' + testCase.expectedOutput.join(', '),
+          testCase,
+          status: passed ? 'passed' : 'failed',
+          duration: 0
+        }))
+      },
+    }
+  }, [result])
+
+  if (state === 'unrun') {
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        Hit {"'Try it out'"} to view test results.
+      </div>
+    )
+  }
+
+  if (state === 'loading') {
+    return (
+      <div className="flex flex-col gap-4 items-center justify-center h-full">
+        <div>{loadingMessage}</div>
+        <InlineLoadingSpinner />
+      </div>
+    )
+  }
+
+  if (state === 'error') {
+    return <div><pre>Error: {errorMessage}</pre></div>
+  }
+
+  const allTestsPassed = Object.values(testCases).every(
     (suite) => suite.failedTests === 0
   );
 
   // Get failed test cases for public tests (limited to 3)
-  const publicFailedTests = mockTestData.public.testCases
+  const publicFailedTests = testCases.public.testCases
     .filter((test) => test.status === "failed")
     .slice(0, 3);
 
@@ -198,13 +258,13 @@ export function TestCases() {
               <CardTitle>Public Tests</CardTitle>
               <Badge
                 variant={
-                  mockTestData.public.failedTests > 0
+                  testCases.public.failedTests > 0
                     ? "destructive"
                     : "default"
                 }
               >
-                {mockTestData.public.passedTests}/
-                {mockTestData.public.totalTests} Passed
+                {testCases.public.passedTests}/
+                {testCases.public.totalTests} Passed
               </Badge>
             </div>
             <CardDescription>
@@ -212,10 +272,10 @@ export function TestCases() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {mockTestData.public.failedTests > 0 ? (
+            {testCases.public.failedTests > 0 ? (
               <div className="space-y-4">
                 <div className="text-sm font-medium text-destructive mb-2">
-                  Failed Tests ({mockTestData.public.failedTests})
+                  Failed Tests ({testCases.public.failedTests})
                 </div>
                 {publicFailedTests.map((test) => (
                   <div
@@ -273,15 +333,15 @@ export function TestCases() {
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="failed">
                       <XCircle2 className="h-4 w-4 mr-2" />
-                      Failed ({mockTestData.public.failedTests})
+                      Failed ({testCases.public.failedTests})
                     </TabsTrigger>
                     <TabsTrigger value="passed">
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Passed ({mockTestData.public.passedTests})
+                      Passed ({testCases.public.passedTests})
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="failed" className="space-y-4 mt-4">
-                    {mockTestData.public.testCases
+                    {testCases.public.testCases
                       .filter((test) => test.status === "failed")
                       .map((test) => (
                         <div
@@ -315,7 +375,7 @@ export function TestCases() {
                       ))}
                   </TabsContent>
                   <TabsContent value="passed" className="space-y-4 mt-4">
-                    {mockTestData.public.testCases
+                    {testCases.public.testCases
                       .filter((test) => test.status === "passed")
                       .map((test) => (
                         <div
@@ -346,8 +406,8 @@ export function TestCases() {
             <div className="flex justify-between items-center">
               <CardTitle>Private Tests</CardTitle>
               <Badge>
-                {mockTestData.private.passedTests}/
-                {mockTestData.private.totalTests} Passed
+                {testCases.private.passedTests}/
+                {testCases.private.totalTests} Passed
               </Badge>
             </div>
             <CardDescription>
@@ -357,22 +417,22 @@ export function TestCases() {
           <CardContent>
             <div className="space-y-6 py-4">
               <div className="flex flex-col items-center justify-center">
-                {mockTestData.private.failedTests === 0 ? (
+                {testCases.private.failedTests === 0 ? (
                   <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
                 ) : (
                   <XCircle className="h-16 w-16 text-red-500 mb-4" />
                 )}
                 <div className="text-center mb-4">
                   <p className="text-2xl font-bold">
-                    {mockTestData.private.passedTests}/
-                    {mockTestData.private.totalTests}
+                    {testCases.private.passedTests}/
+                    {testCases.private.totalTests}
                   </p>
                   <p className="text-sm text-muted-foreground">Tests Passing</p>
                 </div>
                 <Progress
                   value={
-                    (mockTestData.private.passedTests /
-                      mockTestData.private.totalTests) *
+                    (testCases.private.passedTests /
+                      testCases.private.totalTests) *
                     100
                   }
                   className="w-full h-2"

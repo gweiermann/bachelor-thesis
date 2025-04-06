@@ -30,7 +30,10 @@ export default function LeftColumn({ task }: LeftColumnProps) {
     // ---
 
     const state = useVisualization(s => s.state)
-    const indicator = useMemo(() => 
+    const visualizationIndicator = useMemo(() => 
+        state === 'loading' ? <InlineLoadingSpinner className="size-4" /> :
+        (state === 'ready' ? <Eye className="size-4" /> : null), [state])
+    const testsIndicator = useMemo(() => 
         state === 'loading' ? <InlineLoadingSpinner className="size-4" /> :
         (state === 'ready' ? <Eye className="size-4" /> : null), [state])
 
@@ -45,10 +48,10 @@ export default function LeftColumn({ task }: LeftColumnProps) {
                         Instructions
                     </TabsTrigger>
                     <TabsTrigger value="visualization">
-                        Visualization {indicator}
+                        Visualization {visualizationIndicator}
                     </TabsTrigger>
                     <TabsTrigger value="tests">
-                        Tests
+                        Tests {testsIndicator}
                     </TabsTrigger>
                 </TabsList>
                 <div className="mt-4 w-full flex flex-col overflow-y-auto" ref={container}>
