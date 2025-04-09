@@ -9,7 +9,7 @@ def find_preset(name):
     """
     Get the configuration for the given name. (Located in /config)
     """
-    dir = f"/config/{name}"
+    dir = f"/app/config/{name}"
     if not os.path.isdir(dir):
         raise ValueError(f"There is no preset for {name}.")
     manifest_file = dir + "/manifest.json"

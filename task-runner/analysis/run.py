@@ -10,11 +10,15 @@ def load_json_string(json_string):
     """
     Load a JSON string and return the parsed object.
     """
-    return json.loads(f'"{json_string}"')
+    if not json_string.startswith('"') and not json_string.endswith('"'):
+        json_string = f'"{json_string}"'
+    return json.loads(json_string)
 
 if __name__ == '__main__':
     mode = sys.argv[1]
     preset = sys.argv[2]
+
+    # print(' '.join(sys.argv[1:]))
 
     data = config.find_preset(preset)
 

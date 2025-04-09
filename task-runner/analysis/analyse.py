@@ -2,6 +2,7 @@
 
 import lldb
 import os
+import subprocess
 import shutil
 from setup import setup_debugger, steps_of_function
 from collectors import CollectorManager
@@ -43,9 +44,9 @@ def compile():
     Compile the C++ code to a binary executable.
     """
     print_status("Compiling...")
-    os.system(f"clang++-19 -g -c {main_cpp_filename} -o /tmp/main.o")
-    os.system(f"clang++-19 -g -c {user_cpp_filename} -o /tmp/user.o")
-    os.system(f"clang++-19 -o {exe} /tmp/main.o /tmp/user.o")
+    subprocess.run(['clang++-19', '-g', '-c', main_cpp_filename, '-o', '/tmp/main.o'], check=True)
+    subprocess.run(['clang++-19', '-g', '-c', user_cpp_filename, '-o', '/tmp/user.o'], check=True)
+    subprocess.run(['clang++-19', '-g', '-o', exe, '/tmp/main.o', '/tmp/user.o'], check=True)
     
 
 def analyse(preset):
