@@ -24,24 +24,10 @@ export async function runAnalysis(taskName: string, codeWithoutPrototype: string
         throw new Error("Task not found!")
     }
 
-    const code = `
-        #include <iostream>
-        
-        ${task.analysis.functionPrototype}
-        {
-            ${codeWithoutPrototype}
-        }
-        
-        int main() {
-            ${task.analysis.main}
-            return 0;
-        }
-    `
-
     return runBuild({
         type: 'analyse',
-        code,
-        config: task.analysis.config
+        presetName: task.presetName,
+        functionBody: codeWithoutPrototype
     }, onStatusUpdate)
 }
 
@@ -55,35 +41,21 @@ export async function runTests(taskName: string, codeWithoutPrototype: string, o
         throw new Error("Task not found!")
     }
 
-    const code = `
-        #include <iostream>
-        
-        ${task.analysis.functionPrototype}
-        {
-            ${codeWithoutPrototype}
-        }
-        
-        int main() {
-            ${task.testCases.main}
-            return 0;
-        }
-    `
-
     return runBuild({
         type: 'test',
-        code,
-        testCases: [...task.testCases.public, ...task.testCases.private]
+        functionBody: codeWithoutPrototype,
+        presetName: task.presetName
     }, onStatusUpdate)
 }
 
 type BuildPayload = {
     type: 'analyse'
-    code: string
-    config: any // FIXME: remove any type
+    functionBody: string
+    presetName: string
 } | {
     type: 'test'
-    code: string
-    testCases: TestCase[]
+    functionBody: string
+    presetName: string
 }
 
 export function runBuild(payload: BuildPayload, onStatusUpdate: (message: string) => void): Promise<AnalysisResult> | never {   

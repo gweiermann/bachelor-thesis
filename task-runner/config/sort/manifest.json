@@ -1,0 +1,19 @@
+{
+    "entrypointFunction": "sort",
+    "functions": [
+        {
+            "name": "sort",
+            "returnType": "void",
+            "arguments": [
+                {
+                    "name": "arr",
+                    "type": "int*"
+                },
+                {
+                    "name": "n",
+                    "type": "int"
+                }
+            ]
+        }
+    ]
+}

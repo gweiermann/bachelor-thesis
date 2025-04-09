@@ -48,7 +48,7 @@ wss.on('connection', ws => {
             }
 
             taskIsRunning = true
-            const result = await runBuild(config, message => {
+            const result = await runBuild(config.type, config.presetName, config.functionBody, message => {
                 ws.send(JSON.stringify({
                     type: 'status',
                     message
@@ -84,12 +84,12 @@ wss.on('connection', ws => {
 });
 
 
-function runBuild(param, onStatusUpdate) {
+function runBuild(type, presetName, functionBody, onStatusUpdate) {
     return new Promise((resolve, reject) => {
 
         const child = spawn(
-            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', JSON.stringify(param)],
-            { cwd: path.join(process.cwd(), './analysis')}
+            'docker', ['run', '--rm', '-i', '-v', '/config:./config', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(functionBody)],
+            { cwd: path.join(process.cwd())}
         );
 
         let stderr = ''
