@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, } from 'react'
+import { useEffect, useState, } from 'react'
 import { useMemo } from 'react'
 import { type Task } from '@/lib/tasks'
 import LeftColumn from './left-column'
 import RightColumn from './right-column'
-import Navigation from './navigation'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { analyzeCode } from '@/lib/code-analysis'
+import useSWR from 'swr'
+import { useUserCode, useVisualization } from './stores'
+import LoadAnalysis from './load-analysis'
+import LoadTests from './load-tests'
 
 interface TaskProps {
     task: Task
@@ -30,6 +34,8 @@ export default function Task({ task }: TaskProps) {
                     </ResizablePanel>
                 </ResizablePanelGroup>
             </div>
+            <LoadAnalysis task={task} />
+            <LoadTests task={task} />
         </div>
     )
 }

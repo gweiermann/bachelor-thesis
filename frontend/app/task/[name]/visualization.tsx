@@ -1,9 +1,8 @@
 'use client'
 
-import useSWR from 'swr'
-import { FullLoadingSpinner, InlineLoadingSpinner } from '@/components/loading-spinner'
+import { InlineLoadingSpinner } from '@/components/loading-spinner'
 import { useEffect, useState, useMemo } from 'react'
-import { AnalysisResult, AnalysisResultStep, analyzeCode } from '@/lib/code-analysis'
+import { AnalysisResult, AnalysisResultStep } from '@/lib/code-analysis'
 import { AnimatePresence, motion } from 'motion/react'
 import AnimationControlBar from './animation-control-bar'
 import {
@@ -15,8 +14,8 @@ import {
     TableRow,
   } from "@/components/ui/table"
 import { Task } from '@/lib/tasks'
-import { useVisualization } from './use-visualization'
 import { cn } from '@/lib/utils'
+import { useUserCode, useVisualization } from './stores'
 
 interface AnnotatedAnalsisResultStep extends AnalysisResultStep {
     myArray: { value: number, id: number, orderId: number, className?: string }[]
@@ -106,19 +105,11 @@ interface VisualizationProps {
 
 export default function Visualization({ task }: VisualizationProps) {
     const timePerStep = 1 // 1x means 1 second
-    const firstLoadingMessage = 'Waiting for compilation...'
-    
-    const { codeToBeRun, setActiveLines, setState, state, setAnalysis, isDirty, loadingMessage, setLoadingMessage } = useVisualization()
 
-    const { data: analysis, isLoading, error } = useSWR(
-        ['analyzeCode', task.name, codeToBeRun],
-        () => analyzeCode(task.name, codeToBeRun, setLoadingMessage),
-        { revalidateOnFocus: false, suspense: false }
-    )
-
+    const { loadingMessage, errorMessage, setActiveLines, state, result } = useVisualization()
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
-    const steps = useMemo(() => analysis && addAnimationsToSteps(addIdsToItems(analysis)), [analysis])
+    const steps = useMemo(() => result && addAnimationsToSteps(addIdsToItems(result)), [result])
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
     const activeLines = useMemo(() => {
@@ -139,37 +130,16 @@ export default function Visualization({ task }: VisualizationProps) {
     , [steps])
 
     useEffect(() => {
-        if (!codeToBeRun) {
-            setState('unrun')
-        }
-    }, [codeToBeRun, setState])
-
-    useEffect(() => {
-        if (analysis) {
-            setState('ready')
-            setAnalysis(analysis)
+        if (result) {
             setCurrentStepIndex(0)
         }
-    }, [analysis, setState, setAnalysis])
+    }, [result])
 
     // useEffect(() => {
     //     console.log('analysis', analysis)
     //     console.log('steps', steps)
     // }, [steps])
 
-    useEffect(() => {
-        if (isLoading && codeToBeRun) {
-            setState('loading')
-            setLoadingMessage(firstLoadingMessage)
-        }
-    }, [isLoading, setState, setLoadingMessage, codeToBeRun])
-
-    useEffect(() => {
-        if (error) {
-            setState('error')
-            setLoadingMessage(error.message)
-        }
-    }, [error, setState, setLoadingMessage])
 
     useEffect(() => {
         setActiveLines(activeLines)
@@ -193,12 +163,12 @@ export default function Visualization({ task }: VisualizationProps) {
     }
 
     if (state === 'error') {
-        return <div><pre>Error: {error.message}</pre></div>
+        return <div><pre>Error: {errorMessage}</pre></div>
     }
 
     // Prevent bug from crashing, needs further investigation
     if (!steps || steps.some(step => !step)) {
-        console.log('Analysis result is malformed', {steps, analysis})
+        console.log('Analysis result is malformed', {steps, analysis: result})
         return (
             <div>
                 <div>Error: Analysis result is malformed. See console for further information.</div>

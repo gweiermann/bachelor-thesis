@@ -2,8 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Task } from "@/lib/tasks"
 import Editor from "@/components/editor/editor"
 import { Maximize2 } from "lucide-react"
-import { useVisualization } from "./use-visualization"
-import { useEffect, useState } from "react"
+import { useUserCode, useVisualization } from "./stores"
 
 interface RightColumnProps {
     task: Task
@@ -20,20 +19,12 @@ export default function RightColumn({ task }: RightColumnProps) {
         }
     }`
 
-    const { runCode, activeLines, codeToBeRun, setIsDirty, isDirty } = useVisualization()
-    const [currentCode, setCurrentCode] = useState<string | null>(defaultCode)
-
-    useEffect(() => {
-        setIsDirty(currentCode !== codeToBeRun)
-    }, [currentCode, codeToBeRun, setIsDirty])
+    const { runCode, isDirty, setCode } = useUserCode()
+    const { activeLines } = useVisualization()
 
     function handleChange(codeFromEditor: string) {
         const codeWithoutPrototype = codeFromEditor.split('\n').slice(2, -1).join('\n')
-        setCurrentCode(codeWithoutPrototype)
-    }
-
-    function handleRunCode() {
-        runCode(currentCode)
+        setCode(codeWithoutPrototype)
     }
 
     return ( 
@@ -45,13 +36,13 @@ export default function RightColumn({ task }: RightColumnProps) {
             </div>
             <div className="flex-1">
                 <Editor
-                    functionProtoype={task.code.functionPrototype}
+                    functionProtoype={task.functionPrototype}
                     placeholder={defaultCode}
                     onChange={handleChange}
                     activeLines={isDirty ? [] : activeLines} />
             </div>
             <div className="flex flex-row justify-end">
-                <Button onClick={handleRunCode}>
+                <Button onClick={runCode}>
                     Try it out!
                 </Button>
             </div>

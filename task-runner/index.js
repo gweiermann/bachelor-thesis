@@ -1,13 +1,14 @@
 import { WebSocketServer } from 'ws'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
-import stream from 'node:stream'
 import split2 from 'split2'
 
 const wss = new WebSocketServer({ port: 80 });
 
 const maxConnections = 5;
 let connections = 0;
+
+const isDebugMode = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
 
 wss.on('connection', ws => {
     if (connections >= maxConnections) {
@@ -35,17 +36,9 @@ wss.on('connection', ws => {
             }
     
             const dataStr = data.toString('utf-8')
-            let taskName, code
+            let config
             try {
-                const message = JSON.parse(dataStr);
-                taskName = message.taskName
-                code = message.code
-                if (!taskName || !code) {
-                    throw ({
-                        type: 'badRequest',
-                        message: 'Missing property taskName or code'
-                    })
-                }
+                config = JSON.parse(dataStr);
             } catch(e) {
                 console.error('Invalid request received', dataStr)
                 throw ({
@@ -56,7 +49,7 @@ wss.on('connection', ws => {
             }
 
             taskIsRunning = true
-            const result = await runAnalysis(taskName, code, message => {
+            const result = await runBuild(config.type, config.presetName, config.functionBody, message => {
                 ws.send(JSON.stringify({
                     type: 'status',
                     message
@@ -91,61 +84,40 @@ wss.on('connection', ws => {
     });
 });
 
+let idCounter = 0;
 
-function runAnalysis(taskName, code, onStatusUpdate) {
+function debug(id, msg) {
+    if (isDebugMode) {
+        console.log(`[${id}] ${msg}`)
+    }
+}
+
+function debugError(id, msg, force = false) {
+    if (isDebugMode || force) {
+        console.error(`[${id}] ${msg}`)
+    }
+}
+
+function runBuild(type, presetName, functionBody, onStatusUpdate) {
+    const id = String(idCounter++).padStart(3, '0')
+    debug(id, `Starting build process. Type: ${type}, Preset: ${presetName}`)
+
     return new Promise((resolve, reject) => {
-        const param = {
-            code,
-            config: {
-                functionName: 'bubbleSort',
-                collect: [
-                    {
-                        type: 'arrayWatcher',
-                        parameters: {
-                            name: 'arr',
-                            size: 'n',
-                        },
-                        key: 'array'
-                    },
-                    {
-                        type: 'currentLine',
-                        key: 'line'
-                    },
-                    {
-                        type: 'currentScope',
-                        key: 'scope'
-                    }
-                ],
-                postProcess: [
-                    {
-                        type: 'skipInterSwappingSteps',
-                        parameters: {
-                            array: 'array'
-                        },
-                        key: 'skippedStep'
-                    },
-                    {
-                        type: 'keepTrackOfItems',
-                        parameters: {
-                            array: 'array'
-                        },
-                        key: 'event'
-                    }
-                ]
-            }
-        }
-
         const child = spawn(
-            'docker', ['run', '--rm', '-i', 'registry:5000/task-runner-worker', 'analyse', JSON.stringify(param), taskName],
-            { cwd: path.join(process.cwd(), './analysis')}
+            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(functionBody)],
+            { cwd: path.join(process.cwd())}
         );
 
         let stderr = ''
-        child.stderr.on('data', data => stderr += data.toString('utf-8'))
+        child.stderr.on('data', data => {
+            stderr += data.toString('utf-8')
+            debugError(id, `${data.toString('utf-8')}`)
+        })
 
         child.stdout
             .pipe(split2())
             .on('data', line => {
+                debug(id, line)
                 if (!line.trim()) {
                     return
                 }
@@ -176,10 +148,8 @@ function runAnalysis(taskName, code, onStatusUpdate) {
             // Will only trigger if resolve haven't been called yet
             reject(new Error('Process closed unexpectedly: ' + stderr))
         })
-
-        const codeStream = new stream.Readable();
-        codeStream.push(code);
-        codeStream.push(null);
-        codeStream.pipe(child.stdin);
-    });
+    }).catch(e => {
+        debugError(id, 'Build process failed: ' + e.message)
+        throw e
+    })
 }

@@ -9,6 +9,6 @@ RUN npm install
 COPY . .
 
 EXPOSE 80
+USER root
 
 CMD docker build -t registry:5000/task-runner-worker ./analysis && node index.js
-# CMD ["docker", "build", "-t", "task-runner-worker", "./analysis", "&&", "node", "index.js"]

@@ -17,3 +17,11 @@ def print_result(result):
         'type': 'result',
         'result': result
     }), flush=True)
+
+def print_test_result(testCase, output, success):
+    print(json.dumps({
+        'type': 'testResult',
+        'testCase': testCase,
+        'output': output,
+        'success': success
+    }), flush=True)

@@ -3,10 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Task } from "@/lib/tasks";
 import { useEffect, useMemo, useRef } from "react";
 import Visualization from "./visualization";
-import { useVisualization } from "./use-visualization";
 import { TestCases } from "./test-cases";
 import { InlineLoadingSpinner } from "@/components/loading-spinner";
 import { Eye } from "lucide-react";
+import { useVisualization } from "./stores";
 interface LeftColumnProps {
     task: Task
 }
@@ -29,8 +29,11 @@ export default function LeftColumn({ task }: LeftColumnProps) {
     }, [])
     // ---
 
-    const { state } = useVisualization()
-    const indicator = useMemo(() => 
+    const state = useVisualization(s => s.state)
+    const visualizationIndicator = useMemo(() => 
+        state === 'loading' ? <InlineLoadingSpinner className="size-4" /> :
+        (state === 'ready' ? <Eye className="size-4" /> : null), [state])
+    const testsIndicator = useMemo(() => 
         state === 'loading' ? <InlineLoadingSpinner className="size-4" /> :
         (state === 'ready' ? <Eye className="size-4" /> : null), [state])
 
@@ -45,10 +48,10 @@ export default function LeftColumn({ task }: LeftColumnProps) {
                         Instructions
                     </TabsTrigger>
                     <TabsTrigger value="visualization">
-                        Visualization {indicator}
+                        Visualization {visualizationIndicator}
                     </TabsTrigger>
                     <TabsTrigger value="tests">
-                        Tests
+                        Tests {testsIndicator}
                     </TabsTrigger>
                 </TabsList>
                 <div className="mt-4 w-full flex flex-col overflow-y-auto" ref={container}>
