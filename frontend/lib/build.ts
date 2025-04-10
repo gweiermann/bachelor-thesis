@@ -1,4 +1,4 @@
-import { TestCaseResult } from '@/app/task/[name]/stores'
+import { TestCaseResult } from '@/app/courses/[courseId]/chapters/[chapterId]/tasks/[name]/stores'
 import { getTask, TestCase } from './tasks'
 
 export type AnalysisResult = AnalysisResultStep[]
