@@ -1,13 +1,14 @@
 import { WebSocketServer } from 'ws'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
-import stream from 'node:stream'
 import split2 from 'split2'
 
 const wss = new WebSocketServer({ port: 80 });
 
 const maxConnections = 5;
 let connections = 0;
+
+const isDebugMode = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
 
 wss.on('connection', ws => {
     if (connections >= maxConnections) {
@@ -83,21 +84,40 @@ wss.on('connection', ws => {
     });
 });
 
+let idCounter = 0;
+
+function debug(id, msg) {
+    if (isDebugMode) {
+        console.log(`[${id}] ${msg}`)
+    }
+}
+
+function debugError(id, msg, force = false) {
+    if (isDebugMode || force) {
+        console.error(`[${id}] ${msg}`)
+    }
+}
 
 function runBuild(type, presetName, functionBody, onStatusUpdate) {
-    return new Promise((resolve, reject) => {
+    const id = String(idCounter++).padStart(3, '0')
+    debug(id, `Starting build process. Type: ${type}, Preset: ${presetName}`)
 
+    return new Promise((resolve, reject) => {
         const child = spawn(
             'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(functionBody)],
             { cwd: path.join(process.cwd())}
         );
 
         let stderr = ''
-        child.stderr.on('data', data => stderr += data.toString('utf-8'))
+        child.stderr.on('data', data => {
+            stderr += data.toString('utf-8')
+            debugError(id, `${data.toString('utf-8')}`)
+        })
 
         child.stdout
             .pipe(split2())
             .on('data', line => {
+                debug(id, line)
                 if (!line.trim()) {
                     return
                 }
@@ -128,5 +148,8 @@ function runBuild(type, presetName, functionBody, onStatusUpdate) {
             // Will only trigger if resolve haven't been called yet
             reject(new Error('Process closed unexpectedly: ' + stderr))
         })
-    });
+    }).catch(e => {
+        debugError(id, 'Build process failed: ' + e.message)
+        throw e
+    })
 }
