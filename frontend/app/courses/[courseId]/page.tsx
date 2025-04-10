@@ -87,7 +87,7 @@ export default function CoursePage({ params }: { params: { courseId: string } })
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {course.chapters.map((chapter) => (
           <Link
-            href={`/courses/${courseId}/chapters/${chapter.id}`}
+            href={`/courses/${courseId}/${chapter.id}`}
             key={chapter.id}
             className="block transition-transform hover:scale-[1.02]"
           >

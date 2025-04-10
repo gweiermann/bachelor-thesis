@@ -109,7 +109,7 @@ export default function ChapterPage({
             <ChevronRight className="h-4 w-4" />
           </BreadcrumbSeparator>
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/courses/${courseId}/chapters/${chapterId}`}>{chapter.title}</BreadcrumbLink>
+            <BreadcrumbLink href={`/courses/${courseId}/${chapterId}`}>{chapter.title}</BreadcrumbLink>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -120,7 +120,7 @@ export default function ChapterPage({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {chapter.tasks.map((task) => (
           <Link
-            href={`/courses/${courseId}/chapters/${chapterId}/tasks/${task.id}`}
+            href={`/courses/${courseId}/${chapterId}/${task.id}`}
             key={task.id}
             className="block transition-transform hover:scale-[1.02]"
           >
