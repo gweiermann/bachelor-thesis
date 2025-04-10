@@ -6,8 +6,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - CONFIG_PATH=$(pwd)/config
+      - DEBUG=1
     depends_on:
       - registry
+    develop:
+      watch:
+        - action: rebuild
+          path: ./task-runner
+          target: /app
 
   registry:
     image: registry:2
