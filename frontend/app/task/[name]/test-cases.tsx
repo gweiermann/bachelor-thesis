@@ -43,117 +43,6 @@ interface TestSuite {
   testCases?: TestCase[];
 }
 
-// Mock data for demonstration
-const testCases: Record<string, TestSuite> = {
-  public: {
-    name: "Public Tests",
-    totalTests: 15,
-    passedTests: 12,
-    failedTests: 3,
-    testCases: [
-      {
-        id: "p1",
-        name: "Should return correct sum for array of positive numbers",
-        status: "passed",
-        duration: 12,
-      },
-      {
-        id: "p2",
-        name: "Should handle empty arrays",
-        status: "passed",
-        duration: 5,
-      },
-      {
-        id: "p3",
-        name: "Should handle single element arrays",
-        status: "passed",
-        duration: 4,
-      },
-      {
-        id: "p4",
-        name: "Should handle negative numbers",
-        status: "failed",
-        errorMessage: "Expected -5, got -3",
-        duration: 8,
-      },
-      {
-        id: "p5",
-        name: "Should handle large arrays",
-        status: "passed",
-        duration: 15,
-      },
-      {
-        id: "p6",
-        name: "Should handle floating point numbers",
-        status: "failed",
-        errorMessage: "Precision error: Expected 10.5, got 10.499999",
-        duration: 7,
-      },
-      {
-        id: "p7",
-        name: "Should handle mixed positive and negative numbers",
-        status: "passed",
-        duration: 6,
-      },
-      {
-        id: "p8",
-        name: "Should handle zero values",
-        status: "passed",
-        duration: 3,
-      },
-      {
-        id: "p9",
-        name: "Should handle array with all zeros",
-        status: "passed",
-        duration: 4,
-      },
-      {
-        id: "p10",
-        name: "Should handle very large numbers",
-        status: "passed",
-        duration: 9,
-      },
-      {
-        id: "p11",
-        name: "Should handle very small numbers",
-        status: "passed",
-        duration: 5,
-      },
-      {
-        id: "p12",
-        name: "Should handle edge case with MAX_SAFE_INTEGER",
-        status: "passed",
-        duration: 11,
-      },
-      {
-        id: "p13",
-        name: "Should handle edge case with MIN_SAFE_INTEGER",
-        status: "failed",
-        errorMessage: "Overflow error occurred",
-        duration: 10,
-      },
-      {
-        id: "p14",
-        name: "Should maintain original array order",
-        status: "passed",
-        duration: 6,
-      },
-      {
-        id: "p15",
-        name: "Should handle non-numeric values gracefully",
-        status: "passed",
-        duration: 8,
-      },
-    ],
-  },
-  private: {
-    name: "Private Tests",
-    totalTests: 20,
-    passedTests: 20,
-    failedTests: 0,
-  },
-};
-
 export function TestCases() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { result, state, loadingMessage, errorMessage } = useTests()
@@ -162,7 +51,7 @@ export function TestCases() {
     if (!result) {
       return null
     }
-    const grouped = Object.groupBy(result, ({ testCase }) => testCase.suite)
+    const grouped = Object.groupBy(result, ({ suite }) => suite)
     const publicTests = grouped.public || []
     const privateTests = grouped.private || []
     return {
@@ -172,7 +61,7 @@ export function TestCases() {
         failedTests: publicTests.filter(({ passed }) => !passed).length,
         testCases: publicTests.map(({ testCase, passed, output }) => ({
           name: `${testCase.input.join(', ')} \u2192  ${output.join(', ')}`,
-          errorMessage: 'Should be: ' + testCase.expectedOutput.join(', '),
+          errorMessage: 'Should be: ' + testCase.expected.join(', '),
           testCase,
           status: passed ? 'passed' : 'failed',
           duration: 0
@@ -182,10 +71,7 @@ export function TestCases() {
         totalTests: privateTests.length,
         passedTests: privateTests.filter(({ passed }) => passed).length,
         failedTests: privateTests.filter(({ passed }) => !passed).length,
-        testCases: privateTests.map(({ testCase, passed }) => ({
-          name: testCase.input.join(', '),
-          errorMessage: 'Should be: ' + testCase.expectedOutput.join(', '),
-          testCase,
+        testCases: privateTests.map(({ passed }) => ({
           status: passed ? 'passed' : 'failed',
           duration: 0
         }))

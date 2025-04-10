@@ -20,6 +20,7 @@ interface FetchStore<T> {
 export interface TestCaseResult {
     testCase: TestCase
     output: number[]
+    suite: 'public' | 'private'
     passed: boolean
 }
 

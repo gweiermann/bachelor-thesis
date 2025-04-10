@@ -16,17 +16,14 @@ def load_json_string(json_string):
 
 if __name__ == '__main__':
     mode = sys.argv[1]
-    preset = sys.argv[2]
+    preset_name = sys.argv[2]
+    function_bodies = list(map(load_json_string, sys.argv[3:]))
 
-    # print(' '.join(sys.argv[1:]))
-
-    data = config.find_preset(preset)
+    preset = config.find_preset(preset_name)
 
     if mode == 'analyse':
-        function_bodies = list(map(load_json_string, sys.argv[3:]))
-        analyse.entrypoint(data, function_bodies)
+        analyse.entrypoint(preset, function_bodies)
     elif mode == 'test':
-        tests.compile(data['code'])
-        tests.runTests(data['testCases'])
+        tests.entrypoint(preset, function_bodies)
     else:
         raise ValueError("Invalid mode. Use 'analyse' or 'test'.")

@@ -37,6 +37,6 @@ def find_preset(name):
         'h_filename': h_file,
         'analysis': read_json(analysis_config_file),
         'analysis_cpp_filename': analysis_cpp_file,
-        'testcases': read_json(test_config_file),
+        'testCases': read_json(test_config_file),
         'test_cpp_filename': test_cpp_file
     }

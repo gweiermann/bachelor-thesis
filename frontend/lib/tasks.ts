@@ -2,7 +2,7 @@ export interface TestCase {
     id: string
     suite: string
     input: number[]
-    expectedOutput: number[]
+    expected: number[]
 }
 
 export interface Task {

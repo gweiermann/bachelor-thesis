@@ -1,62 +1,23 @@
 #!/usr/bin/env python3
 
-import lldb
-import os
-import subprocess
-import shutil
 from setup import setup_debugger, steps_of_function
 from collectors import CollectorManager
 from postprocessing import PostprocessingManager
 from output import print_result, print_error, print_status
+import preparation
 
+executable_filename = "/tmp/a.out"
 
-main_cpp_filename = "/tmp/main.cpp"
-user_cpp_filename = "/tmp/user.cpp"
-h_filename = "/tmp/user-input.h"
-exe = "/tmp/a.out"
-
-def generate_user_cpp(preset, function_bodies):
-    def prepare_arguments(args):
-        return ', '.join(f"{arg['type']} {arg['name']}" for arg in args)
-    def prepare_function(fn, body):
-        return (fn['returnType'], fn['name'], prepare_arguments(fn['arguments']), body)
-    functions = (prepare_function(fn, body) for fn, body in zip(preset['manifest']['functions'], function_bodies))
-    functions_code = (f"""
-{return_type} {name}({args})
-{{
-    {body}
-}}
-    """.strip() for return_type, name, args, body in functions)
-    return '\n'.join(functions_code)
-    
 def entrypoint(preset, function_bodies):
-    shutil.copyfile(preset['h_filename'], h_filename)
-    shutil.copyfile(preset['analysis_cpp_filename'], main_cpp_filename)
-    user_cpp = generate_user_cpp(preset, function_bodies)
-    with open(user_cpp_filename, 'w') as f:
-        f.write(user_cpp)
-
-    compile()
-    analyse(preset)
-
-def compile():
-    """
-    Compile the C++ code to a binary executable.
-    """
-    print_status("Compiling...")
-    subprocess.run(['clang++-19', '-g', '-c', main_cpp_filename, '-o', '/tmp/main.o'], check=True)
-    subprocess.run(['clang++-19', '-g', '-c', user_cpp_filename, '-o', '/tmp/user.o'], check=True)
-    subprocess.run(['clang++-19', '-g', '-o', exe, '/tmp/main.o', '/tmp/user.o'], check=True)
-    
-
-def analyse(preset):
     try:
+        preparation.compile_target(preset, 'analysis', function_bodies, executable_filename, compile_flags=['-g'])
+        
         function_name = preset['manifest']['entrypointFunction']
         collect_configs = preset['analysis']['collect']
         post_process_configs = preset['analysis'].get('postProcess', {})
 
         print_status("Launching Analysis...")
-        frame, process, thread, debugger = setup_debugger(function_name, exe)
+        frame, process, thread, debugger = setup_debugger(function_name, executable_filename)
 
         collect_manager = CollectorManager.from_dict(collect_configs, frame)
 

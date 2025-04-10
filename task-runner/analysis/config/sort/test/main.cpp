@@ -1,4 +1,5 @@
 #include <iostream>
+#include "user-input.h"
 
 int main() {
     int testCases;
@@ -10,10 +11,11 @@ int main() {
         for (int i = 0; i < n; i++) {
             std::cin >> arr[i];
         }
-        bubbleSort(arr, n);
+        sort(arr, n);
         std::cout << n << " ";
         for (int i = 0; i < n; i++) {
             std::cout << arr[i] << " ";
         }
         delete[] arr;
+    }
 }
