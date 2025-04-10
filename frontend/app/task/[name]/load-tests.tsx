@@ -36,7 +36,6 @@ export default function LoadTests({ task }: LoadTestsProps): null {
 
     useEffect(() => {
         setResult(testResult)
-        console.log('testResult', testResult)
     }, [testResult, setResult])
 
     return null
