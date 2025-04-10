@@ -15,18 +15,20 @@ def chunks(lst):
     yield lst[1:n+1]
     yield from chunks(lst[n+1:])
 
+def test_case_to_stdin(test_case):
+    return str(len(test_case['input'])) + ' ' + ' '.join(map(str, test_case['input']))
+
 def run_tests(test_cases, is_secret):
-    stdin = ' '.join(
-        str(len(test_case['input'])) + ' ' + ' '.join(map(str, test_case['input']))
-        for test_case in test_cases
-    )
+    stdin = str(len(test_cases)) + ' ' + ' '.join(map(test_case_to_stdin, test_cases))
     p = subprocess.run([executable_filename], input=stdin, text=True, capture_output=True)
     if p.returncode != 0:
         print_error("Test execution failed: " + p.stderr)
         return
     stdout = list(map(int, p.stdout.strip().split(' ')))
+    print_status('stdin: ' + stdin)
+    print_status('stdout: ' + p.stdout)
     output_values = chunks(stdout)
-    
+
     if is_secret:
         return [{
             'suite': 'private',
