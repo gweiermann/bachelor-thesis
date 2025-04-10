@@ -109,8 +109,8 @@ export function TestCases() {
     .filter((test) => test.status === "failed")
     .slice(0, 3);
 
-  const handleVisualize = (testId: string) => {
-    console.log(`Visualizing test: ${testId}`);
+  const handleVisualize = (input: number[]) => {
+    console.log(`Visualizing test: ${input}`);
     // Implementation for visualization would go here
   };
 
@@ -163,9 +163,9 @@ export function TestCases() {
                 <div className="text-sm font-medium text-destructive mb-2">
                   Failed Tests ({testCases.public.failedTests})
                 </div>
-                {publicFailedTests.map((test) => (
+                {publicFailedTests.map((test, index) => (
                   <div
-                    key={test.id}
+                    key={index}
                     className="p-3 bg-red-50 border border-red-200 rounded-md"
                   >
                     <div className="flex justify-between items-start">
@@ -182,7 +182,7 @@ export function TestCases() {
                         size="sm"
                         variant="outline"
                         className="ml-2 flex-shrink-0"
-                        onClick={() => handleVisualize(test.id)}
+                        onClick={() => handleVisualize(test.testCase.input)}
                       >
                         <Eye className="h-3.5 w-3.5 mr-1" />
                         Visualize
@@ -229,9 +229,9 @@ export function TestCases() {
                   <TabsContent value="failed" className="space-y-4 mt-4">
                     {testCases.public.testCases
                       .filter((test) => test.status === "failed")
-                      .map((test) => (
+                      .map((test, index) => (
                         <div
-                          key={test.id}
+                          key={index}
                           className="p-4 bg-red-50 border border-red-200 rounded-md"
                         >
                           <div className="flex justify-between items-start">
@@ -251,7 +251,7 @@ export function TestCases() {
                               size="sm"
                               variant="outline"
                               className="ml-2 flex-shrink-0"
-                              onClick={() => handleVisualize(test.id)}
+                              onClick={() => handleVisualize(test.testCase.input)}
                             >
                               <Eye className="h-3.5 w-3.5 mr-1" />
                               Visualize
@@ -263,9 +263,9 @@ export function TestCases() {
                   <TabsContent value="passed" className="space-y-4 mt-4">
                     {testCases.public.testCases
                       .filter((test) => test.status === "passed")
-                      .map((test) => (
+                      .map((test, index) => (
                         <div
-                          key={test.id}
+                          key={index}
                           className="p-4 bg-green-50 border border-green-200 rounded-md"
                         >
                           <div className="flex items-start gap-2">
