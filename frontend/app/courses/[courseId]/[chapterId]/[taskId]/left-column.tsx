@@ -40,7 +40,7 @@ export default function LeftColumn({ task }: LeftColumnProps) {
     return (
         <div className="w-full">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                {task.longName}
+                {task.title}
             </h2>
             <Tabs defaultValue="instructions" className="flex flex-col overflow-auto">
                 <TabsList className="grid w-full grid-cols-3">
