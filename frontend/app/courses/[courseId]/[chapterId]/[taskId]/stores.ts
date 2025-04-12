@@ -33,23 +33,23 @@ interface VisualizationStore extends FetchStore<AnalysisResult> {
 }
 
 export interface UserCodeStore {
-    code?: string
-    codeToBeRun?: string
+    functionBodies?: string[]
+    functionBodiesToBeRun?: string[]
     isDirty: boolean
-    setCode: (code: string) => void
+    setFunctionBodies: (functionBodies: string[]) => void
     runCode: () => void
 }
 
 export const useUserCode = create<UserCodeStore>((set, get) => ({
-    code: null,
-    codeToBeRun: null,
+    functionBodies: null,
+    functionBodiesToBeRun: null,
     isDirty: false,
     
-    setCode(code: string) {
-        set(state => ({ code, isDirty: code !== state.codeToBeRun }))
+    setFunctionBodies(functionBodies: string[]) {
+        set(state => ({ functionBodies, isDirty: functionBodies !== state.functionBodiesToBeRun }))
     },
     runCode() {
-        set(state => ({ codeToBeRun: state.code, isDirty: false }))
+        set(state => ({ functionBodiesToBeRun: state.functionBodies, isDirty: false }))
     }
 }))
 
