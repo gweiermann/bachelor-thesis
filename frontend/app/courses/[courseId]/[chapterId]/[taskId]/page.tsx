@@ -1,4 +1,4 @@
-import { getTask } from '@/lib/db'
+import { getChapter, getCourse, getTask } from '@/lib/db'
 import Task from './task'
 import SimpleBreadcrumb from '@/components/ui/simple-breadcrumb'
 
@@ -9,19 +9,13 @@ interface PageProps {
 export default async function Page({ params }: PageProps) {
     const { courseId, chapterId, taskId } = await params
     const task = await getTask(courseId, chapterId, taskId)
+    const course = await getCourse(courseId)
+    const chapter = await getChapter(courseId, chapterId)
 
     if (!task) {
         return <div>Task not found!</div>
     }
-
-    const course = {
-        title: 'Course Title', // FIXME: Replace with actual course title
-    }
-
-    const chapter = {
-        title: 'Chapter Title', // FIXME: Replace with actual chapter title
-    }
-
+    
     return (
         <div>
             <div className="mx-4 mt-4">
