@@ -1,11 +1,11 @@
 'use client'
 
-import { type Task } from '@/lib/tasks'
 import LeftColumn from './left-column'
 import RightColumn from './right-column'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import LoadAnalysis from './load-analysis'
 import LoadTests from './load-tests'
+import { type Task } from '@/lib/db'
 
 interface TaskProps {
     task: Task

@@ -16,7 +16,7 @@ export default function LoadTests({ task }: LoadTestsProps): null {
 
     const { data: testResult, isLoading, error } = useSWR(
         ['testCode', task.name, codeToBeRun],
-        () => runTests(task.name, codeToBeRun, setLoadingMessage),
+        () => runTests(task, codeToBeRun, setLoadingMessage),
         { revalidateOnFocus: false, suspense: false }
     )
 

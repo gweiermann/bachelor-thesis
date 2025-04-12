@@ -16,7 +16,7 @@ export default function LoadAnalysis({ task }: LoadAnalysisProps): null {
 
     const { data: analysisResult, isLoading, error } = useSWR(
         ['analyzeCode', task.name, codeToBeRun],
-        () => runAnalysis(task.name, codeToBeRun, setLoadingMessage),
+        () => runAnalysis(task, codeToBeRun, setLoadingMessage),
         { revalidateOnFocus: false, suspense: false }
     )
 

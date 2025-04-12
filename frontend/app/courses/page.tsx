@@ -1,35 +1,11 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { getCourses } from "@/lib/db"
 
-export default function Home() {
+export default async function Home() {
   // Mock data for courses
-  const courses = [
-    {
-      id: "gip",
-      title: "Grundlagen in Programmiersprachen (GIP)",
-      description: "Learn the fundamentals of programming languages",
-      progress: 65,
-    },
-    {
-      id: "ads",
-      title: "Algorithmen und Datenstrukturen (ADS)",
-      description: "Master algorithms and data structures",
-      progress: 30,
-    },
-    {
-      id: "db",
-      title: "Datenbanken",
-      description: "Introduction to database systems and SQL",
-      progress: 80,
-    },
-    {
-      id: "os",
-      title: "Betriebssysteme",
-      description: "Understanding operating systems concepts",
-      progress: 45,
-    },
-  ]
+  const courses = await getCourses()
 
   return (
     <main className="container mx-auto py-8 px-4">

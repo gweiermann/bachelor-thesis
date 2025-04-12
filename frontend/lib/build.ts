@@ -1,5 +1,5 @@
-import { TestCaseResult } from '@/app/courses/[courseId]/[chapterId]/[taskName]/stores'
-import { getTask, TestCase } from './tasks'
+import { TestCaseResult } from '@/app/courses/[courseId]/[chapterId]/[taskId]/stores'
+import { getTask, Task } from './db'
 
 export type AnalysisResult = AnalysisResultStep[]
 export interface AnalysisResultStep {
@@ -14,14 +14,9 @@ export type AnalysisResultStepEvent =
     { type: 'swap', index1: number, index2: number } | 
     { type: 'replace', index: number, oldValue: number, newValue: number }
 
-export async function runAnalysis(taskName: string, codeWithoutPrototype: string, onStatusUpdate: (message: string) => void): Promise<AnalysisResult> | never {  
+export async function runAnalysis(task: Task, codeWithoutPrototype: string, onStatusUpdate: (message: string) => void): Promise<AnalysisResult> | never {  
     if (!codeWithoutPrototype) {
         return null
-    }
-
-    const task = await getTask(taskName)
-    if (!task) {
-        throw new Error("Task not found!")
     }
 
     return runBuild({
@@ -31,14 +26,9 @@ export async function runAnalysis(taskName: string, codeWithoutPrototype: string
     }, onStatusUpdate)
 }
 
-export async function runTests(taskName: string, codeWithoutPrototype: string, onStatusUpdate: (message: string) => void): Promise<TestCaseResult[]> | never {  
+export async function runTests(task: Task, codeWithoutPrototype: string, onStatusUpdate: (message: string) => void): Promise<TestCaseResult[]> | never {  
     if (!codeWithoutPrototype) {
         return null
-    }
-
-    const task = await getTask(taskName)
-    if (!task) {
-        throw new Error("Task not found!")
     }
 
     return runBuild({

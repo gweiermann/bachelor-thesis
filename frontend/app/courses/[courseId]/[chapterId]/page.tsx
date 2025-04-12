@@ -9,110 +9,34 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Badge } from "@/components/ui/badge"
 import { ChevronRight, Home } from "lucide-react"
+import { getChapter, getCourse } from "@/lib/db"
+import SimpleBreadcrumb from "@/components/ui/simple-breadcrumb"
 
-// Mock data for courses, chapters, and tasks
-const coursesData = {
-  gip: {
-    title: "Grundlagen in Programmiersprachen (GIP)",
-    chapters: {
-      variables: {
-        title: "Variables and Data Types",
-        tasks: [
-          { id: "integers", title: "Working with Integers", status: "completed" },
-          { id: "floats", title: "Floating Point Numbers", status: "completed" },
-          { id: "strings", title: "String Manipulation", status: "completed" },
-          { id: "booleans", title: "Boolean Logic", status: "completed" },
-        ],
-      },
-      "control-flow": {
-        title: "Control Flow",
-        tasks: [
-          { id: "if-else", title: "If-Else Statements", status: "completed" },
-          { id: "switch", title: "Switch Statements", status: "completed" },
-          { id: "loops", title: "Loops", status: "in-progress" },
-          { id: "break-continue", title: "Break and Continue", status: "not-started" },
-        ],
-      },
-      // Other chapters...
-    },
-  },
-  ads: {
-    title: "Algorithmen und Datenstrukturen (ADS)",
-    chapters: {
-      sorting: {
-        title: "Sorting",
-        tasks: [
-          { id: "bubble-sort", title: "Bubble Sort", status: "completed" },
-          { id: "insertion-sort", title: "Insertion Sort", status: "completed" },
-          { id: "selection-sort", title: "Selection Sort", status: "in-progress" },
-          { id: "quick-sort", title: "Quick Sort", status: "not-started" },
-          { id: "merge-sort", title: "Merge Sort", status: "not-started" },
-        ],
-      },
-      "sorting-recursion": {
-        title: "Sorting with Recursion",
-        tasks: [
-          { id: "recursive-quick-sort", title: "Recursive Quick Sort", status: "completed" },
-          { id: "recursive-merge-sort", title: "Recursive Merge Sort", status: "in-progress" },
-          { id: "heap-sort", title: "Heap Sort", status: "not-started" },
-        ],
-      },
-      "red-black-tree": {
-        title: "Red-Black Trees",
-        tasks: [
-          { id: "rb-insertion", title: "Red-Black Tree Insertion", status: "in-progress" },
-          { id: "rb-deletion", title: "Red-Black Tree Deletion", status: "not-started" },
-          { id: "rb-balancing", title: "Red-Black Tree Balancing", status: "not-started" },
-        ],
-      },
-      // Other chapters...
-    },
-  },
-  // Other courses...
-}
-
-export default function ChapterPage({
+export default async function ChapterPage({
   params,
 }: {
-  params: { courseId: string; chapterId: string }
+  params: Promise<{ courseId: string; chapterId: string }>
 }) {
-  const { courseId, chapterId } = params
-  const course = coursesData[courseId as keyof typeof coursesData]
+  const { courseId, chapterId } = await params
+  const course = await getCourse(courseId)
 
   if (!course) {
     return <div>Course not found</div>
   }
 
-  const chapter = course.chapters[chapterId as keyof typeof course.chapters]
+  const chapter = await getChapter(courseId, chapterId)
 
   if (!chapter) {
     return <div>Chapter not found</div>
   }
 
   return (
-    <main className="container mx-auto py-8 px-4">
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">
-              <Home className="h-4 w-4 mr-1" />
-              Home
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator>
-            <ChevronRight className="h-4 w-4" />
-          </BreadcrumbSeparator>
-          <BreadcrumbItem>
-            <BreadcrumbLink href={`/courses/${courseId}`}>{course.title}</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator>
-            <ChevronRight className="h-4 w-4" />
-          </BreadcrumbSeparator>
-          <BreadcrumbItem>
-            <BreadcrumbLink href={`/courses/${courseId}/${chapterId}`}>{chapter.title}</BreadcrumbLink>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+    <div className="container mx-auto py-8 px-4">
+
+      <SimpleBreadcrumb items={[
+        { label: course.title, href: `/courses/${courseId}` },
+        { label: chapter.title, href: `/courses/${courseId}/${chapterId}` }
+      ]} />
 
       <h1 className="text-3xl font-bold mb-2">{chapter.title}</h1>
       <p className="text-muted-foreground mb-8">Complete the following tasks to master this chapter</p>
@@ -144,7 +68,7 @@ export default function ChapterPage({
           </Link>
         ))}
       </div>
-    </main>
+    </div>
   )
 }
 
