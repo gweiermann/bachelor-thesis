@@ -27,36 +27,94 @@ function highlightLines(editor: EditorType, lines: number[]) {
 }
 
 interface EditorProps {
-    functionProtoype: string
-    placeholder: string
-    onChange?: (value: string) => void
+    functionPrototypes: string[]
+    initialFunctionBodies: string[]
+    onChange?: (value: string[]) => void
     activeLines?: number[]
 }
 
-export default function Editor({ functionProtoype, placeholder, onChange, activeLines = [] }: EditorProps) {
+function getNumberOfLines(code: string) {
+    return (code.match(/\n/g) || []).length + 1
+}
+
+type Range = [
+    number, // startLineNumber
+    number, // startColumn
+    number, // endLineNumber
+    number  // endColumn
+]
+
+interface RestrictedRanges {
+    ranges: Range[]
+    result: string
+}
+
+type RangeString = [ 'restrict', string ] | [ 'mutable', string]
+
+/**
+ * Concatenates all the strings in the array into a single string
+ * It will also generate a range for each argument which says it should be mutable (the monaco plugin will restrict everything else)
+ * @param strings - The strings to concatenate
+ * @return - The concatenated string and the ranges for each argument which position is odd
+ * @example
+ *  generateRestrictedRanges(['restrict', "will be restricted "], ['mutable', "won't be \n restricted "], ['restrict', "will be restricted again"]])
+ *  will generate:
+ *  { "result":"will be restricted won't be \\n restricted will be restricted again", "ranges": [[1,21,2,13]] }
+ */
+function generateRestrictedRanges(strings: RangeString[]): RestrictedRanges {
+    const ranges: Range[] = []
+    let currentLine = 1
+    let currentColumn = 1
+    strings.forEach(([type, string]) => {
+        const lines = string.split('\n')
+        const lastLine = lines.length - 1
+        let lastColumn = lines[lastLine].length + 1
+
+        if (lines.length === 1) {
+            lastColumn += currentColumn
+        }
+
+        if (type === 'mutable') {
+            ranges.push([currentLine, currentColumn, currentLine + lastLine, lastColumn])
+        }
+
+        currentLine += lastLine
+        currentColumn = lastColumn
+    })
+    return {
+        result: strings.map(([, str]) => str).join(''),
+        ranges,
+    }
+}
+
+
+export default function Editor({ functionPrototypes, initialFunctionBodies, onChange, activeLines = [] }: EditorProps) {
     const monacoRef = useRef(null);
     const previousLineDecorationRef = useRef(null)
+    const constrainedInstance = useRef(null)
 
-    function handleEditorDidMount(editor: EditorType, monaco: Monaco) {
-        monacoRef.current = editor;
+    const { result: defaultValue, ranges } = generateRestrictedRanges(functionPrototypes.flatMap((functionPrototype, index) => ([
+        [ 'restrict', functionPrototype + '\n{' ],
+        [ 'mutable', '\n    ' + initialFunctionBodies[index] ],
+        [ 'restrict', '\n}' + (index === functionPrototypes.length - 1 ? '' : '\n\n') ]
+    ])))
 
-        const constrainedInstance = constrainedEditor(monaco);
-        const model = editor.getModel();
-        constrainedInstance.initializeIn(editor);
+    
 
-        const numberOfLines = (placeholder.match(/\n/g) || []).length + 1;
+    const handleEditorDidMount = (editor: EditorType, monaco: Monaco) => {
+        monacoRef.current = editor
 
-        constrainedInstance.addRestrictionsTo(model, [
-            {
-                range: [2, 2, 3 + numberOfLines, 1],
-                allowMultiline: true,
-            }
-        ])
+        constrainedInstance.current = constrainedEditor(monaco)
+        const model = editor.getModel()
+        constrainedInstance.current.initializeIn(editor)
+        constrainedInstance.current.toggleDevMode()
 
-        onChange?.(model.getValue())
+        constrainedInstance.current.addRestrictionsTo(model, ranges.map((range, index) => ({
+            range,
+            allowMultiline: true,
+            label: `body${index}`
+        })))
     }
-
-    const defaultValue = `${functionProtoype}\n{\n    ${placeholder}\n}`
 
     useEffect(() => {
         previousLineDecorationRef.current?.clear()
@@ -65,6 +123,12 @@ export default function Editor({ functionProtoype, placeholder, onChange, active
             monacoRef.current.revealLine(activeLines[0])
         }
     }, [activeLines, monacoRef, previousLineDecorationRef])
+
+    const handleChange = () => {
+        const functionBodies = monacoRef.current.getModel().getValueInEditableRanges()
+        const bodiesAsArray = functionPrototypes.map((_, index) => functionBodies['body' + index]) as string[]
+        onChange?.(bodiesAsArray)
+    }
 
     return (
         <MonacoEditor
@@ -78,7 +142,7 @@ export default function Editor({ functionProtoype, placeholder, onChange, active
                 },
                 scrollBeyondLastLine: false
             }}
-            onChange={onChange}
+            onChange={handleChange}
         />
     )
 }

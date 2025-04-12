@@ -1,30 +1,21 @@
 import { Button } from "@/components/ui/button"
-import { Task } from "@/lib/tasks"
 import Editor from "@/components/editor/editor"
 import { Maximize2 } from "lucide-react"
 import { useUserCode, useVisualization } from "./stores"
+import { Task } from "@/lib/db"
 
 interface RightColumnProps {
     task: Task
 }
 
 export default function RightColumn({ task }: RightColumnProps) {
-    const defaultCode = `for (int i = 0; i < n-1; i++) { 
-        for (int j = 0; j < n-i-1; j++) {
-            if (arr[j] > arr[j+1]) {
-                int tmp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = tmp;
-            }
-        }
-    }`
+    const defaultCode = `// todo: implement`
 
-    const { runCode, isDirty, setCode } = useUserCode()
+    const { runCode, isDirty, setFunctionBodies } = useUserCode()
     const { activeLines } = useVisualization()
 
-    function handleChange(codeFromEditor: string) {
-        const codeWithoutPrototype = codeFromEditor.split('\n').slice(2, -1).join('\n')
-        setCode(codeWithoutPrototype)
+    function handleChange(functionBodies: string[]) {
+        setFunctionBodies(functionBodies)
     }
 
     return ( 
@@ -36,8 +27,8 @@ export default function RightColumn({ task }: RightColumnProps) {
             </div>
             <div className="flex-1">
                 <Editor
-                    functionProtoype={task.functionPrototype}
-                    placeholder={defaultCode}
+                    functionPrototypes={task.functionPrototypes}
+                    initialFunctionBodies={task.functionPrototypes.map(() => defaultCode)}
                     onChange={handleChange}
                     activeLines={isDirty ? [] : activeLines} />
             </div>

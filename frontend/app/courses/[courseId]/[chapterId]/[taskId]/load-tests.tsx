@@ -11,24 +11,24 @@ interface LoadTestsProps {
 export default function LoadTests({ task }: LoadTestsProps): null {
     const firstLoadingMessage = 'Waiting for compilation...'
 
-    const { codeToBeRun } = useUserCode()
+    const { functionBodiesToBeRun } = useUserCode()
     const {  setLoadingMessage, setIsLoading, setErrorMessage, setResult } = useTests()
 
     const { data: testResult, isLoading, error } = useSWR(
-        ['testCode', task.name, codeToBeRun],
-        () => runTests(task, codeToBeRun, setLoadingMessage),
+        ['testCode', task.name, functionBodiesToBeRun],
+        () => runTests(task, functionBodiesToBeRun, setLoadingMessage),
         { revalidateOnFocus: false, suspense: false }
     )
 
     useEffect(() => {
-        if (isLoading && codeToBeRun) {
+        if (isLoading && functionBodiesToBeRun) {
             setLoadingMessage(firstLoadingMessage)
             setIsLoading(true)
         } else {
             setLoadingMessage(null)
             setIsLoading(false)
         }
-    }, [isLoading, setIsLoading, setLoadingMessage, codeToBeRun])
+    }, [isLoading, setIsLoading, setLoadingMessage, functionBodiesToBeRun])
 
     useEffect(() => {
         setErrorMessage(error?.message)
