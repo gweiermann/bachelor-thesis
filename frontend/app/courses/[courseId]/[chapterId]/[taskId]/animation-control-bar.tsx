@@ -19,6 +19,7 @@ interface AnimationControlBarProps {
   className?: string
   currentStepIndex: number
   timePerStep: number
+  resetProp: string
 }
 
 export default function AnimationControlBar({
@@ -28,6 +29,7 @@ export default function AnimationControlBar({
   onPlayPause,
   onStepChange,
   onSpeedChange,
+  resetProp,
   className = "",
 }: AnimationControlBarProps) {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -41,15 +43,11 @@ export default function AnimationControlBar({
 
   const speedOptions = [0.5, 0.75, 1, 1.5, 2]
 
-  useEffect(() => setCurrentStep(0), [])
+  useEffect(() => setCurrentStep(0), [resetProp])
 
   useEffect(() => {
     onSpeedChange?.(playbackSpeed)
   })
-
-  useEffect(() => {
-    setCurrentStep(currentStepIndex)
-  }, [currentStepIndex])
 
   useEffect(() => {
     onPlayPause?.(isPlaying);
@@ -78,7 +76,7 @@ export default function AnimationControlBar({
     }    
   }, [currentStep, isPlaying, derivedTimePerStep, incrementStepByPlayback])
 
-  const handlePlayPauseRestart = () => {
+  const handlePlayPauseRestart = useCallback(() => {
     if (finished) {
       setCurrentStep(0)
     } else {
@@ -88,21 +86,21 @@ export default function AnimationControlBar({
         incrementStepByPlayback()
       }
     }
-  }
+  }, [finished, isPlaying, incrementStepByPlayback])
 
-  const handlePrevStep = () => {
+  const handlePrevStep = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1)
       setIsPlaying(false)
     }
-  };
+  }, [currentStep]);
 
-  const handleNextStep = () => {
+  const handleNextStep = useCallback(() => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1)
       setIsPlaying(false)
     }
-  };
+  }, [currentStep, totalSteps]);
 
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed)

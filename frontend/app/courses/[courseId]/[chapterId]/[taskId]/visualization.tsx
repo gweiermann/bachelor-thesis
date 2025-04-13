@@ -129,11 +129,7 @@ export default function Visualization({ task }: VisualizationProps) {
         ]
     , [steps])
 
-    useEffect(() => {
-        if (result) {
-            setCurrentStepIndex(0)
-        }
-    }, [result])
+    const resetProp = useMemo(() => JSON.stringify(steps?.map(step => step.myArray)), [steps])  // force rerender on reset
 
     // useEffect(() => {
     //     console.log('analysis', analysis)
@@ -232,6 +228,7 @@ export default function Visualization({ task }: VisualizationProps) {
                     currentStepIndex={currentStepIndex}
                     onStepChange={setCurrentStepIndex}
                     onSpeedChange={setPlaybackSpeed}
+                    resetProp={resetProp} // force rerender on reset
                 />
             </div>
         </div>
