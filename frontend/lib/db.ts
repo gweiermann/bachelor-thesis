@@ -6,7 +6,7 @@ export interface TestCase {
 }
 
 export type TaskStatus = 'completed' | 'in-progress' | 'not-started'
-
+ 
 const db = [
     {
         id: "ads",
@@ -108,6 +108,8 @@ export interface Task {
     status: TaskStatus,
     functionPrototypes: string[]
     presetName: string
+    courseId: string
+    chapterId: string
 }
 
 
@@ -126,8 +128,13 @@ export async function getChapter(courseId: string, chapterId: string): Promise<C
 }
 
 export async function getTask(courseId: string, chapterId: string, taskId: string): Promise<Task> {
-    return db
+    const task = db
         .find(({id}) => id === courseId)
         ?.chapters.find(({id}) => id === chapterId)
         ?.tasks.find(({id}) => id === taskId)
+    return {
+        ...task,
+        courseId,
+        chapterId
+    }
 }

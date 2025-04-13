@@ -3,19 +3,35 @@ import Editor from "@/components/editor/editor"
 import { Maximize2 } from "lucide-react"
 import { useUserCode, useVisualization } from "./stores"
 import { Task } from "@/lib/db"
+import { useMemo, useState } from "react"
 
 interface RightColumnProps {
     task: Task
 }
 
 export default function RightColumn({ task }: RightColumnProps) {
-    const defaultCode = `// todo: implement`
-
     const { runCode, isDirty, setFunctionBodies } = useUserCode()
     const { activeLines } = useVisualization()
+    const [initialFunctionBodies, setInitialFunctionBodies] = useState(null)
+    const storageKey = useMemo(() => `functionBodies:${task.courseId}/${task.chapterId}/${task.id}`, [task])
+
+    if (!initialFunctionBodies) {
+
+        const initialCode = `// todo: implement`
+
+        // Use localStorage to persist the initial function bodies across reloads
+        const fromStorage = typeof window !== 'undefined' && JSON.parse(localStorage?.getItem(storageKey) ?? 'null')
+
+        const codes = task.functionPrototypes
+            .map((_, index) => fromStorage?.[index] ?? initialCode) // use fromStorage if available, otherwise use initialCode
+            .map(code => !code.trim() ? initialCode : code)         // if the code is empty, use initialCode
+            .map(code => '\n    ' + code.trim())                    // indent the code
+        setInitialFunctionBodies(codes)
+    }
 
     function handleChange(functionBodies: string[]) {
         setFunctionBodies(functionBodies)
+        localStorage.setItem(storageKey, JSON.stringify(functionBodies))
     }
 
     return ( 
@@ -28,7 +44,7 @@ export default function RightColumn({ task }: RightColumnProps) {
             <div className="flex-1">
                 <Editor
                     functionPrototypes={task.functionPrototypes}
-                    initialFunctionBodies={task.functionPrototypes.map(() => defaultCode)}
+                    initialFunctionBodies={initialFunctionBodies}
                     onChange={handleChange}
                     activeLines={isDirty ? [] : activeLines} />
             </div>
