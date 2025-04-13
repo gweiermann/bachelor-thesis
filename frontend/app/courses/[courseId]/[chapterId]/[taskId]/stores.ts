@@ -1,7 +1,6 @@
-import { create, StateCreator, StoreApi, UseBoundStore, useStore } from 'zustand'
-import { AnalysisResult } from '@/lib/code-analysis';
-import { TestCase } from '@/lib/tasks';
-
+import { AnalysisResult } from '@/lib/build'
+import { TestCase } from '@/lib/db'
+import { create, type StateCreator } from 'zustand'
 export type VisualizationType = 'sort'
 export type State = 'unrun' | 'loading' | 'ready' | 'error'
 
@@ -40,18 +39,20 @@ export interface UserCodeStore {
     runCode: () => void
 }
 
-export const useUserCode = create<UserCodeStore>((set, get) => ({
-    functionBodies: null,
-    functionBodiesToBeRun: null,
-    isDirty: false,
-    
-    setFunctionBodies(functionBodies: string[]) {
-        set(state => ({ functionBodies, isDirty: functionBodies !== state.functionBodiesToBeRun }))
-    },
-    runCode() {
-        set(state => ({ functionBodiesToBeRun: state.functionBodies, isDirty: false }))
-    }
-}))
+export const useUserCode = create<UserCodeStore>(
+    (set, get) => ({
+        functionBodies: null,
+        functionBodiesToBeRun: null,
+        isDirty: false,
+        
+        setFunctionBodies(functionBodies: string[]) {
+            set(state => ({ functionBodies, isDirty: functionBodies !== state.functionBodiesToBeRun }))
+        },
+        runCode() {
+            set(state => ({ functionBodiesToBeRun: state.functionBodies, isDirty: false }))
+        }
+    })
+)
 
 export const useFetchStore = <T>(
     set: Parameters<StateCreator<FetchStore<T>>>[0],

@@ -4,7 +4,7 @@
 import { constrainedEditor } from "constrained-editor-plugin";
 import MonacoEditor, { type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useMemo } from 'react'
 import './style.css'
 
 type EditorType = editor.IStandaloneCodeEditor
@@ -33,23 +33,19 @@ interface EditorProps {
     activeLines?: number[]
 }
 
-function getNumberOfLines(code: string) {
-    return (code.match(/\n/g) || []).length + 1
+interface Range {
+    startLineNumber: number
+    startColumn: number
+    endLineNumber: number
+    endColumn: number
 }
-
-type Range = [
-    number, // startLineNumber
-    number, // startColumn
-    number, // endLineNumber
-    number  // endColumn
-]
 
 interface RestrictedRanges {
     ranges: Range[]
     result: string
 }
 
-type RangeString = [ 'restrict', string ] | [ 'mutable', string]
+type RangeString = [ 'restrict', string ] | [ 'mutable', string] | [ 'mutable-dont-track', string ]
 
 /**
  * Concatenates all the strings in the array into a single string
@@ -75,7 +71,12 @@ function generateRestrictedRanges(strings: RangeString[]): RestrictedRanges {
         }
 
         if (type === 'mutable') {
-            ranges.push([currentLine, currentColumn, currentLine + lastLine, lastColumn])
+            ranges.push({
+                startLineNumber: currentLine,
+                startColumn: currentColumn,
+                endLineNumber: currentLine + lastLine,
+                endColumn: lastColumn
+            })
         }
 
         currentLine += lastLine
@@ -93,13 +94,13 @@ export default function Editor({ functionPrototypes, initialFunctionBodies, onCh
     const previousLineDecorationRef = useRef(null)
     const constrainedInstance = useRef(null)
 
-    const { result: defaultValue, ranges } = generateRestrictedRanges(functionPrototypes.flatMap((functionPrototype, index) => ([
-        [ 'restrict', functionPrototype + '\n{' ],
-        [ 'mutable', '\n    ' + initialFunctionBodies[index] ],
-        [ 'restrict', '\n}' + (index === functionPrototypes.length - 1 ? '' : '\n\n') ]
-    ])))
-
-    
+    const { result: defaultValue, ranges } = useMemo(
+        () => generateRestrictedRanges(functionPrototypes.flatMap((functionPrototype, index) => ([
+            [ 'restrict', functionPrototype + '\n{' ],
+            [ 'mutable', initialFunctionBodies?.[index] ?? '' ],
+            [ 'restrict', '\n}' + (index === functionPrototypes.length - 1 ? '' : '\n\n') ]
+        ]))
+    ), [functionPrototypes, initialFunctionBodies])
 
     const handleEditorDidMount = (editor: EditorType, monaco: Monaco) => {
         monacoRef.current = editor
@@ -110,7 +111,7 @@ export default function Editor({ functionPrototypes, initialFunctionBodies, onCh
         constrainedInstance.current.toggleDevMode()
 
         constrainedInstance.current.addRestrictionsTo(model, ranges.map((range, index) => ({
-            range,
+            range: [range.startLineNumber, range.startColumn, range.endLineNumber, range.endColumn],
             allowMultiline: true,
             label: `body${index}`
         })))
@@ -140,7 +141,8 @@ export default function Editor({ functionPrototypes, initialFunctionBodies, onCh
                 minimap: {
                     enabled: false
                 },
-                scrollBeyondLastLine: false
+                scrollBeyondLastLine: false,
+                tabSize: 4
             }}
             onChange={handleChange}
         />
