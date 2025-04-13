@@ -49,13 +49,15 @@ def setup_debugger(function_name, executable_filename):
 
 
 def steps_of_function(frame, process, thread):
-    frame_id = frame.GetFrameID()
+    wanted_filename = frame.GetLineEntry().GetFileSpec().GetFilename()
 
     while process.GetState() == lldb.eStateStopped:
         frame = thread.GetFrameAtIndex(0)
-        if (frame.GetFrameID() != frame_id):
-            return
+        filename = frame.GetLineEntry().GetFileSpec().GetFilename()
+
+        if (wanted_filename != filename):
+            thread.StepOut()
 
         yield frame
 
-        thread.StepOver()
+        thread.StepInto()

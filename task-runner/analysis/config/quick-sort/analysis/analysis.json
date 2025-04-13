@@ -1,0 +1,36 @@
+{
+    "collect": [
+        {
+            "type": "arrayWatcher",
+            "parameters": {
+                "name": "arr",
+                "size": "n"
+            },
+            "key": "array"
+        },
+        {
+            "type": "currentLine",
+            "key": "line"
+        },
+        {
+            "type": "currentScope",
+            "key": "scope"
+        }
+    ],
+    "postProcess": [
+        {
+            "type": "skipInterSwappingSteps",
+            "parameters": {
+                "array": "array"
+            },
+            "key": "skippedStep"
+        },
+        {
+            "type": "keepTrackOfItems",
+            "parameters": {
+                "array": "array"
+            },
+            "key": "event"
+        }
+    ]
+}
