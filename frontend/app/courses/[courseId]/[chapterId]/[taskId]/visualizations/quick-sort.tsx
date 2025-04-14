@@ -1,10 +1,44 @@
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import { useMemo } from "react";
+
+function addRecursionStages(steps) {
+    if (!steps.length) return []
+    let stages = [
+        {
+            left: 0,
+            right: steps[0].array.length - 1,
+            pivot:  steps[0].array.length - 1
+        }
+    ]
+    return [
+        { ...steps[0], recursionStages: stages },
+        ...steps.slice(1).map(step => {
+            if (step.recursion) {
+                const event = step.recursion
+                if (event.type === 'step_in') {
+                    stages.push({
+                        left: step.scope.low,
+                        right: step.scope.high,
+                        pivot: step.scope.high
+                    })
+                } else if (event.type === 'step_out') {
+                    stages.pop()
+                } else {
+                    throw new Error('Unknown event type: ' + event.type)
+                }
+            }
+            return { ...step, recursionStages: stages.slice() }
+        })
+    ]
+}
 
 export default function QuickSortVisualization({ steps, timePerStep, currentStepIndex}) {
+    const mySteps = useMemo(() => addRecursionStages(steps), [steps])
+    console.log(mySteps.map(steps => steps.recursionStages))
     return (
         <ul className="flex space-x-4">
-            {steps[currentStepIndex].myArray.map((item, index) => 
+            {mySteps[currentStepIndex].myArray.map((item, index) => 
                 <motion.li
                     key={item.orderId}
                     layout

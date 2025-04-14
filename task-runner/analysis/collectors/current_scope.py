@@ -8,7 +8,7 @@ class CurrentScope(Collector):
 
     def pre_step(self, frame):
         self.current_scope = self.previous_scope
-        varlist = frame.GetVariables(False, True, False, False)
+        varlist = frame.GetVariables(True, True, False, False)
         self.previous_scope = {var.GetName(): var.GetValue() for var in varlist}
 
     def step(self, frame):

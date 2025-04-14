@@ -27,34 +27,37 @@ type AnnotatedAnalsisResult = AnnotatedAnalsisResultStep[]
 function addIdsToItems(analysis: AnalysisResult): AnnotatedAnalsisResult {
     if (!analysis.length) return []
     let id = 0
-    let current = { ...analysis[0], myArray: analysis[0].array.map((value, index) => ({value, id: id++, orderId: index})) }
+    let current = analysis[0].array.map((value, index) => ({value, id: id++, orderId: index}))
     return [
-        current,
+        { ...analysis[0], myArray: current },
         ...analysis.slice(1).map(step => {
-            current = { ...step, myArray: current.myArray.slice().map(item => ({ ...item })) }
+            current = current.slice().map(item => ({ ...item }))
             const event = step.event
             if (!event) {
-                return current
+                return { ...step, myArray: current }
             }
             if (event.type === 'replace') {
-                const item = current.myArray[event.index]
-                Object.assign(current.myArray[event.index],{
+                Object.assign(current[event.index],{
                     value: event.newValue,
                     id: id++
                 })
             } else if (event.type === 'swap') {
-                const temp = {...current.myArray[event.index1]}          
-                current.myArray[event.index1] = current.myArray[event.index2]
-                current.myArray[event.index2] = temp
+                const temp = {...current[event.index1]}
+                current[event.index1] = current[event.index2]
+                current[event.index2] = temp
             } else {
                 throw new Error('Unknown event type: ' + event.type)
             }
-            return current
+            return {
+                ...step,
+                myArray: current,
+            }
         })
     ]
 }
 
 function addAnimationsToSteps(steps: AnnotatedAnalsisResult) {
+    console.log('animation', steps)
     let i = 0
     return steps.map((step, index) => {
         const event = step.event
@@ -133,7 +136,7 @@ export default function Visualization({ task }: VisualizationProps) {
         ]
     , [steps])
 
-    const resetProp = useMemo(() => JSON.stringify(steps?.map(step => step.myArray)), [steps])  // force rerender on reset
+    const resetProp = useMemo(() => JSON.stringify(steps), [steps])  // force rerender on reset
 
     useEffect(() => {
         console.log('steps', steps)
