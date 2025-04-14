@@ -3,7 +3,6 @@
 import { InlineLoadingSpinner } from '@/components/loading-spinner'
 import { useEffect, useState, useMemo } from 'react'
 import { AnalysisResult, AnalysisResultStep } from '@/lib/code-analysis'
-import { AnimatePresence, motion } from 'motion/react'
 import AnimationControlBar from './animation-control-bar'
 import {
     Table,
@@ -15,7 +14,9 @@ import {
   } from "@/components/ui/table"
 import { Task } from '@/lib/tasks'
 import { cn } from '@/lib/utils'
-import { useUserCode, useVisualization } from './stores'
+import SortVisualization from './visualizations/sort'
+import QuickSortVisualization from './visualizations/quick-sort'
+import { useVisualization } from './stores'
 
 interface AnnotatedAnalsisResultStep extends AnalysisResultStep {
     myArray: { value: number, id: number, orderId: number, className?: string }[]
@@ -173,43 +174,16 @@ export default function Visualization({ task }: VisualizationProps) {
             </div>
         )
     }
+
+    const TheVisualization = {
+        'sort': SortVisualization,
+        'quick-sort': QuickSortVisualization
+    }[task.presetName]
     
     return (
         <div className="flex items-center justify-center w-full h-full">
             <div className="grid grid-rows-3 auto-rows-min gap-8 items-center justify-center">
-                <ul className="flex space-x-4">
-                        {steps[currentStepIndex].myArray.map((item, index) => 
-                            <motion.li
-                                key={item.orderId}
-                                layout
-                                transition={{
-                                    duration: derivedTimePerStep,
-                                    type: 'spring',
-                                    bounce: 0.25
-                                }}
-                                className="size-16"
-                                >
-                                    <motion.div
-                                        initial={{ y: -50, opacity: 0, scale: 0.5 }}
-                                        animate={{ y: 0, opacity: 1, scale: 1 }}
-                                        transition={{type: 'spring', duration: 0.05, delay: 0.05 * index}}
-                                        className="relative size-full">
-                                        <AnimatePresence initial={false}>
-                                            <motion.div
-                                                key={item.id}
-                                                transition={{ type: 'spring', duration: derivedTimePerStep }}
-                                                initial={{ y: -100, opacity: 0, scale: 0.5 }}
-                                                animate={{ y: 0, opacity: 1, scale: 1 }}
-                                                exit={{ y: 100, opacity: 0, scale: 0.5 }}
-                                                className={cn("absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center", item.className)}>
-                                                {item.value}
-                                            </motion.div>
-                                        </AnimatePresence>
-                                    </motion.div>
-                                </motion.li>
-                        )}
-                    
-                </ul>
+                <TheVisualization steps={steps} timePerStep={derivedTimePerStep} currentStepIndex={currentStepIndex} />
                 <Table>               
                     <TableHeader>
                         <TableRow>
