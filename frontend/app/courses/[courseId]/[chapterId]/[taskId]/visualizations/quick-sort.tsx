@@ -14,8 +14,8 @@ function addRecursionStages(steps) {
     return [
         { ...steps[0], recursionStages: stages },
         ...steps.slice(1).map(step => {
-            if (step.recursion) {
-                const event = step.recursion
+            const event = step.recursion
+            if (event && event.from.startsWith('quickSortRecursive') && event.to.startsWith('quickSortRecursive')) {
                 if (event.type === 'step_in') {
                     if (step.scope.low === undefined || step.scope.high === undefined) {
                         console.warn('Recursion step without scope', step)
@@ -39,21 +39,21 @@ function addRecursionStages(steps) {
 
 export default function QuickSortVisualization({ steps, timePerStep, currentStepIndex}) {
     const mySteps = useMemo(() => addRecursionStages(steps), [steps])
-    console.log(mySteps[currentStepIndex].recursionStages) 
+    const stageCount = useMemo(() => mySteps[currentStepIndex].recursionStages.length, [mySteps, currentStepIndex])
     return (
-        <div className="flex flex-col gap-2" style={{ '--col-count': `repeat(${mySteps[0].myArray.length}, minmax(0, 1fr))` } as React.CSSProperties}>
-            {mySteps[currentStepIndex].recursionStages.map((stage, stageIndex) => (
-                <AnimatePresence key={stageIndex}>
+        <div className="flex flex-col gap-2 h-full" style={{ '--col-count': `repeat(${mySteps[0].myArray.length}, minmax(0, 1fr))` } as React.CSSProperties}>
+            <AnimatePresence>
+                {mySteps[currentStepIndex].recursionStages.map((stage, stageIndex) => (
                     <motion.ul
-                        initial={{ y: -50, opacity: 0 }}
-                        exit={{ y: -50, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1, height: stageIndex < mySteps[currentStepIndex].recursionStages.length - 1 ? '5px' : '' }} 
+                        key={stageIndex}
+                        initial={{ y: -10, opacity: 0 }}
+                        exit={{ y: -10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
                         transition={{
                             duration: timePerStep,
                             type: 'spring',
-                            bounce: 0.01
                         }}
-                        className={cn("grid gap-2 grid-cols-(--col-count)")}>
+                        className={cn("grid gap-2 grid-cols-(--col-count) h-1")}>
                         
                         {mySteps[currentStepIndex].myArray.slice(stage.left, stage.right + 1).map((item, index) => 
                             <motion.li
@@ -61,7 +61,7 @@ export default function QuickSortVisualization({ steps, timePerStep, currentStep
                                 layout
                                 transition={{
                                     duration: timePerStep,
-                                    type: 'spring'
+                                    type: 'spring',
                                 }}
                                 className="size-16 col-(--col-index)"
                                 style={{ '--col-index': index + stage.left + 1 } as React.CSSProperties}
@@ -85,8 +85,8 @@ export default function QuickSortVisualization({ steps, timePerStep, currentStep
                             </motion.li>
                         )}
                     </motion.ul>
-                </AnimatePresence>
-            ))}
+                ))}
+            </AnimatePresence>
         </div>
     )
 }

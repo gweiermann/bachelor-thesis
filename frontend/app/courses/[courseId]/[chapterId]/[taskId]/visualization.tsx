@@ -184,32 +184,30 @@ export default function Visualization({ task }: VisualizationProps) {
     }[task.presetName]
     
     return (
-        <div className="flex items-center justify-center w-full">
-            <div className="grid grid-rows-[repeat(3, auto)] auto-rows-min gap-8 items-center justify-center">
-                <TheVisualization steps={steps} timePerStep={derivedTimePerStep} currentStepIndex={currentStepIndex} />
-                <Table>               
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Variable</TableHead>
-                            {allVariableNames.map(name => <TableHead key={name}>{name}</TableHead>)}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <TableRow>
-                            <TableHead>Value</TableHead>
-                            {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope[key] : '-'}</TableCell>)}
-                        </TableRow>
-                    </TableBody>
-                </Table>
-                <AnimationControlBar
-                    totalSteps={steps.length}
-                    timePerStep={timePerStep}
-                    currentStepIndex={currentStepIndex}
-                    onStepChange={setCurrentStepIndex}
-                    onSpeedChange={setPlaybackSpeed}
-                    resetProp={resetProp} // force rerender on reset
-                />
-            </div>
+        <div className="grid grid-rows-[auto_1fr_auto] auto-rows-min gap-8 items-center justify-center h-full w-full">
+            <Table>               
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Variable</TableHead>
+                        {allVariableNames.map(name => <TableHead key={name}>{name}</TableHead>)}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow>
+                        <TableHead>Value</TableHead>
+                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope[key] : '-'}</TableCell>)}
+                    </TableRow>
+                </TableBody>
+            </Table>
+            <TheVisualization steps={steps} timePerStep={derivedTimePerStep} currentStepIndex={currentStepIndex} />
+            <AnimationControlBar
+                totalSteps={steps.length}
+                timePerStep={timePerStep / 2}
+                currentStepIndex={currentStepIndex}
+                onStepChange={setCurrentStepIndex}
+                onSpeedChange={setPlaybackSpeed}
+                resetProp={resetProp} // force rerender on reset
+            />
         </div>
     )
 }
