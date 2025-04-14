@@ -18,5 +18,5 @@ class Postprocessor:
     def setup(self):
         raise NotImplementedError("Postprocessor hasn't implemented its setup function")
 
-    def process(self, current_step, index):
+    def process(self, collected_list):
         raise NotImplementedError("Postprocessor hasn't implemented its process function")

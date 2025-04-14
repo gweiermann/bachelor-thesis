@@ -1,3 +1,4 @@
+import copy
 from .postprocessor import Postprocessor
 
 class KeepTrackOfItems(Postprocessor):
@@ -13,13 +14,21 @@ class KeepTrackOfItems(Postprocessor):
     def setup(self, array):
         self.array_key = array
 
-    def process(self, current_step, index, collected_list):
+    def process(self, collected_step):
+        lst = [{**copy.deepcopy(step), self.key: None} for step in collected_step]
+        filtered = list(filter(lambda x: self.array_key in x and x[self.array_key] is not None, lst))
+        for i, current_step in enumerate(filtered):
+            self.handle_step(current_step, i, filtered)
+        return lst
+
+    def handle_step(self, current_step, index, collected_list):
         """
         Detect whether there was a swap or a change in the current step.
+        Mutates the current step to add the information about the swap or change.
         """
 
         if index < 1:
-            return {**current_step, self.key: None}
+            return
         
         previous_list = collected_list[index - 1][self.array_key]
         current_list = current_step[self.array_key]
@@ -62,4 +71,4 @@ class KeepTrackOfItems(Postprocessor):
             if list1[i] != list2[i]:
                 return i
         return None
-        
+    

@@ -1,3 +1,4 @@
+import copy
 from .postprocessor import Postprocessor
 
 class SkipInterSwappingSteps(Postprocessor):
@@ -13,13 +14,33 @@ class SkipInterSwappingSteps(Postprocessor):
         self.skip_information = None
         self.array_key = array
 
-    def process(self, current_step, index, collected_list):
+    def process(self, collected_list):
         """
         Skip the steps where the same item is swapped between two different positions.
         """
+        lst = [{**copy.deepcopy(step), self.key: None} for step in collected_list]
+        filtered = list(filter(lambda x: self.array_key in x and x[self.array_key] is not None, lst))
 
+        # process only items with array_key in it. But also keep items that don't have it inbetween.
+        index = 0
+        mask = [False] * len(lst)
+        for i, step in enumerate(lst):
+            if self.array_key in step and step[self.array_key] is not None:
+                mask[i] = self.handle_step(step, index, filtered)
+                index += 1
+            else:
+                mask[i] = True
+                
+        return [item for keep, item in zip(mask, lst) if keep] 
+
+    def handle_step(self, current_step, index, collected_list):
+        """
+        Mutates the current step to add the information about the swap or change.
+        returns False if it should be skipped, True otherwise.
+        """
         if index == 0 or index == len(collected_list) - 1:
-            return {**current_step, self.key: self.skip_information}
+            current_step[self.key] = self.skip_information
+            return True
         
         first = collected_list[index - 1][self.array_key]
         second = collected_list[index - 0][self.array_key]
@@ -29,12 +50,12 @@ class SkipInterSwappingSteps(Postprocessor):
 
         if change_at_second != change_at_third and second[change_at_second] == second[change_at_third] and first[change_at_second] == third[change_at_third]:
             self.skip_information = current_step
-            return None
+            return False
 
         current_step = {**current_step, self.key: self.skip_information}
         self.skip_information = None
-            
-        return current_step
+
+        return True            
         
     def find_changed_index(self, list1, list2, startIndex=0):
         """
