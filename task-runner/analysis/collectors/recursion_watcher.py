@@ -2,7 +2,7 @@ from .collector import Collector
 
 class RecursionWatcher(Collector):
     def setup(self, frame):
-        self.stack_trace = [frame]
+        self.stack_trace = [(frame.GetFunction().GetDisplayName(), frame)]
     
     def step(self, frame):
         if self.stack_trace is None:
@@ -11,24 +11,25 @@ class RecursionWatcher(Collector):
             return None
 
         # No change in stack trace, no need to step
-        if self.stack_trace[-1].IsEqual(frame):
+        if self.stack_trace[-1][1].IsEqual(frame):
             return None
         
-        if len(self.stack_trace) > 1 and self.stack_trace[-2].IsEqual(frame):
+        if len(self.stack_trace) > 1 and self.stack_trace[-2][1].IsEqual(frame):
             # We are going back in the stack trace, we need to step out
-            previous_frame = self.stack_trace.pop()
+            previous_fn,_ = self.stack_trace[-1]
+            self.stack_trace.pop()
             return {
                 'type': 'step_out',
-                'from': previous_frame.GetFunction().GetDisplayName(),
+                'from': previous_fn,
                 'to': frame.GetFunction().GetDisplayName(),
             }
         
         # We are going deeper in the stack trace, we need to step in
-        previous_frame = self.stack_trace[-1]
-        self.stack_trace.append(frame)
+        previous_name,_ = self.stack_trace[-1]
+        self.stack_trace.append((frame.GetFunction().GetDisplayName(), frame))
         return {
             'type': 'step_in',
-            'from': previous_frame.GetFunction().GetDisplayName(),
+            'from': previous_name, 
             'to': frame.GetFunction().GetDisplayName(),
         }
 

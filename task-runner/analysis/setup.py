@@ -57,6 +57,7 @@ def steps_of_function(frame, process, thread):
 
         if (wanted_filename != filename):
             thread.StepOut()
+            continue
 
         yield frame
 
