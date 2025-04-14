@@ -35,6 +35,7 @@ export interface UserCodeStore {
     functionBodies?: string[]
     functionBodiesToBeRun?: string[]
     isDirty: boolean
+    runCount: number
     setFunctionBodies: (functionBodies: string[]) => void
     runCode: () => void
 }
@@ -44,12 +45,13 @@ export const useUserCode = create<UserCodeStore>(
         functionBodies: null,
         functionBodiesToBeRun: null,
         isDirty: false,
+        runCount: 0,
         
         setFunctionBodies(functionBodies: string[]) {
             set(state => ({ functionBodies, isDirty: functionBodies !== state.functionBodiesToBeRun }))
         },
         runCode() {
-            set(state => ({ functionBodiesToBeRun: state.functionBodies, isDirty: false }))
+            set(state => ({ functionBodiesToBeRun: state.functionBodies, isDirty: false, runCount: state.runCount + 1 }))
         }
     })
 )

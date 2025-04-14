@@ -11,11 +11,11 @@ interface LoadAnalysisProps {
 export default function LoadAnalysis({ task }: LoadAnalysisProps): null {
     const firstLoadingMessage = 'Waiting for compilation...'
 
-    const { functionBodiesToBeRun } = useUserCode()
+    const { functionBodiesToBeRun, runCount } = useUserCode()
     const {  setLoadingMessage, setIsLoading, setErrorMessage, setResult } = useVisualization()
 
     const { data: analysisResult, isLoading, error } = useSWR(
-        ['analyzeCode', task.name, functionBodiesToBeRun],
+        ['analyzeCode', task.name, functionBodiesToBeRun, runCount],
         () => runAnalysis(task, functionBodiesToBeRun, setLoadingMessage),
         { revalidateOnFocus: false, suspense: false }
     )
@@ -36,6 +36,9 @@ export default function LoadAnalysis({ task }: LoadAnalysisProps): null {
 
     useEffect(() => {
         setResult(analysisResult)
+        if (analysisResult) {
+            console.log(analysisResult)
+        }
     }, [analysisResult, setResult])
 
     return null

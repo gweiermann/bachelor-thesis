@@ -115,6 +115,8 @@ export default function Editor({ functionPrototypes, initialFunctionBodies, onCh
             allowMultiline: true,
             label: `body${index}`
         })))
+
+        handleChange()
     }
 
     useEffect(() => {
