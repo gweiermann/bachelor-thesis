@@ -30,14 +30,16 @@ function addIdsToItems(analysis: AnalysisResult): AnnotatedAnalsisResult {
     return [
         current,
         ...analysis.slice(1).map(step => {
-            const event = step.event
             current = { ...step, myArray: current.myArray.slice().map(item => ({ ...item })) }
+            const event = step.event
+            if (!event) {
+                return current
+            }
             if (event.type === 'replace') {
                 const item = current.myArray[event.index]
                 Object.assign(current.myArray[event.index],{
                     value: event.newValue,
-                    id: id++,
-                    className: 'bg-amber-400'
+                    id: id++
                 })
             } else if (event.type === 'swap') {
                 const temp = {...current.myArray[event.index1]}          
@@ -52,6 +54,7 @@ function addIdsToItems(analysis: AnalysisResult): AnnotatedAnalsisResult {
 }
 
 function addAnimationsToSteps(steps: AnnotatedAnalsisResult) {
+    let i = 0
     return steps.map((step, index) => {
         const event = step.event
         const followingEvent = steps[index + 1]?.event
@@ -131,10 +134,9 @@ export default function Visualization({ task }: VisualizationProps) {
 
     const resetProp = useMemo(() => JSON.stringify(steps?.map(step => step.myArray)), [steps])  // force rerender on reset
 
-    // useEffect(() => {
-    //     console.log('analysis', analysis)
-    //     console.log('steps', steps)
-    // }, [steps])
+    useEffect(() => {
+        console.log('steps', steps)
+    }, [steps])
 
 
     useEffect(() => {
