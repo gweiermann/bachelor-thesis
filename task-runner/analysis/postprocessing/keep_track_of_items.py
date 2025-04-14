@@ -40,12 +40,12 @@ class KeepTrackOfItems(Postprocessor):
         second_change = self.find_changed_index(previous_list, current_list, first_change + 1)
         if second_change is None:
             # no swap behaviour, only one item changed, so we assume a new item got added
-            return {**current_step, self.key: {
-                'type': 'replace',
+            current_step[self.key] = {
                 'index': first_change,
                 'oldValue': current_list[first_change],
                 'newValue': current_list[first_change]
-            }}
+            }
+            return
         
         if self.find_changed_index(current_list, previous_list, second_change + 1) is not None:
             raise ValueError("It's unexpected that a step can have more than two changes")
@@ -53,11 +53,12 @@ class KeepTrackOfItems(Postprocessor):
         # potential swap behaviour
         if previous_list[first_change] == current_list[second_change] and previous_list[second_change] == current_list[first_change]:
             # it's indeed a swap
-            return {**current_step, self.key: {
+            current_step[self.key] = {
                 'type': 'swap',
                 'index1': first_change,
                 'index2': second_change
-            }}
+            }
+            return
         print(f"Unexpected behaviour: {previous_list} -> {current_list}; {index}")
         raise ValueError("It's unexpected that a step can have more than one new item that is not swapped with another item")        
         
