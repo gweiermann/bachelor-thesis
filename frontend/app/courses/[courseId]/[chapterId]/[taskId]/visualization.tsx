@@ -184,8 +184,8 @@ export default function Visualization({ task }: VisualizationProps) {
     }[task.presetName]
     
     return (
-        <div className="flex items-center justify-center w-full h-full">
-            <div className="grid grid-rows-3 auto-rows-min gap-8 items-center justify-center">
+        <div className="flex items-center justify-center w-full">
+            <div className="grid grid-rows-[repeat(3, auto)] auto-rows-min gap-8 items-center justify-center">
                 <TheVisualization steps={steps} timePerStep={derivedTimePerStep} currentStepIndex={currentStepIndex} />
                 <Table>               
                     <TableHeader>
