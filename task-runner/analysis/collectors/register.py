@@ -1,11 +1,13 @@
 from .array_watcher import ArrayWatcher
 from .current_scope import CurrentScope
 from .current_line import CurrentLine
+from .recursion_watcher import RecursionWatcher
 
 collectors = {
     'arrayWatcher': ArrayWatcher,
     'currentScope': CurrentScope,
     'currentLine': CurrentLine,
+    'recursionWatcher': RecursionWatcher,
 }
 
 def get_collector(name):
