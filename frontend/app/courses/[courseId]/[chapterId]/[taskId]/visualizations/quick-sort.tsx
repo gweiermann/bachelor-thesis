@@ -4,47 +4,53 @@ import { useMemo } from "react";
 
 function addRecursionStages(steps) {
     if (!steps.length) return []
-    let stages = [
+    const stages = [
         {
             left: 0,
             right: steps[0].array.length - 1,
             pivot:  steps[0].array.length - 1
         }
     ]
+    const persistent: number[] = []
     return [
-        { ...steps[0], recursionStages: stages },
+        { ...steps[0], recursionStages: stages, persistent: [] },
         ...steps.slice(1).map(step => {
             const event = step.recursion
-            if (event && event.from.startsWith('quickSortRecursive') && event.to.startsWith('quickSortRecursive')) {
-                if (event.type === 'step_in') {
-                    const scope = step.scope.current
-                    if (scope.low === undefined || scope.high === undefined) {
-                        console.warn('Recursion step without scope', step)
-                    } else {
+            if (event) {
+                if (event.from.startsWith('quickSortRecursive(') && event.to.startsWith('quickSortRecursive(')) {
+                    if (event.type === 'step_in') {
+                        if (event.arguments.low >= event.arguments.high) {
+                            persistent.push(parseInt(event.arguments.low))
+                        }
                         stages.push({
-                            left: parseInt(scope.low),
-                            right: parseInt(scope.high),
-                            pivot: parseInt(scope.high)
+                            left: parseInt(event.arguments.low),
+                            right: parseInt(event.arguments.high),
+                            pivot: parseInt(event.arguments.high)
                         })
+                    } else if (event.type === 'step_out') {
+                        stages.pop()
+                    } else {
+                        throw new Error('Unknown event type: ' + event.type)
                     }
-                } else if (event.type === 'step_out') {
-                    stages.pop()
-                } else {
-                    throw new Error('Unknown event type: ' + event.type)
+                }
+                else if (event.from.startsWith('partition(') && event.type === 'step_out') {
+                    persistent.push(parseInt(event.returnValue))
                 }
             }
-            return { ...step, recursionStages: stages.slice() }
+            console.log(persistent)
+            return { ...step, recursionStages: stages.slice(), persistent: persistent.slice() }
         })
     ]
 }
 
 export default function QuickSortVisualization({ steps, timePerStep, currentStepIndex}) {
     const mySteps = useMemo(() => addRecursionStages(steps), [steps])
-    const stageCount = useMemo(() => mySteps[currentStepIndex].recursionStages.length, [mySteps, currentStepIndex])
+    const step = useMemo(() => mySteps[currentStepIndex], [mySteps, currentStepIndex])
+    const stageCount = useMemo(() => step.recursionStages.length, [step])
     return (
         <div className="flex flex-col gap-2 h-full" style={{ '--col-count': `repeat(${mySteps[0].myArray.length}, minmax(0, 1fr))` } as React.CSSProperties}>
             <AnimatePresence>
-                {mySteps[currentStepIndex].recursionStages.map((stage, stageIndex) => (
+                {step.recursionStages.map((stage, stageIndex) => (
                     <motion.ul
                         key={stageIndex}
                         initial={{ y: -10, opacity: 0 }}
@@ -56,7 +62,7 @@ export default function QuickSortVisualization({ steps, timePerStep, currentStep
                         }}
                         className={cn("grid gap-2 grid-cols-(--col-count) h-1")}>
                         
-                        {mySteps[currentStepIndex].myArray.slice(stage.left, stage.right + 1).map((item, index) => 
+                        {step.myArray.slice(stage.left, stage.right + 1).map((item, index) => 
                             <motion.li
                                 key={item.orderId}
                                 layout
@@ -78,7 +84,13 @@ export default function QuickSortVisualization({ steps, timePerStep, currentStep
                                             initial={{ y: -100, opacity: 0, scale: 0.5 }}
                                             animate={{ y: 0, opacity: 1, scale: 1 }}
                                             exit={{ y: 100, opacity: 0, scale: 0.5 }}
-                                            className={cn("absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center", item.className)}>
+                                            className={cn(
+                                                "absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center",
+                                                item.className,
+                                                {
+                                                    'border-green-500 border-4 bg-green-200': step.persistent.includes(stage.left + index),
+                                                }
+                                            )}>
                                             {item.value}
                                         </motion.div>
                                     </AnimatePresence>
