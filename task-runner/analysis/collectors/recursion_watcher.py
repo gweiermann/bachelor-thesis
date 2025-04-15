@@ -3,6 +3,30 @@ from .collector import Collector
 class RecursionWatcher(Collector):
     def setup(self, frame):
         self.stack_trace = [(frame.GetFunction().GetDisplayName(), frame)]
+        self.functions_with_breakpoints = set()
+
+    def activate_step_out_breakpoint(self, frame):
+        """
+        Is needed for thread.GetStopReturnValue() to work
+        """
+        function = frame.GetFunction()
+        function_name = function.GetDisplayName()
+
+        if function_name in self.functions_with_breakpoints:
+            return
+        
+        self.functions_with_breakpoints.add(function_name)
+
+        target = frame.GetThread().GetProcess().GetTarget()
+        instructions = function.GetInstructions(target)
+
+        for i in range(instructions.GetSize()):
+            inst = instructions.GetInstructionAtIndex(i)
+            if inst.GetMnemonic(target) in ["ret", "retq"]:
+                addr = inst.GetAddress().GetLoadAddress(target)
+                bp = target.BreakpointCreateByAddress(addr)
+                bp.SetScriptCallbackBody("frame.GetThread().StepOut()")
+
     
     def step(self, frame):
         if self.stack_trace is None:
@@ -22,9 +46,11 @@ class RecursionWatcher(Collector):
                 'type': 'step_out',
                 'from': previous_fn,
                 'to': frame.GetFunction().GetDisplayName(),
+                'returnValue': frame.GetThread().GetStopReturnValue().GetValue()
             }
         
         # We are going deeper in the stack trace, we need to step in
+        self.activate_step_out_breakpoint(frame)
         previous_name,_ = self.stack_trace[-1]
         self.stack_trace.append((frame.GetFunction().GetDisplayName(), frame))
         return {
