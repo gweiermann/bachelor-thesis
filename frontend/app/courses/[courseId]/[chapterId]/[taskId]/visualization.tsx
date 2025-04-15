@@ -130,7 +130,8 @@ export default function Visualization({ task }: VisualizationProps) {
     const allVariableNames = useMemo(() =>
         !steps ? [] : [
             ...steps.reduce((result, current) => {
-                Object.keys(current.scope).map(key => result.add(key))
+                Object.keys(current.scope.current).map(key => result.add(key))
+                Object.keys(current.scope.previous).map(key => result.add(key))
                 return result
             }, new Set<string>())
         ]
@@ -195,7 +196,7 @@ export default function Visualization({ task }: VisualizationProps) {
                 <TableBody>
                     <TableRow>
                         <TableHead>Value</TableHead>
-                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope[key] : '-'}</TableCell>)}
+                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope['array' in steps[currentStepIndex] ? 'previous' : 'current'][key] : '-'}</TableCell>)}
                     </TableRow>
                 </TableBody>
             </Table>

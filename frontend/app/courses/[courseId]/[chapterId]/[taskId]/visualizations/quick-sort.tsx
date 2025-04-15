@@ -17,13 +17,14 @@ function addRecursionStages(steps) {
             const event = step.recursion
             if (event && event.from.startsWith('quickSortRecursive') && event.to.startsWith('quickSortRecursive')) {
                 if (event.type === 'step_in') {
-                    if (step.scope.low === undefined || step.scope.high === undefined) {
+                    const scope = step.scope.current
+                    if (scope.low === undefined || scope.high === undefined) {
                         console.warn('Recursion step without scope', step)
                     } else {
                         stages.push({
-                            left: parseInt(step.scope.low),
-                            right: parseInt(step.scope.high),
-                            pivot: parseInt(step.scope.high)
+                            left: parseInt(scope.low),
+                            right: parseInt(scope.high),
+                            pivot: parseInt(scope.high)
                         })
                     }
                 } else if (event.type === 'step_out') {
