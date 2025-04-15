@@ -1,10 +1,14 @@
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import { useMemo } from "react";
+import { addAnimationsToSteps, addOrder } from "./post-processors";
 
-export default function SortVisualization({ steps, timePerStep, currentStepIndex}) {
+export default function SortVisualization({ analysis, timePerStep, currentStepIndex}) {
+    const steps = useMemo(() => addAnimationsToSteps(addOrder(analysis)), [analysis])
+    const step = useMemo(() => steps[currentStepIndex], [steps, currentStepIndex])
     return (
         <ul className="flex space-x-4">
-            {steps[currentStepIndex].myArray.map((item, index) => 
+            {steps[currentStepIndex].order.map((item, index) => 
                 <motion.li
                     key={item.orderId}
                     layout
@@ -27,7 +31,10 @@ export default function SortVisualization({ steps, timePerStep, currentStepIndex
                                 initial={{ y: -100, opacity: 0, scale: 0.5 }}
                                 animate={{ y: 0, opacity: 1, scale: 1 }}
                                 exit={{ y: 100, opacity: 0, scale: 0.5 }}
-                                className={cn("absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center", item.className)}>
+                                className={cn(
+                                    "absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center",
+                                    step.className[index]
+                                )}>
                                 {item.value}
                             </motion.div>
                         </AnimatePresence>

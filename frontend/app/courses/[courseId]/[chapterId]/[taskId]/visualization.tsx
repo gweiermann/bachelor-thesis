@@ -2,7 +2,7 @@
 
 import { InlineLoadingSpinner } from '@/components/loading-spinner'
 import { useEffect, useState, useMemo } from 'react'
-import { AnalysisResult, AnalysisResultStep } from '@/lib/code-analysis'
+import { AnalysisResultStep } from '@/lib/code-analysis'
 import AnimationControlBar from './animation-control-bar'
 import {
     Table,
@@ -13,91 +13,10 @@ import {
     TableRow,
   } from "@/components/ui/table"
 import { Task } from '@/lib/tasks'
-import { cn } from '@/lib/utils'
 import SortVisualization from './visualizations/sort'
 import QuickSortVisualization from './visualizations/quick-sort'
 import { useVisualization } from './stores'
-
-interface AnnotatedAnalsisResultStep extends AnalysisResultStep {
-    myArray: { value: number, id: number, orderId: number, className?: string }[]
-}
-
-type AnnotatedAnalsisResult = AnnotatedAnalsisResultStep[]
-
-function addIdsToItems(analysis: AnalysisResult): AnnotatedAnalsisResult {
-    if (!analysis.length) return []
-    let id = 0
-    let current = analysis[0].array.map((value, index) => ({value, id: id++, orderId: index}))
-    return [
-        { ...analysis[0], myArray: current },
-        ...analysis.slice(1).map(step => {
-            current = current.slice().map(item => ({ ...item }))
-            const event = step.event
-            if (!event) {
-                return { ...step, myArray: current }
-            }
-            if (event.type === 'replace') {
-                Object.assign(current[event.index],{
-                    value: event.newValue,
-                    id: id++
-                })
-            } else if (event.type === 'swap') {
-                const temp = {...current[event.index1]}
-                current[event.index1] = current[event.index2]
-                current[event.index2] = temp
-            } else {
-                throw new Error('Unknown event type: ' + event.type)
-            }
-            return {
-                ...step,
-                myArray: current,
-            }
-        })
-    ]
-}
-
-function addAnimationsToSteps(steps: AnnotatedAnalsisResult) {
-    console.log('animation', steps)
-    let i = 0
-    return steps.map((step, index) => {
-        const event = step.event
-        const followingEvent = steps[index + 1]?.event
-
-        function getClassName(i: number) {
-            if (!event) {
-                return undefined
-            }
-            if (event.type === 'replace' && i === event.index) {
-                return 'bg-amber-400'
-            }
-            if (event.type === 'swap' && (i === event.index1 || i === event.index2)) {
-                return 'bg-sky-200'
-            }
-            return undefined
-        }
-
-        function getClassNameForFollowing(i: number) {
-            if (!followingEvent) {
-                return undefined
-            }
-            if (followingEvent.type === 'replace' && i === followingEvent.index) {
-                return 'border-2 border-dashed animate-wiggle'
-            }
-            if (followingEvent.type === 'swap' && (i === followingEvent.index1 || i === followingEvent.index2)) {
-                return 'border-2 border-dashed animate-wiggle'
-            }
-            return undefined
-        }
-
-        return {
-            ...step,
-            myArray: step.myArray.map((item, i) => ({
-                ...item,
-                className: cn(getClassName(i), getClassNameForFollowing(i))
-            }))
-        }
-    })
-}
+import { AnalysisResult } from '@/lib/build'
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
     if (!step) {
@@ -113,36 +32,37 @@ interface VisualizationProps {
 export default function Visualization({ task }: VisualizationProps) {
     const timePerStep = 1 // 1x means 1 second
 
-    const { loadingMessage, errorMessage, setActiveLines, state, result } = useVisualization()
+    const { loadingMessage, errorMessage, setActiveLines, state, result: analysis } = useVisualization()
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
-    const steps = useMemo(() => result && addAnimationsToSteps(addIdsToItems(result)), [result])
+
+    const currentStep = useMemo(() => analysis?.[currentStepIndex], [analysis, currentStepIndex])
+    
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
     const activeLines = useMemo(() => {
-        if (currentStepIndex === 0 || !steps || currentStepIndex >= steps.length) {
+        if (currentStepIndex === 0 || !analysis || currentStepIndex >= analysis.length) {
             return []
         }
-        const step = steps[currentStepIndex]
+        const step = analysis[currentStepIndex]
         return [step.line, ...getLineNumberFromStepAsArray(step.skippedStep)]
-    }, [currentStepIndex, steps])
+    }, [currentStepIndex, analysis])
 
     const allVariableNames = useMemo(() =>
-        !steps ? [] : [
-            ...steps.reduce((result, current) => {
+        !analysis ? [] : [
+            ...analysis.reduce((result, current) => {
                 Object.keys(current.scope.current).map(key => result.add(key))
                 Object.keys(current.scope.previous).map(key => result.add(key))
                 return result
             }, new Set<string>())
         ]
-    , [steps])
+    , [analysis])
 
-    const resetProp = useMemo(() => JSON.stringify(steps), [steps])  // force rerender on reset
+    const resetProp = useMemo(() => JSON.stringify(analysis), [analysis])  // force rerender on reset
 
     useEffect(() => {
-        console.log('steps', steps)
-    }, [steps])
-
+        console.log('steps', analysis)
+    }, [analysis])
 
     useEffect(() => {
         setActiveLines(activeLines)
@@ -170,8 +90,8 @@ export default function Visualization({ task }: VisualizationProps) {
     }
 
     // Prevent bug from crashing, needs further investigation
-    if (!steps || steps.some(step => !step)) {
-        console.log('Analysis result is malformed', {steps, analysis: result})
+    if (!analysis || analysis.some(step => !step)) {
+        console.log('Analysis result is malformed', analysis)
         return (
             <div>
                 <div>Error: Analysis result is malformed. See console for further information.</div>
@@ -196,13 +116,13 @@ export default function Visualization({ task }: VisualizationProps) {
                 <TableBody>
                     <TableRow>
                         <TableHead>Value</TableHead>
-                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? steps[currentStepIndex].scope['array' in steps[currentStepIndex] ? 'previous' : 'current'][key] : '-'}</TableCell>)}
+                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 ? currentStep.scope['array' in currentStep ? 'previous' : 'current'][key] : '-'}</TableCell>)}
                     </TableRow>
                 </TableBody>
             </Table>
-            <TheVisualization steps={steps} timePerStep={derivedTimePerStep} currentStepIndex={currentStepIndex} />
+            <TheVisualization analysis={analysis} timePerStep={derivedTimePerStep} currentStepIndex={currentStepIndex} />
             <AnimationControlBar
-                totalSteps={steps.length}
+                totalSteps={analysis.length}
                 timePerStep={timePerStep / 2}
                 currentStepIndex={currentStepIndex}
                 onStepChange={setCurrentStepIndex}
@@ -211,4 +131,13 @@ export default function Visualization({ task }: VisualizationProps) {
             />
         </div>
     )
+}
+
+function addAnimationsToSteps(arg0: any): any {
+    throw new Error('Function not implemented.')
+}
+
+
+function addIdsToItems(result: AnalysisResult): any {
+    throw new Error('Function not implemented.')
 }
