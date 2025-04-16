@@ -4,7 +4,6 @@ import os
 from output import print_status
 
 main_cpp_filename = "/tmp/main.cpp"
-user_cpp_filename = "/tmp/user.cpp"
 h_filename = "/tmp/user-input.h"
 utils_h_filename = ("/app/config/utils.h", "/tmp/utils.h")
 utils_cpp_filename = ("/app/config/utils.cpp", "/tmp/utils.cpp")
@@ -31,7 +30,7 @@ def copy_files(src_dsts):
     for src, dst in src_dsts:
         shutil.copyfile(src, dst)
 
-def compile_target(preset, type, function_bodies, output_file, compile_flags=[]):
+def compile_target(preset, type, function_bodies, output_file, user_cpp_filename, compile_flags=[]):
     """
     Creates source files based on user input and compiles them.
     """
@@ -40,7 +39,6 @@ def compile_target(preset, type, function_bodies, output_file, compile_flags=[])
 
     # Find out which files to use
     main_cpp_filename = preset['analysis_cpp_filename'] if type == 'analysis' else preset['test_cpp_filename']
-    user_cpp_filename = "/tmp/user-input.cpp"
     
     # Generate cpp file based on user input
     user_cpp_content = generate_user_cpp(preset, function_bodies)

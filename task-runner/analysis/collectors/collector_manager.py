@@ -1,8 +1,8 @@
 from .collector import Collector
 
 class CollectorManager:
-    def from_dict(config, frame):
-        collectors = [Collector.from_dict(c, frame) for c in config]
+    def from_dict(config, frame, user_cpp_filename):
+        collectors = [Collector.from_dict(c, frame, user_cpp_filename) for c in config]
         return CollectorManager(collectors)
 
     def __init__(self, collectors):

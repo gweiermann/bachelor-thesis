@@ -8,10 +8,11 @@ from output import print_result, print_error, print_status
 import preparation
 
 executable_filename = "/tmp/a.out"
+user_cpp_filename = "/tmp/user.cpp"
 
 def entrypoint(preset, function_bodies):
     try:
-        preparation.compile_target(preset, 'analysis', function_bodies, executable_filename, compile_flags=['-g'])
+        preparation.compile_target(preset, 'analysis', function_bodies, executable_filename, user_cpp_filename, compile_flags=['-g'])
         
         function_name = preset['manifest']['entrypointFunction']
         collect_configs = preset['analysis']['collect']
@@ -20,7 +21,7 @@ def entrypoint(preset, function_bodies):
         print_status("Launching Analysis...")
         frame, process, thread, debugger = setup_debugger(function_name, executable_filename)
 
-        collect_manager = CollectorManager.from_dict(collect_configs, frame)
+        collect_manager = CollectorManager.from_dict(collect_configs, frame, user_cpp_filename)
 
         print_status("Analysing...")
         for frame in steps_of_function(frame, process, thread):

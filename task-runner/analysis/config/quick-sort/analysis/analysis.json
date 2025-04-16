@@ -19,6 +19,10 @@
         {
             "type": "recursionWatcher",
             "key": "recursion"
+        },
+        {
+            "type": "compareOperationWatcher",
+            "key": "comparison"
         }
     ],
     "postProcess": [
