@@ -120,10 +120,10 @@ export default function Visualization({ task }: VisualizationProps) {
                     </TableRow>
                 </TableBody>
             </Table>
-            <TheVisualization analysis={analysis} timePerStep={derivedTimePerStep} currentStepIndex={currentStepIndex} />
+            <TheVisualization analysis={analysis} timePerStep={derivedTimePerStep / 2} currentStepIndex={currentStepIndex} />
             <AnimationControlBar
                 totalSteps={analysis.length}
-                timePerStep={timePerStep / 2}
+                timePerStep={timePerStep}
                 currentStepIndex={currentStepIndex}
                 onStepChange={setCurrentStepIndex}
                 onSpeedChange={setPlaybackSpeed}
