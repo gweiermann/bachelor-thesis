@@ -5,7 +5,7 @@ class Array:
         self.array_name = array_name
         self.array_ref = Array.__get_array_ref(frame, array_name)
         self.size = Array.__get_size(frame, size_name)
-        self.byte_size = self.array_ref.Dereference().GetByteSize()
+        self.byte_size = self.array_ref.GetType().GetDereferencedType().GetByteSize()
 
     def __get_size(frame, size_name):
         size = frame.FindVariable(size_name)

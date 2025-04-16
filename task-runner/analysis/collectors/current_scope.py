@@ -9,7 +9,12 @@ class CurrentScope(Collector):
     def pre_step(self, frame):
         self.current_scope = self.previous_scope
         varlist = frame.GetVariables(True, True, False, False)
-        self.previous_scope = {var.GetName(): var.GetValue() for var in varlist}
+        self.previous_scope = {var.GetName(): {
+            'value': var.GetValue(),
+            'type': var.GetType().GetDisplayTypeName(),
+            'isPointer': var.GetType().IsPointerType(),
+            'isReference': var.GetType().IsReferenceType(),
+        } for var in varlist}
 
     def step(self, frame):
         return {
