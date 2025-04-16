@@ -15,6 +15,8 @@ class CompareOperationWatcher(Collector):
             if op['range']['start']['line'] <= line <= op['range']['end']['line']:
                 return {
                     'operation': op,
+                    'lhsValue': frame.EvaluateExpression(op['lhs']).GetValue(),
+                    'rhsValue': frame.EvaluateExpression(op['rhs']).GetValue(),
                 }
         return None
     
@@ -34,8 +36,8 @@ class CompareOperationWatcher(Collector):
 
             for i, tok in enumerate(token_strs):
                 if tok in bin_ops:
-                    lhs = ' '.join(token_strs[:i])
-                    rhs = ' '.join(token_strs[i+1:])
+                    lhs = ''.join(token_strs[:i])
+                    rhs = ''.join(token_strs[i+1:])
                     op = tok
 
                     # extract range
