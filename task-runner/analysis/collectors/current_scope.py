@@ -8,11 +8,14 @@ class CurrentScope(Collector):
 
     def pre_step(self, frame):
         self.current_scope = self.previous_scope
-        varlist = frame.GetVariables(False, True, False, False)
+        varlist = frame.GetVariables(True, True, False, False)
         self.previous_scope = {var.GetName(): var.GetValue() for var in varlist}
 
     def step(self, frame):
-        return self.current_scope
+        return {
+            'current': self.previous_scope, # yes this is correct
+            'previous': self.current_scope
+        }
     
     def is_reason_for_new_step(self):
         return False

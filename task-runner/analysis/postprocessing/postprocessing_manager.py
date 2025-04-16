@@ -15,13 +15,6 @@ class PostprocessingManager:
         for postprocessor in self.postprocessors:
             postprocessor.prepare()
 
-        before_list = collected_list
-
         for postprocessor in self.postprocessors:
-            result_list = []
-            for i, step in enumerate(before_list):
-                result = postprocessor.process(step, i, before_list)
-                if result:
-                    result_list.append(result)
-            before_list = result_list
-        return before_list
+            collected_list = postprocessor.process(collected_list)
+        return collected_list

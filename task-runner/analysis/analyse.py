@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import traceback
 from setup import setup_debugger, steps_of_function
 from collectors import CollectorManager
 from postprocessing import PostprocessingManager
@@ -33,6 +34,6 @@ def entrypoint(preset, function_bodies):
 
         print_result(result_list)
     except Exception as e:
-        print_error(str(e))
+        print_error(traceback.format_exc())
         raise e
     
