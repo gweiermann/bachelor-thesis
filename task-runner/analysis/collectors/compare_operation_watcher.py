@@ -11,14 +11,17 @@ class CompareOperationWatcher(Collector):
     def actual_step(self, frame):
         line_entry = frame.GetLineEntry()
         line = line_entry.GetLine()
+        result_list = []
         for op in self.compare_operations:
             if op['range']['start']['line'] <= line <= op['range']['end']['line']:
-                return {
+                result_list.append({
                     'operation': op,
                     'lhsValue': frame.EvaluateExpression(op['lhs']).GetValue(),
                     'rhsValue': frame.EvaluateExpression(op['rhs']).GetValue(),
-                }
-        return None
+                })
+        if result_list == []:
+            return None
+        return result_list
     
     def step(self, frame):
         now = self.previous

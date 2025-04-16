@@ -10,6 +10,7 @@ class ArrayCompareOperationWatcher(CompareOperationWatcher):
     def actual_step(self, frame):
         line_entry = frame.GetLineEntry()
         line = line_entry.GetLine()
+        result_list = []
         for op in self.compare_operations:
             if op['range']['start']['line'] <= line <= op['range']['end']['line']:
                 lhs = frame.EvaluateExpression('&(' + op['lhs'] + ')')
@@ -19,7 +20,7 @@ class ArrayCompareOperationWatcher(CompareOperationWatcher):
                 if lhs_index is not None or rhs_index is not None:
                     lhs_value = frame.EvaluateExpression(op['lhs']).GetValue()
                     rhs_value = frame.EvaluateExpression(op['rhs']).GetValue()
-                    return {
+                    result_list.append({
                         'operation': op,
                         'lhs': {
                             'index': lhs_index,
@@ -29,5 +30,7 @@ class ArrayCompareOperationWatcher(CompareOperationWatcher):
                             'index': rhs_index,
                             'value': rhs_value
                         }
-                    }
-        return None
+                    })
+        if result_list == []:
+            return None
+        return result_list

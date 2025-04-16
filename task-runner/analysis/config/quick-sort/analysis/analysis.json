@@ -22,7 +22,7 @@
         },
         {
             "type": "compareOperationWatcher",
-            "key": "comparison"
+            "key": "comparisons"
         },
         {
             "type": "arrayCompareOperationWatcher",
@@ -30,7 +30,7 @@
                 "name": "arr",
                 "size": "n"
             },
-            "key": "arrayComparison"
+            "key": "arrayComparisons"
         }
     ],
     "postProcess": [

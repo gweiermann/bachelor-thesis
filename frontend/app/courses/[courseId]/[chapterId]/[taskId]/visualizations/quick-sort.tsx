@@ -11,23 +11,33 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
     const step = useMemo(() => steps[currentStepIndex], [steps, currentStepIndex])
     const stageCount = useMemo(() => step.stages.length, [step])
     const comparison = useMemo(() => {
-        if (!step.comparison) {
+        if (!step.comparisons) {
             return null
         }
-        let lhs, rhs, op
-        op = step.comparison.operation.op
-        lhs = `${step.comparison.operation.lhs} = ${step.comparison.lhsValue}`
-        rhs = `${step.comparison.rhsValue} = ${step.comparison.operation.rhs}`
-        
-        if (step.arrayComparison) {
-            if (step.arrayComparison.lhs.index) {
-                lhs = `${step.comparison.operation.lhs} = array[${step.arrayComparison.lhs.index}] = ${step.arrayComparison.lhs.value}`
-            }
-            if (step.arrayComparison.rhs.index) {
-                rhs = `${step.arrayComparison.rhs.value} = array[${step.arrayComparison.rhs.index}] = ${step.comparison.operation.rhs}`
-            }
-        }
-        return `${lhs} ${op} ${rhs}`
+
+        const simple = step.comparisons.filter(comp => !step.arrayComparisons?.some(c => c.operation.range.start.line === comp.operation.range.start.line && c.operation.range.start.col === comp.operation.range.start.col))
+        const array = step.arrayComparisons ?? []
+
+        return [
+            ...simple.map(comp => {
+                const lhs = `${comp.operation.lhs} = ${comp.lhsValue}`
+                const rhs = `${comp.rhsValue} = ${comp.operation.rhs}`
+                const op = comp.operation.op
+                return `${lhs} ${op} ${rhs}`
+            }),
+            ...array.map(comp => {
+                let lhs = `${comp.operation.lhs} = ${comp.lhs.value}`
+                let rhs = `${comp.rhs.value} = ${comp.operation.rhs}`
+                const op = comp.operation.op
+                if (comp.lhs.index) {
+                    lhs = `${comp.operation.lhs} = array[${comp.lhs.index}] = ${comp.lhs.value}`
+                }
+                if (comp.rhs.index) {
+                    rhs = `${comp.rhs.value} = array[${comp.rhs.index}] = ${comp.operation.rhs}`
+                }
+                return `${lhs} ${op} ${rhs}`
+            })
+        ].join(', ')
     }, [step])
     return (
         <div className="flex flex-col gap-2 h-full">
