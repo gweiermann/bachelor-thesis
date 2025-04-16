@@ -18,7 +18,7 @@ function postProcessor<T, A extends AnalysisResultStep>(
     return [
         { ...analysis[0], [key]: curr },
         ...analysis.slice(1).map((step, index) => {
-            curr = stepWithPredicate(step, index, JSON.parse(JSON.stringify(curr)))
+            curr = stepWithPredicate(step, index + 1, JSON.parse(JSON.stringify(curr)))
             return {
                 ...step,
                 [key]: curr
@@ -41,23 +41,26 @@ function postProcessorOfArray<T, A extends AnalysisResultStep>(
     return postProcessor(key, analysis, startValue, stepWithPredicate)
 }
 
-export function addOrder(steps: AnalysisResultStep[]) {
+export function addOrder<T>(steps: AnalysisResultStep[], additional?: (step: AnalysisResultStep, stepIndex: number, count: number) => T[]) {
     let id = 0
     return postProcessorOfArray<{ value: Number, orderId: number, id: number }, AnalysisResultStep>('order', steps,
         (value, index) => ({ id: id++, orderId: index, value }),
         (step, stepIndex, prev) => {
+            const additionalValues = additional?.(step, stepIndex, prev.length)
             const event = step.event
-            if (!event) {
-                return prev
+            if (event) {
+                if (event.type === 'replace') {
+                    prev[event.index] = { ...prev[event.index], id: id++, value: event.newValue }
+                } else if (event.type === 'swap') {
+                    const temp = { ...prev[event.index1] }
+                    prev[event.index1] = { ...prev[event.index2] }
+                    prev[event.index2] = temp
+                } else {
+                    throw new Error('Unknown event type: ' + event.type)
+                }
             }
-            if (event.type === 'replace') {
-                prev[event.index] = { ...prev[event.index], id: id++, value: event.newValue }
-            } else if (event.type === 'swap') {
-                const temp = { ...prev[event.index1] }
-                prev[event.index1] = { ...prev[event.index2] }
-                prev[event.index2] = temp
-            } else {
-                throw new Error('Unknown event type: ' + event.type)
+            if (additionalValues) {
+                return prev.map((item, index) => ({ ...item, additional: {...item.additional, ...additionalValues[index]}}))
             }
             return prev
         }
@@ -133,27 +136,37 @@ export function addRecursionStages(steps) {
     )
 }
 
-export function addQuicksortHighlighting(steps) {
-    return postProcessor<{ persistentIndexes: number[], pivotIndexes: number[]}, AnalysisResultStep>('quicksort', steps,
-        { persistentIndexes: [], pivotIndexes: [] },
+export function addPersistentIndexes(steps) {
+    return postProcessor<number[], AnalysisResultStep>('persistentIndexes', steps,
+        [],
         (step, i, prev) => {
-            const { persistentIndexes, pivotIndexes } = prev
             const event = step.recursion
             if (event) {
                 if (event.from.startsWith('quickSortRecursive(') && event.to.startsWith('quickSortRecursive(')) {
                     if (event.type === 'step_in') {
                         if (event.arguments.low >= event.arguments.high) {
-                            persistentIndexes.push(parseInt(event.arguments.low))
-                        } else {
-                            pivotIndexes.push(parseInt(event.arguments.high))
+                            prev.push(parseInt(event.arguments.low))
                         }
                     }
                 }
                 else if (event.from.startsWith('partition(') && event.type === 'step_out') {
-                    persistentIndexes.push(parseInt(event.returnValue))
+                    prev.push(parseInt(event.returnValue))
                 }
             }
             return prev
         }
     )
+}
+
+export function enrichPivotElement(step: AnalysisResultStep, stepIndex: number, count: number) {
+    const event = step.recursion
+    if (event) {
+        if (event.to.startsWith('quickSortRecursive(')) {
+            if (event.type === 'step_in') {
+                if (parseInt(event.arguments.low) < parseInt(event.arguments.high)) {
+                    return new Array(count).fill(null).map((_, i) => ({ isPivot: i === parseInt(event.arguments.high) }))
+                }
+            }
+        }
+    }
 }

@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useMemo } from "react";
-import { addAnimationsToSteps, addOrder, addQuicksortHighlighting, addRecursionStages } from "./post-processors";
+import { addAnimationsToSteps, addOrder, addPersistentIndexes, addRecursionStages, enrichPivotElement } from "./post-processors";
 
 
 
 export default function QuickSortVisualization({ analysis, timePerStep, currentStepIndex}) {
-    const steps = useMemo(() => analysis && addAnimationsToSteps(addOrder(addQuicksortHighlighting(addRecursionStages(analysis)))), [analysis])
-    console.log(analysis, steps)
+    const steps = useMemo(() => analysis && addAnimationsToSteps(addPersistentIndexes(addRecursionStages(addOrder(analysis, enrichPivotElement)))), [analysis])
+    console.log(steps)
     const step = useMemo(() => steps[currentStepIndex], [steps, currentStepIndex])
     const stageCount = useMemo(() => step.stages.length, [step])
     return (
@@ -51,7 +51,8 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                                 "absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center",
                                                 step.className[stage.left + index],
                                                 {
-                                                    'border-green-500 border-4 bg-green-200': step.quicksort.persistentIndexes.includes(stage.left + index),
+                                                    'bg-amber-300': item.additional?.isPivot,
+                                                    'border-green-500 border-4 bg-green-200': step.persistentIndexes.includes(stage.left + index),
                                                 }
                                             )}>
                                             {item.value}
