@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { addAnimationsToSteps, addOrder, addPersistentIndexes, addRecursionStages, enrichPivotElement } from "./post-processors";
 
 
 
 export default function QuickSortVisualization({ analysis, timePerStep, currentStepIndex}) {
     const steps = useMemo(() => analysis && addAnimationsToSteps(addPersistentIndexes(addRecursionStages(addOrder(analysis, enrichPivotElement)))), [analysis])
-    console.log(steps)
+    useEffect(() => console.log(steps), [steps])
     const step = useMemo(() => steps[currentStepIndex], [steps, currentStepIndex])
     const stageCount = useMemo(() => step.stages.length, [step])
     const comparison = useMemo(() => {
@@ -29,10 +29,10 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                 let lhs = `${comp.operation.lhs} = ${comp.lhs.value}`
                 let rhs = `${comp.rhs.value} = ${comp.operation.rhs}`
                 const op = comp.operation.op
-                if (comp.lhs.index) {
+                if (comp.lhs.index !== null) {
                     lhs = `${comp.operation.lhs} = array[${comp.lhs.index}] = ${comp.lhs.value}`
                 }
-                if (comp.rhs.index) {
+                if (comp.rhs.index !== null) {
                     rhs = `${comp.rhs.value} = array[${comp.rhs.index}] = ${comp.operation.rhs}`
                 }
                 return `${lhs} ${op} ${rhs}`

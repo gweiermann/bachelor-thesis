@@ -61,4 +61,5 @@ def steps_of_function(frame, process, thread):
 
         yield frame
 
+        # thread.StepInstruction(False)
         thread.StepInto()

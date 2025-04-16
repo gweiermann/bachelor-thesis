@@ -17,7 +17,7 @@ class CompareOperationWatcher(Collector):
                 result_list.append({
                     'operation': op,
                     'lhsValue': frame.EvaluateExpression(op['lhs']).GetValue(),
-                    'rhsValue': frame.EvaluateExpression(op['rhs']).GetValue(),
+                    'rhsValue': frame.EvaluateExpression(op['rhs']).GetValue()
                 })
         if result_list == []:
             return None
