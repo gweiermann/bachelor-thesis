@@ -2,12 +2,16 @@ from .array_watcher import ArrayWatcher
 from .current_scope import CurrentScope
 from .current_line import CurrentLine
 from .recursion_watcher import RecursionWatcher
+from .compare_operation_watcher import CompareOperationWatcher
+from .array_compare_operation_watcher import ArrayCompareOperationWatcher
 
 collectors = {
     'arrayWatcher': ArrayWatcher,
     'currentScope': CurrentScope,
     'currentLine': CurrentLine,
     'recursionWatcher': RecursionWatcher,
+    'compareOperationWatcher': CompareOperationWatcher,
+    'arrayCompareOperationWatcher': ArrayCompareOperationWatcher,
 }
 
 def get_collector(name):

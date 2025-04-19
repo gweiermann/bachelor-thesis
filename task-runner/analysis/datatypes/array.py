@@ -5,6 +5,7 @@ class Array:
         self.array_name = array_name
         self.array_ref = Array.__get_array_ref(frame, array_name)
         self.size = Array.__get_size(frame, size_name)
+        self.byte_size = self.array_ref.Dereference().GetByteSize()
 
     def __get_size(frame, size_name):
         size = frame.FindVariable(size_name)
@@ -19,4 +20,18 @@ class Array:
         return array_ref
     
     def get(self):
-        return tuple(int(self.array_ref.GetChildAtIndex(i, lldb.eDynamicCanRunTarget, True).GetValue(), 0) for i in range(self.size))
+        values = (self.array_ref.GetChildAtIndex(i, lldb.eDynamicCanRunTarget, True).GetValue() for i in range(self.size))
+        return tuple(int(val, 0) if type(val) is int else val for val in values)
+
+    def get_referenced_index(self, pointer: lldb.SBValue) -> int:
+        """
+        Get the index of the element that is referenced by the pointer value.
+        Returns None otherwise
+        """
+        if not pointer.TypeIsPointerType():
+            return None
+        
+        index = (int(pointer.GetValue(), 0) - int(self.array_ref.GetValue(), 0)) / self.byte_size
+        if index >= 0 and index < self.size:
+            return index
+        return None

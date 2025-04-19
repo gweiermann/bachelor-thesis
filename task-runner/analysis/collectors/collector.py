@@ -1,16 +1,17 @@
 
 class Collector:
-    def from_dict(config, frame):
+    def from_dict(config, frame, user_cpp_filename):
         from .register import get_collector
         collector_name = config['type']
         collector = get_collector(collector_name)
         key = config['key']
         parameters = config.get('parameters', {})
-        return collector(key, parameters, frame)
+        return collector(key, parameters, frame, user_cpp_filename)
 
-    def __init__(self, key, parameters, frame):
+    def __init__(self, key, parameters, frame, user_cpp_filename):
         self.key = key
         self.parameters = parameters
+        self.user_cpp_filename = user_cpp_filename
         self.setup(frame, **parameters)
 
     def process_step(self, frame):

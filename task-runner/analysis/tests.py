@@ -3,6 +3,7 @@ from output import print_status, print_error, print_result
 import preparation
 
 executable_filename = "/tmp/a.out"
+user_cpp_filename = "/tmp/user.cpp"
 
 
 def chunks(lst):
@@ -47,7 +48,7 @@ def entrypoint(preset, function_bodies):
     Run the tests specified in the config.
     """
 
-    preparation.compile_target(preset, 'test', function_bodies, executable_filename, compile_flags=['-O2'])
+    preparation.compile_target(preset, 'test', function_bodies, executable_filename, user_cpp_filename, compile_flags=['-O2'])
 
     print_status("Running tests...")
     

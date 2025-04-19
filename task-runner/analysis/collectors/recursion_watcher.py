@@ -29,8 +29,6 @@ class RecursionWatcher(Collector):
 
     
     def step(self, frame):
-        if self.stack_trace is None:
-            raise Exception("really none")
         if len(self.stack_trace) == 0:
             return None
 
