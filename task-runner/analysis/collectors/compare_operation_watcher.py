@@ -4,8 +4,8 @@ from clang import cindex
 class CompareOperationWatcher(Collector):
     def setup(self, frame):
         index = cindex.Index.create()
-        tu = index.parse(self.user_cpp_filename, args=['-std=c++17'])
-        self.compare_operations = CompareOperationWatcher.extract_compare_operations(tu.cursor)
+        token = index.parse(self.user_cpp_filename, args=['-std=c++17'])
+        self.compare_operations = CompareOperationWatcher.extract_compare_operations(token.cursor)
         self.previous = None
     
     def actual_step(self, frame):
@@ -35,34 +35,41 @@ class CompareOperationWatcher(Collector):
         results = []
         if node.kind == cindex.CursorKind.BINARY_OPERATOR:
             bin_ops = { '<', '>', '<=', '>=', '==', '!=' }
-            token_strs = [t.spelling for t in node.get_tokens()]
+            raw = ''.join(t.spelling for t in node.get_tokens())
 
-            for i, tok in enumerate(token_strs):
-                if tok in bin_ops:
-                    lhs = ''.join(token_strs[:i])
-                    rhs = ''.join(token_strs[i+1:])
-                    op = tok
+            children = list(node.get_children())
 
-                    # extract range
-                    extent = node.extent
-                    start = extent.start
-                    end = extent.end
+            if len(children) != 2:
+                raise Exception(f'unexpected number of children for binary operator: {len(children)}')
+            
+            child1 = children[0]
+            child2 = children[1]
 
-                    results.append({
-                        'lhs': lhs,
-                        'op': op,
-                        'rhs': rhs,
-                        'range': {
-                            'start': {
-                                'line': start.line,
-                                'col': start.column,
-                            },
-                            'end': {
-                                'line': end.line,
-                                'col': end.column,
-                            }
+            lhs = ''.join(t.spelling for t in child1.get_tokens())
+            rhs = ''.join(t.spelling for t in child2.get_tokens())
+            op = raw[len(lhs):-len(rhs)]
+            
+            if op in bin_ops:
+                # extract range
+                extent = node.extent
+                start = extent.start
+                end = extent.end
+
+                results.append({
+                    'lhs': lhs,
+                    'op': op,
+                    'rhs': rhs,
+                    'range': {
+                        'start': {
+                            'line': start.line,
+                            'col': start.column,
+                        },
+                        'end': {
+                            'line': end.line,
+                            'col': end.column,
                         }
-                    })
+                    }
+                })                
                 
         for child in node.get_children():
             results.extend(CompareOperationWatcher.extract_compare_operations(child))

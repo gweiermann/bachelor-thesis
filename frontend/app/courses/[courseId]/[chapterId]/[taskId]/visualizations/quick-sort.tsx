@@ -37,13 +37,13 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                 }
                 return `${lhs} ${op} ${rhs}`
             })
-        ].join(', ')
+        ].join('\n')
     }, [step])
     return (
         <div className="flex flex-col gap-2 h-full">
-            <div className="mb-4">
+            <pre className="mb-4">
                 {comparison ?? "No comparison"}
-            </div>
+            </pre>
             <div className="flex flex-col gap-4 h-full" style={{ '--col-count': `2fr repeat(${step.order.length}, minmax(0, 1fr))` } as React.CSSProperties}>
                 <AnimatePresence>
                     {step.stages.map((stage, stageIndex) => (
