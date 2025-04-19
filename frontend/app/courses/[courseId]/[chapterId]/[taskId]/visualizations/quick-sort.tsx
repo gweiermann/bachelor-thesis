@@ -41,8 +41,10 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
     }, [step])
     return (
         <div className="flex flex-col gap-2 h-full">
-            <div>{comparison ?? "No comparison"}</div>
-            <div className="flex flex-col gap-2 h-full" style={{ '--col-count': `repeat(${step.order.length}, minmax(0, 1fr))` } as React.CSSProperties}>
+            <div className="mb-4">
+                {comparison ?? "No comparison"}
+            </div>
+            <div className="flex flex-col gap-4 h-full" style={{ '--col-count': `2fr repeat(${step.order.length}, minmax(0, 1fr))` } as React.CSSProperties}>
                 <AnimatePresence>
                     {step.stages.map((stage, stageIndex) => (
                         <motion.ul
@@ -54,7 +56,13 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                 duration: timePerStep,
                                 type: 'spring',
                             }}
-                            className={cn("grid gap-2 grid-cols-(--col-count) h-1")}>
+                            className={cn("grid gap-2 grid-cols-(--col-count) h-6")}>
+
+                            <div className="col-1 flex align-center w-full">
+                                <div>
+                                    sort(arr, {stage.left}, {stage.right})
+                                </div>
+                            </div>
                             
                             {step.order.slice(stage.left, stage.right + 1).map((item, index) => 
                                 <motion.li
@@ -64,8 +72,13 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                         duration: timePerStep,
                                         type: 'spring',
                                     }}
-                                    className="size-16 col-(--col-index)"
-                                    style={{ '--col-index': stage.left + index + 1 } as React.CSSProperties}
+                                    className={cn(
+                                        "size-16 col-(--col-index)",
+                                        {
+                                            'h-6': stageIndex < stageCount - 1,
+                                        }
+                                    )}
+                                    style={{ '--col-index': stage.left + index + 2 } as React.CSSProperties}
                                     >
                                     <motion.div
                                         animate={{ opacity: 1, scale: 1 }}
