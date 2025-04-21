@@ -21,10 +21,6 @@
             "key": "recursion"
         },
         {
-            "type": "compareOperationWatcher",
-            "key": "comparisons"
-        },
-        {
             "type": "arrayCompareOperationWatcher",
             "parameters": {
                 "name": "arr",
