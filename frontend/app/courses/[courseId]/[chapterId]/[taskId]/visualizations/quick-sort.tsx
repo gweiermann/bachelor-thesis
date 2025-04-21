@@ -64,7 +64,7 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                 {step.order.slice(stage.left, stage.right + 1).map((item, index) => 
                                     <motion.li
                                         key={step.order[stage.left + index].orderId}
-                                        id={stageIndex === stageCount - 1 ? `item-${stage.left + index}` : null}
+                                        id={stageIndex === stageCount - 1 || (index + stage.left < step.stages[stageIndex + 1].left || step.stages[stageIndex + 1].right < index + stage.left)  ? `item-${stage.left + index}` : null}
                                         layout
                                         transition={{
                                             duration: timePerStep,
