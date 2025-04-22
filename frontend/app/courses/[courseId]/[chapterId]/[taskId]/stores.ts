@@ -25,10 +25,17 @@ export interface TestCaseResult {
 
 interface TestsStore extends FetchStore<TestCaseResult[]> { }
 
+export interface HighlightRange {
+    range: { start: { line: number, column: number }, end: { line: number, column: number } }
+    color: string
+    hoverMessage?: string
+}
 interface VisualizationStore extends FetchStore<AnalysisResult> {
     type: VisualizationType
     activeLines: number[]
     setActiveLines: (activeLines: number[]) => void
+    highlightRanges: HighlightRange[],
+    setHighlightRanges: (highlightRanges: HighlightRange[]) => void,
 }
 
 export interface UserCodeStore {
@@ -94,7 +101,9 @@ export const useFetchStore = <T>(
 export const useVisualization = create<VisualizationStore>((set, get) => ({
     type: 'sort',
     activeLines: [],
-    setActiveLines: (activeLines: number[]) => set({ activeLines }),
+    setActiveLines: activeLines => set({ activeLines }),
+    highlightRanges: [],
+    setHighlightRanges: highlightRanges => set({ highlightRanges }),
     ...useFetchStore(set, get),
 }))
 

@@ -36,9 +36,6 @@ export default function LoadAnalysis({ task }: LoadAnalysisProps): null {
 
     useEffect(() => {
         setResult(analysisResult)
-        if (analysisResult) {
-            console.log(analysisResult)
-        }
     }, [analysisResult, setResult])
 
     return null
