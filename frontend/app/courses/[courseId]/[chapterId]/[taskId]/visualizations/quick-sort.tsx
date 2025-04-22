@@ -15,7 +15,8 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
     const itemCount = useMemo(() => step.order.length, [step])
     const setHighlightRanges = useVisualization(state => state.setHighlightRanges)
 
-    const [highlightColors,] = useState([ 'amber-500', 'green-500', 'blue-500', 'red-500', 'purple-500', 'pink-500' ])
+    const highlightColors = ['bg-fuchsia-500', 'bg-teal-500', 'bg-blue-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500' ]
+    const highlightColorVariables = Object.fromEntries(highlightColors.map(color => [color, `--color-${color.slice(3)}`]))
 
     const comparisons = useMemo(() => step.arrayComparisons?.map((comp, index) => {
         const lhsHasArrow = comp.lhs.index !== null
@@ -36,19 +37,19 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
             rhsIndex: comp.rhs.index,
             lhs,
             rhs,
-            lhsColor: highlightColors[(index * 2) % highlightColors.length],
-            rhsColor: highlightColors[(index * 2 + 1) % highlightColors.length],
+            lhsClassName: highlightColors[(index * 2) % highlightColors.length],
+            rhsClassName: highlightColors[(index * 2 + 1) % highlightColors.length],
             op: comp.operation.op,
             operation: comp.operation,
             comp,
             startIndex
         }
-    }) ?? [], [step, itemCount, highlightColors])
+    }) ?? [], [step, itemCount])
 
     useEffect(() => {
         setHighlightRanges(comparisons.flatMap(comp => [
-            { range: comp.operation.lhsRange, color: comp.lhsColor, hoverMessage: comp.comp.lhs.value },
-            { range: comp.operation.rhsRange, color: comp.rhsColor, hoverMessage: comp.comp.rhs.value  },
+            { range: comp.operation.lhsRange, className: comp.lhsClassName, hoverMessage: comp.comp.lhs.value },
+            { range: comp.operation.rhsRange, className: comp.rhsClassName, hoverMessage: comp.comp.rhs.value  },
         ]))
     }, [comparisons, setHighlightRanges])
 
@@ -124,22 +125,24 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                 <div>                
                     <ul className="flex flex-col gap-2 items-center">
                         {comparisons.map((comp, index) => (
-                            <li key={index} className="grid grid-cols-(--col-count) gap-2" style={{ '--col-start-index': comp.startIndex + 2 } as React.CSSProperties}>
+                            <li key={index} className="grid grid-cols-(--col-count)" style={{ '--col-start-index': comp.startIndex + 2 } as React.CSSProperties}>
                                 <div className={cn(
-                                        "min-w-16 min-h-8 text-center border-4 bg-white rounded flex justify-center items-center z-10 col-(--col-start-index)",
-                                    )} id={`lhs-${index}`} style={{ borderColor: `var(--color-${comp.lhsColor})` }}>
+                                        "min-w-16 min-h-8 text-center border-r-0 border-3 border-black rounded-l font-bold bg-white flex justify-center items-center z-10 col-(--col-start-index)",
+                                        comp.lhsClassName
+                                    )} id={`lhs-${index}`}>
                                     {comp.lhs}
                                 </div>
-                                <div className="min-w-16 min-h-8 border-4 border-stone-600 bg-white rounded flex justify-center items-center z-10">
+                                <div className="min-w-16 min-h-8 bg-gray-300 border-t-3 border-b-3 border-black font-bold flex justify-center items-center z-10">
                                     {comp.op}
                                 </div>
                                 <div className={cn(
-                                        "min-w-16 min-h-8 text-center border-4 bg-white rounded flex justify-center items-center z-10",
-                                    )} id={`rhs-${index}`} style={{ borderColor: `var(--color-${comp.rhsColor})` }}>
+                                        "min-w-16 min-h-8 text-cente border-l-0 border-3 border-black rounded-r font-bold bg-white flex justify-center items-center z-10",
+                                        comp.rhsClassName
+                                    )} id={`rhs-${index}`}>
                                     {comp.rhs}
                                 </div>
-                                {comp.lhsHasArrow && <Xarrow start={`lhs-${index}`} end={`item-${comp.lhsIndex}`} startAnchor='top' endAnchor='bottom' color={`var(--color-${comp.lhsColor})`} /> }
-                                {comp.rhsHasArrow && <Xarrow start={`rhs-${index}`} end={`item-${comp.rhsIndex}`} startAnchor='top' endAnchor='bottom' color={`var(--color-${comp.rhsColor})`} /> }
+                                {comp.lhsHasArrow && <Xarrow start={`lhs-${index}`} end={`item-${comp.lhsIndex}`} startAnchor='top' endAnchor='bottom' color={`var(${highlightColorVariables[comp.lhsClassName]})`} /> }
+                                {comp.rhsHasArrow && <Xarrow start={`rhs-${index}`} end={`item-${comp.rhsIndex}`} startAnchor='top' endAnchor='bottom' color={`var(${highlightColorVariables[comp.rhsClassName]})`} /> }
                             </li>
                         ))}
                     </ul>

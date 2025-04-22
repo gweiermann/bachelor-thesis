@@ -27,7 +27,7 @@ interface TestsStore extends FetchStore<TestCaseResult[]> { }
 
 export interface HighlightRange {
     range: { start: { line: number, column: number }, end: { line: number, column: number } }
-    color: string
+    className: string
     hoverMessage?: string
 }
 interface VisualizationStore extends FetchStore<AnalysisResult> {

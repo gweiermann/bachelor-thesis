@@ -37,9 +37,8 @@ function highlightTheRanges(editor: EditorType, highlightRanges: HighlightRange[
             endColumn: highlight.range.end.column,
         },
         options: {
-            className: cn(`bg-${highlight.color}`, 'opacity-40'),
-            hoverMessage: { value: highlight.hoverMessage },
-            inlineClassName: 'text-white '
+            className: cn(highlight.className, 'opacity-40'),
+            hoverMessage: { value: highlight.hoverMessage }
         },
     })));
 }
