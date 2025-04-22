@@ -88,7 +88,7 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                         className={cn(
                                             "size-16 col-(--col-index)",
                                             {
-                                                'h-6': stageIndex < stageCount - 1,
+                                                'h-6': stageIndex < stageCount - 1
                                             }
                                         )}
                                         style={{ '--col-index': stage.left + index + 2 } as React.CSSProperties}
@@ -110,6 +110,7 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                                         {
                                                             'bg-amber-300': item.additional?.isPivot,
                                                             'border-green-500 border-4 bg-green-200': step.persistentIndexes.includes(stage.left + index),
+                                                            'bg-gray-300 border-0 text-gray-300': stageIndex < stageCount - 1 && step.stages[stageIndex + 1].left <= stage.left + index && step.stages[stageIndex + 1].right >= stage.left + index,
                                                         }
                                                     )}>
                                                     {item.value}
