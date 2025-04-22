@@ -54,9 +54,9 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
     }, [comparisons, setHighlightRanges])
 
     return (
-        <div className="flex flex-col gap-2 h-full" style={{ '--col-count': `2fr repeat(${step.order.length}, minmax(0, 1fr))` } as React.CSSProperties}>
+        <div className="h-full flex flex-col gap-2" style={{ '--col-count': `2fr repeat(${step.order.length}, minmax(0, 1fr))` } as React.CSSProperties}>
             <Xwrapper>
-                <div className="flex flex-col gap-4 h-full">
+                <div className="flex flex-col h-full">
                     <AnimatePresence>
                         {step.stages.map((stage, stageIndex) => (
                             <motion.ul
@@ -68,12 +68,13 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                     duration: timePerStep,
                                     type: 'spring',
                                 }}
-                                className={cn("grid gap-2 grid-cols-(--col-count) h-6")}>
+                                className={cn(
+                                    "grid gap-2 grid-cols-(--col-count) h-20 even:bg-gray-100 odd:bg-gray-50 py-2 px-4 first:rounded-t last:rounded-b",
+                                    {'h-10': stageIndex < stageCount - 1}
+                                )}>
 
-                                <div className="col-1 flex align-center w-full">
-                                    <div>
-                                        sort(arr, {stage.left}, {stage.right})
-                                    </div>
+                                <div className="col-1 flex items-center h-full w-full">
+                                    sort(arr, {stage.left}, {stage.right})
                                 </div>
                                 
                                 {step.order.slice(stage.left, stage.right + 1).map((item, index) => 
@@ -86,10 +87,7 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                             type: 'spring',
                                         }}
                                         className={cn(
-                                            "size-16 col-(--col-index)",
-                                            {
-                                                'h-6': stageIndex < stageCount - 1
-                                            }
+                                            "w-16 col-(--col-index) h-full",
                                         )}
                                         style={{ '--col-index': stage.left + index + 2 } as React.CSSProperties}
                                         >
