@@ -11,7 +11,7 @@ interface RightColumnProps {
 
 export default function RightColumn({ task }: RightColumnProps) {
     const { runCode, isDirty, setFunctionBodies } = useUserCode()
-    const { activeLines } = useVisualization()
+    const { activeLines, highlightRanges } = useVisualization()
     const [initialFunctionBodies, setInitialFunctionBodies] = useState(null)
     const storageKey = useMemo(() => `functionBodies:${task.courseId}/${task.chapterId}/${task.id}`, [task])
 
@@ -46,7 +46,8 @@ export default function RightColumn({ task }: RightColumnProps) {
                     functionPrototypes={task.functionPrototypes}
                     initialFunctionBodies={initialFunctionBodies}
                     onChange={handleChange}
-                    activeLines={isDirty ? [] : activeLines} />
+                    activeLines={isDirty ? [] : activeLines}
+                    highlightRanges={isDirty ? [] : highlightRanges} />
             </div>
             <div className="flex flex-row justify-end">
                 <Button onClick={runCode}>

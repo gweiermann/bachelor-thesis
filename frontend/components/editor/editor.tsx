@@ -6,6 +6,8 @@ import MonacoEditor, { type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { useRef, useEffect, useMemo } from 'react'
 import './style.css'
+import { HighlightRange } from "@/app/courses/[courseId]/[chapterId]/[taskId]/stores";
+import { cn } from "@/lib/utils";
 
 type EditorType = editor.IStandaloneCodeEditor
 
@@ -26,11 +28,27 @@ function highlightLines(editor: EditorType, lines: number[]) {
     })));
 }
 
+function highlightTheRanges(editor: EditorType, highlightRanges: HighlightRange[]) {
+    return editor.createDecorationsCollection(highlightRanges.map(highlight => ({
+        range: {
+            startLineNumber: highlight.range.start.line - 3,
+            startColumn: highlight.range.start.column,
+            endLineNumber: highlight.range.end.line - 3,
+            endColumn: highlight.range.end.column,
+        },
+        options: {
+            className: cn(highlight.className, 'opacity-40'),
+            hoverMessage: { value: highlight.hoverMessage }
+        },
+    })));
+}
+
 interface EditorProps {
     functionPrototypes: string[]
     initialFunctionBodies: string[]
     onChange?: (value: string[]) => void
     activeLines?: number[]
+    highlightRanges: HighlightRange[]
 }
 
 interface Range {
@@ -89,9 +107,10 @@ function generateRestrictedRanges(strings: RangeString[]): RestrictedRanges {
 }
 
 
-export default function Editor({ functionPrototypes, initialFunctionBodies, onChange, activeLines = [] }: EditorProps) {
+export default function Editor({ functionPrototypes, initialFunctionBodies, onChange, activeLines = [], highlightRanges = [] }: EditorProps) {
     const monacoRef = useRef(null);
     const previousLineDecorationRef = useRef(null)
+    const previousHighlightDecorationRef = useRef(null)
     const constrainedInstance = useRef(null)
 
     const { result: defaultValue, ranges } = useMemo(
@@ -126,6 +145,13 @@ export default function Editor({ functionPrototypes, initialFunctionBodies, onCh
             monacoRef.current.revealLine(activeLines[0])
         }
     }, [activeLines, monacoRef, previousLineDecorationRef])
+
+    useEffect(() => {
+        previousHighlightDecorationRef.current?.clear()
+        if (monacoRef.current && highlightRanges.length) {
+            previousHighlightDecorationRef.current = highlightTheRanges(monacoRef.current, highlightRanges)
+        }
+    }, [highlightRanges, monacoRef, previousHighlightDecorationRef])
 
     const handleChange = () => {
         const functionBodies = monacoRef.current.getModel().getValueInEditableRanges()

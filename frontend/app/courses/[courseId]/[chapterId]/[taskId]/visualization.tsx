@@ -61,10 +61,6 @@ export default function Visualization({ task }: VisualizationProps) {
     const resetProp = useMemo(() => JSON.stringify(analysis), [analysis])  // force rerender on reset
 
     useEffect(() => {
-        console.log('steps', analysis)
-    }, [analysis])
-
-    useEffect(() => {
         setActiveLines(activeLines)
     }, [activeLines, setActiveLines])
 

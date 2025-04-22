@@ -62,11 +62,31 @@ class CompareOperationWatcher(Collector):
                     'range': {
                         'start': {
                             'line': start.line,
-                            'col': start.column,
+                            'column': start.column,
                         },
                         'end': {
                             'line': end.line,
-                            'col': end.column,
+                            'column': end.column,
+                        }
+                    },
+                    'lhsRange': {
+                        'start': {
+                            'line': child1.extent.start.line,
+                            'column': child1.extent.start.column,
+                        },
+                        'end': {
+                            'line': child1.extent.end.line,
+                            'column': child1.extent.end.column,
+                        }
+                    },
+                    'rhsRange': {
+                        'start': {
+                            'line': child2.extent.start.line,
+                            'column': child2.extent.start.column,
+                        },
+                        'end': {
+                            'line': child2.extent.end.line,
+                            'column': child2.extent.end.column,
                         }
                     }
                 })                
