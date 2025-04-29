@@ -12,7 +12,7 @@ export default async function Page({ params }: PageProps) {
     const task = await getTask(courseId, chapterId, taskId)
     const course = await getCourse(courseId)
     const chapter = await getChapter(courseId, chapterId)
-    const template = await getTemplate(taskId)
+    const template = await getTemplate(task.presetName)
 
     if (!task) {
         return <div>Task not found!</div>

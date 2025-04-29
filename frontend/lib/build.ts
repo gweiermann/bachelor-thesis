@@ -14,37 +14,37 @@ export type AnalysisResultStepEvent =
     { type: 'swap', index1: number, index2: number } | 
     { type: 'replace', index: number, oldValue: number, newValue: number }
 
-export async function runAnalysis(task: Task, functionBodies: string[], onStatusUpdate: (message: string) => void): Promise<AnalysisResult> | never {  
-    if (!functionBodies) {
+export async function runAnalysis(task: Task, code: string, onStatusUpdate: (message: string) => void): Promise<AnalysisResult> | never {  
+    if (!code) {
         return null
     }
 
     return runBuild({
         type: 'analyse',
-        functionBodies,
+        code,
         presetName: task.presetName
     }, onStatusUpdate)
 }
 
-export async function runTests(task: Task, functionBodies: string[], onStatusUpdate: (message: string) => void): Promise<TestCaseResult[]> | never {  
-    if (!functionBodies) {
+export async function runTests(task: Task, code: string, onStatusUpdate: (message: string) => void): Promise<TestCaseResult[]> | never {  
+    if (!code) {
         return null
     }
 
     return runBuild({
         type: 'test',
-        functionBodies,
+        code,
         presetName: task.presetName
     }, onStatusUpdate)
 }
 
 type BuildPayload = {
     type: 'analyse'
-    functionBodies: string[]
+    code: string
     presetName: string
 } | {
     type: 'test'
-    functionBodies: string[]
+    code: string
     presetName: string
 }
 

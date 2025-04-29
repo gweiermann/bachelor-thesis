@@ -1,6 +1,6 @@
 
 export interface Template {
-    taskId: string
+    presetName: string
     template: string
     ranges: {
         start: {
@@ -17,9 +17,9 @@ export interface Template {
     }[]
 }
 
-export async function getTemplate(taskName: string): Promise<Template> {
+export async function getTemplate(presetName: string): Promise<Template> {
     'use server'
-    const response = await fetch(`http://task-runner/template/${taskName}`, {
+    const response = await fetch(`http://task-runner/template/${presetName}`, {
         method: 'GET'
     })
     const result = await response.json()

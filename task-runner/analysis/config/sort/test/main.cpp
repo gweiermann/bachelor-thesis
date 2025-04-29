@@ -1,5 +1,5 @@
 #include <iostream>
-#include "user-input.h"
+void sort(int*, int);
 
 int main() {
     int testCases;

@@ -10,9 +10,9 @@ import preparation
 executable_filename = "/tmp/a.out"
 user_cpp_filename = "/tmp/user.cpp"
 
-def entrypoint(preset, function_bodies):
+def entrypoint(preset, code):
     try:
-        preparation.compile_target(preset, 'analysis', function_bodies, executable_filename, user_cpp_filename, compile_flags=['-g'])
+        preparation.compile_target(preset, 'analysis', code, executable_filename, user_cpp_filename, compile_flags=['-g'])
         
         function_name = preset['manifest']['entrypointFunction']
         collect_configs = preset['analysis']['collect']

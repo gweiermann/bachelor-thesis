@@ -13,7 +13,6 @@ def find_preset(name):
     if not os.path.isdir(dir):
         raise ValueError(f"There is no preset for {name}.")
     manifest_file = dir + "/manifest.json"
-    h_file = dir + "/user-input.h"
     analysis_config_file = dir + "/analysis/analysis.json"
     analysis_cpp_file = dir + "/analysis/main.cpp"
     test_config_file = dir + "/test/testcases.json"
@@ -21,8 +20,6 @@ def find_preset(name):
 
     if not os.path.isfile(manifest_file):
         raise ValueError(f"Manifest file {manifest_file} does not exist.")
-    if not os.path.isfile(h_file):
-        raise ValueError(f"Header file {h_file} does not exist.")
     if not os.path.isfile(analysis_config_file):
         raise ValueError(f"Analysis config file {analysis_config_file} does not exist.")
     if not os.path.isfile(analysis_cpp_file):
@@ -34,7 +31,6 @@ def find_preset(name):
     
     return {
         'manifest': read_json(manifest_file),
-        'h_filename': h_file,
         'analysis': read_json(analysis_config_file),
         'analysis_cpp_filename': analysis_cpp_file,
         'testCases': read_json(test_config_file),

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "user-input.h"
+void quickSort(int* arr, int n);
 
 int main() {
     int testCases;

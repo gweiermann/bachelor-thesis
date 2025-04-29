@@ -63,7 +63,7 @@ app.ws('/build', (ws, req) => {
             }
 
             taskIsRunning = true
-            const result = await runBuild(config.type, config.presetName, config.functionBodies, message => {
+            const result = await runBuild(config.type, config.presetName, config.code, message => {
                 ws.send(JSON.stringify({
                     type: 'status',
                     message
@@ -112,13 +112,13 @@ function debugError(id, msg, force = false) {
     }
 }
 
-function runBuild(type, presetName, functionBodies, onStatusUpdate) {
+function runBuild(type, presetName, code, onStatusUpdate) {
     const id = String(idCounter++).padStart(3, '0')
     debug(id, `Starting build process. Type: ${type}, Preset: ${presetName}`)
 
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, ...functionBodies.map(functionBody => JSON.stringify(functionBody))],
+            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
             { cwd: path.join(process.cwd())}
         );
 

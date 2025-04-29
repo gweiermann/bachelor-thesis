@@ -32,9 +32,9 @@ function highlightLines(editor: EditorType, lines: number[]) {
 function highlightTheRanges(editor: EditorType, highlightRanges: HighlightRange[]) {
     return editor.createDecorationsCollection(highlightRanges.map(highlight => ({
         range: {
-            startLineNumber: highlight.range.start.line - 3,
+            startLineNumber: highlight.range.start.line,
             startColumn: highlight.range.start.column,
-            endLineNumber: highlight.range.end.line - 3,
+            endLineNumber: highlight.range.end.line,
             endColumn: highlight.range.end.column,
         },
         options: {
@@ -47,7 +47,7 @@ function highlightTheRanges(editor: EditorType, highlightRanges: HighlightRange[
 interface EditorProps {
     template: Template
     initialFunctionBodies: string[]
-    onChange?: (value: string[]) => void
+    onChange?: (bodies: string[], code: string) => void
     activeLines?: number[]
     highlightRanges: HighlightRange[]
 }
@@ -134,10 +134,10 @@ export default function Editor({ template, initialFunctionBodies, onChange, acti
     
     const defaultValue = template.template
 
-    const handleChange = useCallback(() => {
+    const handleChange = useCallback((value: string) => {
         const functionBodies = monacoRef.current.getModel().getValueInEditableRanges()
         const bodiesAsArray = template.ranges.map((_, index) => functionBodies['body' + index]) as string[]
-        onChange?.(bodiesAsArray)
+        onChange?.(bodiesAsArray, value)
     }, [template, onChange, monacoRef])
 
     const handleEditorDidMount = useCallback((editor: EditorType, monaco: Monaco) => {
@@ -156,7 +156,7 @@ export default function Editor({ template, initialFunctionBodies, onChange, acti
 
         model.updateValueInEditableRanges(Object.fromEntries(initialFunctionBodies.map((body, index) => [`body${index}`, body])))
 
-        handleChange()
+        handleChange(editor.getValue())
     }, [initialFunctionBodies, template, handleChange])
 
     useEffect(() => {

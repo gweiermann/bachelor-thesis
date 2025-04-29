@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 
-export async function getTemplate(taskId) {
-    const templatePath = `./analysis/config/${taskId}/template.cpp`
+export async function getTemplate(presetName) {
+    const templatePath = `./analysis/config/${presetName}/template.cpp`
     const data = await readFile(templatePath, 'utf-8').catch(() => null)
     if (!data) {
         return null
@@ -51,7 +51,7 @@ export async function getTemplate(taskId) {
         previousLine = line
     }
     return {
-        taskId,
+        presetName,
         template: result,
         ranges
     }

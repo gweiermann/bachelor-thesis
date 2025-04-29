@@ -12,7 +12,7 @@ interface RightColumnProps {
 }
 
 export default function RightColumn({ task, template }: RightColumnProps) {
-    const { runCode, isDirty, setFunctionBodies } = useUserCode()
+    const { runCode, isDirty, setCode } = useUserCode()
     const { activeLines, highlightRanges } = useVisualization()
     const storageKey = useMemo(() => `functionBodies:${task.courseId}/${task.chapterId}/${task.id}`, [task])
 
@@ -23,8 +23,8 @@ export default function RightColumn({ task, template }: RightColumnProps) {
             .map(([code, range]) => !code.trim() ? range.initialCode : code) // if the code is empty, use initialCode
     }, [template, storageKey])
 
-    function handleChange(functionBodies: string[]) {
-        setFunctionBodies(functionBodies)
+    function handleChange(functionBodies: string[], code: string) {
+        setCode(code)
         localStorage.setItem(storageKey, JSON.stringify(functionBodies))
     }
 
@@ -48,6 +48,6 @@ export default function RightColumn({ task, template }: RightColumnProps) {
                     Try it out!
                 </Button>
             </div>
-        </div>
+        </div>  
     )
 }

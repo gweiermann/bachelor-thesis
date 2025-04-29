@@ -1,6 +1,9 @@
-// insert custom functions here (or prototypes)
+void quickSort(int*, int);
+void quickSortRecursive(int*, int, int);
+int partition(int*, int, int);
+// your own prototypes:
 // <user-code-start>
-void swap(int* a, int* b);
+void swap(int&, int&);
 
 // <user-code-end>
 void quickSort(int* arr, int n) {
@@ -8,6 +11,8 @@ void quickSort(int* arr, int n) {
     quickSortRecursive(arr, 0, n - 1);
 // <user-code-end>
 }
+
+// -------- what you need to implement: ------------------
 
 void quickSortRecursive(int* arr, int low, int high) {
 // <user-code-start>
@@ -21,11 +26,13 @@ int partition(int* arr, int low, int high) {
 // <user-code-end>
 }
 
-// insert custom functions here (if prototype is defined above)
+// -----------------------------------------------------------
+
+// your own functions:
 // <user-code-start>
-void swap(int* a, int* b) {
-    int temp = *a;
-    *a = *b;
-    *b = temp;
+void swap(int& a, int& b) {
+    int temp = a;
+    a = b;
+    b = temp;
 }
 // <user-code-end>

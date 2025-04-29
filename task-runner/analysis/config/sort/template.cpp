@@ -4,7 +4,7 @@
 void swap(int* a, int* b);
 // <user-code-end>
 
-void bubbleSort(int* arr, int n) {
+void sort(int* arr, int n) {
     // <user-code-start>
     // todo: add your code here
     // <user-code-end>

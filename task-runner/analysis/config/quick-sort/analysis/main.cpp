@@ -1,4 +1,4 @@
-#include "user-input.h"
+void quickSort(int* arr, int n);
 
 int main() {
     int arr[] = {5, 2, 7, 1, 8, 3, 6, 4};
