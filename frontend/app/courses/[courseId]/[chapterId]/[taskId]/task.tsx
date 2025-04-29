@@ -9,9 +9,10 @@ import { type Task } from '@/lib/db'
 
 interface TaskProps {
     task: Task
+    template: Template
 }
 
-export default function Task({ task }: TaskProps) {
+export default function Task({ task, template }: TaskProps) {
     return (
         <div className="flex flex-col overflow-auto bg-background">
             <div className="overflow-auto">
@@ -25,7 +26,7 @@ export default function Task({ task }: TaskProps) {
                     <ResizableHandle />
 
                     <ResizablePanel defaultSize={40} className="p-4">
-                        <RightColumn task={task} />
+                        <RightColumn task={task} template={template} />
                     </ResizablePanel>
                 </ResizablePanelGroup>
             </div>

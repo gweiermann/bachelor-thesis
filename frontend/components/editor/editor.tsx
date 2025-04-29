@@ -4,10 +4,11 @@
 import { constrainedEditor } from "constrained-editor-plugin";
 import MonacoEditor, { type Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useCallback } from 'react'
 import './style.css'
 import { HighlightRange } from "@/app/courses/[courseId]/[chapterId]/[taskId]/stores";
 import { cn } from "@/lib/utils";
+import { Template } from "@/lib/get-template";
 
 type EditorType = editor.IStandaloneCodeEditor
 
@@ -44,7 +45,7 @@ function highlightTheRanges(editor: EditorType, highlightRanges: HighlightRange[
 }
 
 interface EditorProps {
-    functionPrototypes: string[]
+    template: Template
     initialFunctionBodies: string[]
     onChange?: (value: string[]) => void
     activeLines?: number[]
@@ -106,22 +107,40 @@ function generateRestrictedRanges(strings: RangeString[]): RestrictedRanges {
     }
 }
 
+function insertIntoString(str: string, index: number, value: string): string {
+    return str.slice(0, index) + value + str.slice(index);
+}
 
-export default function Editor({ functionPrototypes, initialFunctionBodies, onChange, activeLines = [], highlightRanges = [] }: EditorProps) {
+function insertsIntoString(base: string, ...inserts: {index: number, value: string}[]): string {
+    let result = base
+    let index = 0
+    inserts.forEach(insert => {
+        const { index: insertIndex, value } = insert
+        result = insertIntoString(result, index + insertIndex, value)
+        index += value.length
+    })
+    return result
+}
+
+// https://stackoverflow.com/a/51399781/6368046
+type ArrayElement<ArrayType extends readonly unknown[]> = 
+  ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
+
+export default function Editor({ template, initialFunctionBodies, onChange, activeLines = [], highlightRanges = [] }: EditorProps) {
     const monacoRef = useRef(null);
     const previousLineDecorationRef = useRef(null)
     const previousHighlightDecorationRef = useRef(null)
     const constrainedInstance = useRef(null)
+    
+    const defaultValue = template.template
 
-    const { result: defaultValue, ranges } = useMemo(
-        () => generateRestrictedRanges(functionPrototypes.flatMap((functionPrototype, index) => ([
-            [ 'restrict', functionPrototype + '\n{' ],
-            [ 'mutable', initialFunctionBodies?.[index] ?? '' ],
-            [ 'restrict', '\n}' + (index === functionPrototypes.length - 1 ? '' : '\n\n') ]
-        ]))
-    ), [functionPrototypes, initialFunctionBodies])
+    const handleChange = useCallback(() => {
+        const functionBodies = monacoRef.current.getModel().getValueInEditableRanges()
+        const bodiesAsArray = template.ranges.map((_, index) => functionBodies['body' + index]) as string[]
+        onChange?.(bodiesAsArray)
+    }, [template, onChange, monacoRef])
 
-    const handleEditorDidMount = (editor: EditorType, monaco: Monaco) => {
+    const handleEditorDidMount = useCallback((editor: EditorType, monaco: Monaco) => {
         monacoRef.current = editor
 
         constrainedInstance.current = constrainedEditor(monaco)
@@ -129,14 +148,16 @@ export default function Editor({ functionPrototypes, initialFunctionBodies, onCh
         constrainedInstance.current.initializeIn(editor)
         constrainedInstance.current.toggleDevMode()
 
-        constrainedInstance.current.addRestrictionsTo(model, ranges.map((range, index) => ({
-            range: [range.startLineNumber, range.startColumn, range.endLineNumber, range.endColumn],
+        constrainedInstance.current.addRestrictionsTo(model, template.ranges.map((range, index) => ({
+            range: [range.start.line, range.start.column, range.end.line, range.end.column],
             allowMultiline: true,
             label: `body${index}`
         })))
 
+        model.updateValueInEditableRanges(Object.fromEntries(initialFunctionBodies.map((body, index) => [`body${index}`, body])))
+
         handleChange()
-    }
+    }, [initialFunctionBodies, template, handleChange])
 
     useEffect(() => {
         previousLineDecorationRef.current?.clear()
@@ -152,13 +173,7 @@ export default function Editor({ functionPrototypes, initialFunctionBodies, onCh
             previousHighlightDecorationRef.current = highlightTheRanges(monacoRef.current, highlightRanges)
         }
     }, [highlightRanges, monacoRef, previousHighlightDecorationRef])
-
-    const handleChange = () => {
-        const functionBodies = monacoRef.current.getModel().getValueInEditableRanges()
-        const bodiesAsArray = functionPrototypes.map((_, index) => functionBodies['body' + index]) as string[]
-        onChange?.(bodiesAsArray)
-    }
-
+    
     return (
         <MonacoEditor
             height="70vh"

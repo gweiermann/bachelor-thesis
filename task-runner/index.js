@@ -1,16 +1,30 @@
-import { WebSocketServer } from 'ws'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import split2 from 'split2'
+import express from 'express'
+import expressWs from 'express-ws'
+import { getTemplate } from './get-template.js'
+import { error } from 'node:console'
 
-const wss = new WebSocketServer({ port: 80 });
+const app = express()
+expressWs(app)
 
 const maxConnections = 5;
 let connections = 0;
 
 const isDebugMode = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
 
-wss.on('connection', ws => {
+app.get('/template/:taskId', async (req, res) => {
+    const template = await getTemplate(req.params.taskId)
+    if (!template) {
+        res.status(404).json({ ok: false, error: `Template '${req.params.taskId}' not found` })
+        return
+    }
+    res.json({ ok: true, data: template })
+})
+
+
+app.ws('/build', (ws, req) => {
     if (connections >= maxConnections) {
         ws.send(JSON.stringify({
             type: 'error',
@@ -153,3 +167,7 @@ function runBuild(type, presetName, functionBodies, onStatusUpdate) {
         throw e
     })
 }
+
+app.listen(80, () => {
+    console.log('Server is running on port 80')
+})
