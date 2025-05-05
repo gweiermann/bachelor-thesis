@@ -52,7 +52,7 @@ class SkipInterSwappingSteps(Postprocessor):
             self.skip_information = current_step
             return False
 
-        current_step = {**current_step, self.key: self.skip_information}
+        current_step[self.key] = self.skip_information
         self.skip_information = None
 
         return True            
