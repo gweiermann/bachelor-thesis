@@ -52,80 +52,6 @@ interface EditorProps {
     highlightRanges: HighlightRange[]
 }
 
-interface Range {
-    startLineNumber: number
-    startColumn: number
-    endLineNumber: number
-    endColumn: number
-}
-
-interface RestrictedRanges {
-    ranges: Range[]
-    result: string
-}
-
-type RangeString = [ 'restrict', string ] | [ 'mutable', string] | [ 'mutable-dont-track', string ]
-
-/**
- * Concatenates all the strings in the array into a single string
- * It will also generate a range for each argument which says it should be mutable (the monaco plugin will restrict everything else)
- * @param strings - The strings to concatenate
- * @return - The concatenated string and the ranges for each argument which position is odd
- * @example
- *  generateRestrictedRanges(['restrict', "will be restricted "], ['mutable', "won't be \n restricted "], ['restrict', "will be restricted again"]])
- *  will generate:
- *  { "result":"will be restricted won't be \\n restricted will be restricted again", "ranges": [[1,21,2,13]] }
- */
-function generateRestrictedRanges(strings: RangeString[]): RestrictedRanges {
-    const ranges: Range[] = []
-    let currentLine = 1
-    let currentColumn = 1
-    strings.forEach(([type, string]) => {
-        const lines = string.split('\n')
-        const lastLine = lines.length - 1
-        let lastColumn = lines[lastLine].length + 1
-
-        if (lines.length === 1) {
-            lastColumn += currentColumn
-        }
-
-        if (type === 'mutable') {
-            ranges.push({
-                startLineNumber: currentLine,
-                startColumn: currentColumn,
-                endLineNumber: currentLine + lastLine,
-                endColumn: lastColumn
-            })
-        }
-
-        currentLine += lastLine
-        currentColumn = lastColumn
-    })
-    return {
-        result: strings.map(([, str]) => str).join(''),
-        ranges,
-    }
-}
-
-function insertIntoString(str: string, index: number, value: string): string {
-    return str.slice(0, index) + value + str.slice(index);
-}
-
-function insertsIntoString(base: string, ...inserts: {index: number, value: string}[]): string {
-    let result = base
-    let index = 0
-    inserts.forEach(insert => {
-        const { index: insertIndex, value } = insert
-        result = insertIntoString(result, index + insertIndex, value)
-        index += value.length
-    })
-    return result
-}
-
-// https://stackoverflow.com/a/51399781/6368046
-type ArrayElement<ArrayType extends readonly unknown[]> = 
-  ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
-
 export default function Editor({ template, initialFunctionBodies, onChange, activeLines = [], highlightRanges = [] }: EditorProps) {
     const monacoRef = useRef(null);
     const previousLineDecorationRef = useRef(null)
@@ -154,7 +80,17 @@ export default function Editor({ template, initialFunctionBodies, onChange, acti
             label: `body${index}`
         })))
 
+        // fill ranges with user code
         model.updateValueInEditableRanges(Object.fromEntries(initialFunctionBodies.map((body, index) => [`body${index}`, body])))
+
+        // collapse pragma regions
+        editor.trigger(null, 'editor.fold', {
+            selectionLines: model.getValue().split('\n')
+                .map((line, index) => [line, index])
+                .filter(([line,]) => line.startsWith('#pragma region '))
+                .map(([, index]) => index)
+        })
+        
 
         handleChange(editor.getValue())
     }, [initialFunctionBodies, template, handleChange])
