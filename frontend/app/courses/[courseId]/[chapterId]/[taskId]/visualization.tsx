@@ -112,7 +112,7 @@ export default function Visualization({ task }: VisualizationProps) {
                 <TableBody>
                     <TableRow>
                         <TableHead>Value</TableHead>
-                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 && !currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.isPointer ? currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.value : '-'}</TableCell>)}
+                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 && (!currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.isPointer && !currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.isReference ) ? currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.value : '-'}</TableCell>)}
                     </TableRow>
                 </TableBody>
             </Table>

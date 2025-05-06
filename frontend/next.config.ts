@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
         return [
             {
                 source: '/ws-api/run',
-                destination: 'http://task-runner:80'
+                destination: 'http://task-runner:80/build'
             }
         ]
     }

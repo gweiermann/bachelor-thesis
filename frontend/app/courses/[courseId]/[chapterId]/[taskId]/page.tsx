@@ -1,6 +1,7 @@
 import { getChapter, getCourse, getTask } from '@/lib/db'
 import Task from './task'
 import SimpleBreadcrumb from '@/components/ui/simple-breadcrumb'
+import { getTemplate } from '@/lib/get-template'
 
 interface PageProps {
     params: Promise<{ courseId: string, chapterId: string, taskId: string }>
@@ -11,6 +12,7 @@ export default async function Page({ params }: PageProps) {
     const task = await getTask(courseId, chapterId, taskId)
     const course = await getCourse(courseId)
     const chapter = await getChapter(courseId, chapterId)
+    const template = await getTemplate(task.presetName)
 
     if (!task) {
         return <div>Task not found!</div>
@@ -26,7 +28,7 @@ export default async function Page({ params }: PageProps) {
                 ]} />
             </div>
             
-            <Task task={task} />
+            <Task task={task} template={template} />
         </div>
     )
 }

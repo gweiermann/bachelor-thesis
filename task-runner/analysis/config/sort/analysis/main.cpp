@@ -1,4 +1,4 @@
-#include "user-input.h"
+void sort(int*, int);
 
 int main() {
     int arr[] = {64, 34, 25, 12, 22, 11, 90};
