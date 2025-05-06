@@ -4,24 +4,7 @@ import os
 from output import print_status
 
 main_cpp_filename = "/tmp/main.cpp"
-h_filename = "/tmp/user-input.h"
-utils_h_filename = ("/app/config/utils.h", "/tmp/utils.h")
-utils_cpp_filename = ("/app/config/utils.cpp", "/tmp/utils.cpp")
 exe = "/tmp/a.out"
-
-def generate_user_cpp(preset, function_bodies):
-    def prepare_arguments(args):
-        return ', '.join(f"{arg['type']} {arg['name']}" for arg in args)
-    def prepare_function(fn, body):
-        return (fn['returnType'], fn['name'], prepare_arguments(fn['arguments']), body)
-    functions = (prepare_function(fn, body) for fn, body in zip(preset['manifest']['functions'], function_bodies))
-    functions_code = (f"""
-{return_type} {name}({args})
-{{
-    {body}
-}}
-    """.strip() for return_type, name, args, body in functions)
-    return '#include "utils.h"\n#include "user-input.h"\n' + '\n'.join(functions_code)
 
 def copy_files(src_dsts):
     """
@@ -30,7 +13,7 @@ def copy_files(src_dsts):
     for src, dst in src_dsts:
         shutil.copyfile(src, dst)
 
-def compile_target(preset, type, function_bodies, output_file, user_cpp_filename, compile_flags=[]):
+def compile_target(preset, type, code, output_file, user_cpp_filename, compile_flags=[]):
     """
     Creates source files based on user input and compiles them.
     """
@@ -41,15 +24,12 @@ def compile_target(preset, type, function_bodies, output_file, user_cpp_filename
     main_cpp_filename = preset['analysis_cpp_filename'] if type == 'analysis' else preset['test_cpp_filename']
     
     # Generate cpp file based on user input
-    user_cpp_content = generate_user_cpp(preset, function_bodies)
+    user_cpp_content = code
     with open(user_cpp_filename, 'w') as f: f.write(user_cpp_content)
 
     # Get a list of h and cpp files to copy and compile
     files = [
         main_cpp_filename,
-        preset['h_filename'],
-        "/app/config/utils.h",
-        "/app/config/utils.cpp",
         user_cpp_filename
     ]
 

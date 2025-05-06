@@ -1,16 +1,30 @@
-import { WebSocketServer } from 'ws'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import split2 from 'split2'
+import express from 'express'
+import expressWs from 'express-ws'
+import { getTemplate } from './get-template.js'
+import { error } from 'node:console'
 
-const wss = new WebSocketServer({ port: 80 });
+const app = express()
+expressWs(app)
 
 const maxConnections = 5;
 let connections = 0;
 
 const isDebugMode = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
 
-wss.on('connection', ws => {
+app.get('/template/:taskId', async (req, res) => {
+    const template = await getTemplate(req.params.taskId)
+    if (!template) {
+        res.status(404).json({ ok: false, error: `Template '${req.params.taskId}' not found` })
+        return
+    }
+    res.json({ ok: true, data: template })
+})
+
+
+app.ws('/build', (ws, req) => {
     if (connections >= maxConnections) {
         ws.send(JSON.stringify({
             type: 'error',
@@ -49,7 +63,7 @@ wss.on('connection', ws => {
             }
 
             taskIsRunning = true
-            const result = await runBuild(config.type, config.presetName, config.functionBodies, message => {
+            const result = await runBuild(config.type, config.presetName, config.code, message => {
                 ws.send(JSON.stringify({
                     type: 'status',
                     message
@@ -98,13 +112,13 @@ function debugError(id, msg, force = false) {
     }
 }
 
-function runBuild(type, presetName, functionBodies, onStatusUpdate) {
+function runBuild(type, presetName, code, onStatusUpdate) {
     const id = String(idCounter++).padStart(3, '0')
     debug(id, `Starting build process. Type: ${type}, Preset: ${presetName}`)
 
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, ...functionBodies.map(functionBody => JSON.stringify(functionBody))],
+            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
             { cwd: path.join(process.cwd())}
         );
 
@@ -153,3 +167,7 @@ function runBuild(type, presetName, functionBodies, onStatusUpdate) {
         throw e
     })
 }
+
+app.listen(80, () => {
+    console.log('Server is running on port 80')
+})
