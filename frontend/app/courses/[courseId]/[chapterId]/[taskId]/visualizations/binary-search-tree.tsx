@@ -40,8 +40,16 @@ function treeToGraphInternal(tree: BinaryTreeNode, nodes: Record<string, GraphNo
     treeToGraphInternal(tree.right, nodes, edges)
 }
 
+function addInbetweenTrees(steps) {
+    let lastTree = null
+    return steps.map(step => {
+        lastTree = step.trees ?? lastTree
+        return { ...step, trees: lastTree }
+    });
+}
+
 export default function BinarySearchTree({ analysis, timePerStep, currentStepIndex}) {
-    const steps = useMemo(() => analysis, [analysis])
+    const steps = useMemo(() => addInbetweenTrees(analysis), [analysis])
     const step = useMemo(() => steps[currentStepIndex], [steps, currentStepIndex])
     const graph = useMemo(() => treesToGraph(step.trees), [step.trees])
     const svgRef = useRef<SVGSVGElement | null>(null);
@@ -52,8 +60,6 @@ export default function BinarySearchTree({ analysis, timePerStep, currentStepInd
     const width = svgRef.current?.scrollWidth ?? 800
     const height = svgRef.current?.scrollHeight ?? 400
     const duration = 0
-
-    
 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
