@@ -23,9 +23,9 @@ int main() {
     insertMyself(root, 5);
     insertMyself(root, 3);
     insertMyself(root, 7);
-    insertMyself(root, 2);
-    insertMyself(root, 4);
-    insertMyself(root, 6);
+    insert(root, 2);
+    insert(root, 4);
+    insert(root, 6);
     insert(root, 8);
     return 0;
 }
