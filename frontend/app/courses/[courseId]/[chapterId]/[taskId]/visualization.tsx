@@ -103,7 +103,7 @@ export default function Visualization({ task }: VisualizationProps) {
     }
     
     return (
-        <div className="grid grid-rows-[auto_1fr_auto] auto-rows-min gap-8 items-center justify-center h-full w-full">
+        <div className="grid grid-rows-[auto_1fr_auto] grid-cols-[1fr] gap-8 items-center justify-center h-full w-full px-12">
             <Table>               
                 <TableHeader>
                     <TableRow>
