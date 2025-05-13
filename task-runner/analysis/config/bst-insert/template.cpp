@@ -1,5 +1,3 @@
-
-
 #pragma region prototypes
 struct BinaryTreeNode {
     int data;
@@ -19,7 +17,6 @@ void insert(BinaryTreeNode*& node, int value) {
     // todo: add your code here
 // <user-code-end>
 }
-
 
 #pragma region custom_functions
 // <user-code-start>
