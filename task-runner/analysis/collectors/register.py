@@ -4,6 +4,7 @@ from .current_line import CurrentLine
 from .recursion_watcher import RecursionWatcher
 from .compare_operation_watcher import CompareOperationWatcher
 from .array_compare_operation_watcher import ArrayCompareOperationWatcher
+from .binary_tree_watcher import BinaryTreeWatcher
 
 collectors = {
     'arrayWatcher': ArrayWatcher,
@@ -12,6 +13,7 @@ collectors = {
     'recursionWatcher': RecursionWatcher,
     'compareOperationWatcher': CompareOperationWatcher,
     'arrayCompareOperationWatcher': ArrayCompareOperationWatcher,
+    'binaryTreeWatcher': BinaryTreeWatcher,
 }
 
 def get_collector(name):

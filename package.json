@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "react-xarrows": "^2.0.2"
+    "react-xarrows": "^2.0.2",
+    "reagraph": "^4.22.0",
+    "vis-network": "^9.1.10"
   }
 }

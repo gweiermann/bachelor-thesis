@@ -17,6 +17,7 @@ import SortVisualization from './visualizations/sort'
 import QuickSortVisualization from './visualizations/quick-sort'
 import { useVisualization } from './stores'
 import { AnalysisResult } from '@/lib/build'
+import BinarySearchTree from './visualizations/binary-search-tree'
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
     if (!step) {
@@ -30,6 +31,12 @@ interface VisualizationProps {
 }
 
 export default function Visualization({ task }: VisualizationProps) {
+    const TheVisualization = {
+        'sort': SortVisualization,
+        'quick-sort': QuickSortVisualization,
+        'bst-insert': BinarySearchTree,
+    }[task.presetName]
+
     const timePerStep = 1 // 1x means 1 second
 
     const { loadingMessage, errorMessage, setActiveLines, state, result: analysis } = useVisualization()
@@ -94,14 +101,9 @@ export default function Visualization({ task }: VisualizationProps) {
             </div>
         )
     }
-
-    const TheVisualization = {
-        'sort': SortVisualization,
-        'quick-sort': QuickSortVisualization
-    }[task.presetName]
     
     return (
-        <div className="grid grid-rows-[auto_1fr_auto] auto-rows-min gap-8 items-center justify-center h-full w-full">
+        <div className="grid grid-rows-[auto_1fr_auto] grid-cols-[1fr] gap-8 items-center justify-center h-full w-full px-12">
             <Table>               
                 <TableHeader>
                     <TableRow>

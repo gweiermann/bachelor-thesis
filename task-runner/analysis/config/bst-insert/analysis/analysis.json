@@ -1,0 +1,26 @@
+{
+    "collect": [
+        {
+            "type": "currentScope",
+            "key": "scope"
+        },
+        {
+            "type": "currentLine",
+            "key": "line"
+        },
+        {
+            "type": "binaryTreeWatcher",
+            "key": "trees",
+            "parameters": {
+                "name": "node"
+            }
+        },
+        {
+            "type": "recursionWatcher",
+            "key": "recursion"
+        }
+    ],
+    "postProcess": [
+        
+    ]
+}
