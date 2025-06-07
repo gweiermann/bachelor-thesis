@@ -50,16 +50,24 @@ def setup_debugger(function_name, executable_filename):
 
 def steps_of_function(frame, process, thread):
     wanted_filename = frame.GetLineEntry().GetFileSpec().GetFilename()
+    stack_depth = thread.GetNumFrames()
+    initial_frame = thread.GetFrameAtIndex(0)
 
     while process.GetState() == lldb.eStateStopped:
         frame = thread.GetFrameAtIndex(0)
         filename = frame.GetLineEntry().GetFileSpec().GetFilename()
 
-        if (wanted_filename != filename):
-            thread.StepOut()
+        if wanted_filename != filename:
+            # We moved out of the user code file, and we want to get back in (if possible)
+            if thread.GetNumFrames() > stack_depth:
+                thread.StepOut() # We are in some library code, so we want to go back to the user code
+            if thread.GetNumFrames() == stack_depth and not initial_frame.IsEqual(frame):
+                thread.StepOut() # We are somewhere else but not in user code, so we want to go back to the main code so it can get into the user code again
+            else:
+                thread.StepInto() # We are probably in the main function, so we want to go into the user code again
             continue
+
 
         yield frame
 
-        # thread.StepInstruction(False)
         thread.StepInto()
