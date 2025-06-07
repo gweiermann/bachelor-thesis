@@ -41,6 +41,7 @@ class KeepTrackOfItems(Postprocessor):
         if second_change is None:
             # no swap behaviour, only one item changed, so we assume a new item got added
             current_step[self.key] = {
+                'type': 'replace',
                 'index': first_change,
                 'oldValue': current_list[first_change],
                 'newValue': current_list[first_change]
