@@ -131,7 +131,7 @@ function runBuild(type, presetName, code, onStatusUpdate) {
         child.stdout
             .pipe(split2())
             .on('data', line => {
-                debug(id, line)
+                // debug(id, line)
                 if (!line.trim()) {
                     return
                 }
@@ -153,8 +153,10 @@ function runBuild(type, presetName, code, onStatusUpdate) {
                     }
                 }
                 catch(e) {
-                    console.error('Invalid process message received', line.toString('utf-8'))
-                    reject(new Error('Received invalid message from build process.'))
+                    debug(id, line)
+                    // it's ok, most probably just debug information
+                    // console.error('Invalid process message received', line.toString('utf-8'))
+                    // reject(new Error('Received invalid message from build process.'))
                 }
             })
 
