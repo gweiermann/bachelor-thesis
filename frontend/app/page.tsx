@@ -14,18 +14,17 @@ export default function HeroSection() {
     const timer = setTimeout(() => {
       setAnimationComplete(true)
     }, 2000)
-
     return () => clearTimeout(timer)
   }, [])
 
   return (
     <ClientOnly>
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-20 md:py-32 h-full">
+      <section className="relative overflow-hidden bg-gradient-to-br from-white via-gray-100 to-blue-50 py-20 md:py-32 h-full">
         {/* Animated background elements */}
         <div className="absolute inset-0 z-0 opacity-20">
-          <div className="absolute top-20 left-10 h-40 w-40 rounded-full bg-purple-500 blur-[80px]" />
-          <div className="absolute bottom-20 right-10 h-40 w-40 rounded-full bg-blue-500 blur-[80px]" />
-          <div className="absolute top-1/2 left-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500 blur-[100px]" />
+          <div className="absolute top-20 left-10 h-40 w-40 rounded-full bg-purple-300 blur-[80px]" />
+          <div className="absolute bottom-20 right-10 h-40 w-40 rounded-full bg-blue-200 blur-[80px]" />
+          <div className="absolute top-1/2 left-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-200 blur-[100px]" />
         </div>
 
         {/* Code-like decorative elements */}
@@ -33,7 +32,7 @@ export default function HeroSection() {
           {Array.from({ length: 20 }).map((_, i) => (
             <div
               key={i}
-              className="absolute text-xs font-mono text-white/50"
+              className="absolute text-xs font-mono text-gray-400"
               style={{
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
@@ -45,7 +44,6 @@ export default function HeroSection() {
           ))}
         </div>
 
-        
         <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <motion.div
@@ -54,17 +52,17 @@ export default function HeroSection() {
               transition={{ duration: 0.6 }}
               className="mb-6 flex items-center justify-center gap-2"
             >
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-purple-600/20 text-purple-400">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-purple-200/60 text-purple-600">
                 <Zap size={14} />
               </span>
-              <span className="text-sm font-medium text-purple-400">Revolutionizing coding practice</span>
+              <span className="text-sm font-medium text-purple-600">Revolutionizing coding practice</span>
             </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl md:text-6xl"
+              className="mb-6 bg-gradient-to-r from-gray-900 via-blue-700 to-purple-700 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl md:text-6xl"
             >
               Next gen coding challenges
             </motion.h1>
@@ -73,7 +71,7 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="mx-auto mb-10 max-w-2xl text-lg text-slate-300 sm:text-xl"
+              className="mx-auto mb-10 max-w-2xl text-lg text-gray-700 sm:text-xl"
             >
               get visualized feedback and level up your skills
             </motion.p>
@@ -87,21 +85,20 @@ export default function HeroSection() {
               <Button
                 asChild
                 size="lg"
-                className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 px-8 text-white hover:from-purple-700 hover:to-blue-700"
+                className="group relative overflow-hidden bg-gradient-to-r from-purple-500 to-blue-400 px-8 text-white hover:from-purple-600 hover:to-blue-500"
               >
                 <Link href="/task/bubble-sort">
                   <span className="relative z-10">Try it out</span>
-                  <span className="absolute inset-0 -z-0 translate-y-full bg-gradient-to-r from-purple-700 to-blue-700 transition-transform duration-300 group-hover:translate-y-0"></span>
+                  <span className="absolute inset-0 -z-0 translate-y-full bg-gradient-to-r from-purple-600 to-blue-500 transition-transform duration-300 group-hover:translate-y-0"></span>
                 </Link>
               </Button>
 
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Terminal size={16} />
                 <span>No setup required</span>
               </div>
             </motion.div>
           </div>
-        
 
           {/* Animated code preview */}
           <motion.div
@@ -110,14 +107,14 @@ export default function HeroSection() {
             transition={{ duration: 0.8, delay: 0.5 }}
             className="mx-auto mt-16 max-w-3xl"
           >
-            <div className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800/50 shadow-2xl backdrop-blur-sm">
-              <div className="flex items-center gap-1 border-b border-slate-700 px-4 py-2">
-                <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
-                <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                <div className="ml-2 text-xs font-medium text-slate-400">algorithm-visualizer.js</div>
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white/80 shadow-2xl backdrop-blur-sm">
+              <div className="flex items-center gap-1 border-b border-gray-200 px-4 py-2">
+                <div className="h-3 w-3 rounded-full bg-red-400"></div>
+                <div className="h-3 w-3 rounded-full bg-yellow-400"></div>
+                <div className="h-3 w-3 rounded-full bg-green-400"></div>
+                <div className="ml-2 text-xs font-medium text-gray-500">algorithm-visualizer.js</div>
               </div>
-              <div className="p-4 font-mono text-xs text-slate-300 sm:text-sm">
+              <div className="p-4 font-mono text-xs text-gray-700 sm:text-sm">
                 <CodeAnimation completed={animationComplete} />
               </div>
             </div>
@@ -182,7 +179,7 @@ function CodeAnimation({ completed }) {
           <motion.div
             key={index}
             className={`w-12 rounded-t-md text-center font-mono font-bold ${
-              highlightIndices.includes(index) ? "bg-green-500 text-white" : "bg-blue-500/70 text-white"
+              highlightIndices.includes(index) ? "bg-green-400 text-white" : "bg-blue-300/80 text-gray-800"
             }`}
             style={{
               height: `${getBarHeight(number)}%`,
@@ -208,9 +205,9 @@ function CodeAnimation({ completed }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="rounded-md bg-slate-700/50 p-3 text-center text-sm"
+          className="rounded-md bg-gray-100 p-3 text-center text-sm"
         >
-          <span className="text-blue-400">
+          <span className="text-blue-600">
             {currentStep < sortingSteps.length ? sortingSteps[currentStep].message : "Sorting complete!"}
           </span>
         </motion.div>
@@ -218,4 +215,3 @@ function CodeAnimation({ completed }) {
     </div>
   )
 }
-
