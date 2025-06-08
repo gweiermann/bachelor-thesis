@@ -4,7 +4,10 @@ import { getTask, Task } from './db'
 export type AnalysisResult = AnalysisResultStep[]
 export interface AnalysisResultStep {
     array: number[]
-    scope: Record<string, number>
+    scope: {
+        current: Record<string, { isReference: boolean, isPointer: boolean, value: number }>,
+        previous: Record<string, { isReference: boolean, isPointer: boolean, value: number }>
+    }
     line: number
     skippedStep: AnalysisResultStep | null
     event: AnalysisResultStepEvent

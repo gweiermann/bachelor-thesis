@@ -44,6 +44,7 @@ export default function Visualization({ task }: VisualizationProps) {
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
 
     const currentStep = useMemo(() => analysis?.[currentStepIndex], [analysis, currentStepIndex])
+    const correctScope = useMemo(() => currentStep?.scope?.['array' in currentStep ? 'previous' : 'current'] ?? {}, [currentStep])
     
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
@@ -101,6 +102,8 @@ export default function Visualization({ task }: VisualizationProps) {
             </div>
         )
     }
+
+    
     
     return (
         <div className="grid grid-rows-[auto_1fr_auto] grid-cols-[1fr] gap-8 items-center justify-center h-full w-full px-12">
@@ -108,13 +111,13 @@ export default function Visualization({ task }: VisualizationProps) {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Variable</TableHead>
-                        {allVariableNames.map(name => <TableHead key={name}>{name}</TableHead>)}
+                        {Object.keys(correctScope).map(name => <TableHead key={name}>{name}</TableHead>)}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     <TableRow>
                         <TableHead>Value</TableHead>
-                        {allVariableNames.map(key => <TableCell key={key}>{currentStepIndex > 0 && (!currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.isPointer && !currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.isReference ) ? currentStep.scope['array' in currentStep ? 'previous' : 'current'][key]?.value : '-'}</TableCell>)}
+                        {Object.entries(correctScope).map(([key, value]) => <TableCell key={key}>{currentStepIndex > 0 && (!value?.isPointer && !value?.isReference) ? value?.value : '-'}</TableCell>)}
                     </TableRow>
                 </TableBody>
             </Table>
