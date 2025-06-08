@@ -67,7 +67,7 @@ def steps_of_function(frame, process, thread):
                 thread.StepInto() # We are probably in the main function, so we want to go into the user code again
             continue
 
-
         yield frame
 
+        print(f'step in {frame.GetLineEntry()}')
         thread.StepInto()
