@@ -135,7 +135,7 @@ function CodeAnimation({ completed }) {
   const [highlightIndices, setHighlightIndices] = useState([])
 
   // Sorting steps for visualization (selection sort)
-  const sortingSteps = [
+  const [sortingSteps, ] = useState([
     { array: [64, 25, 12, 22, 11], highlight: [0, 1], message: "Comparing 64 and 25" },
     { array: [64, 25, 12, 22, 11], highlight: [1, 2], message: "Comparing 25 and 12" },
     { array: [64, 25, 12, 22, 11], highlight: [2, 3], message: "Comparing 12 and 22" },
@@ -150,7 +150,7 @@ function CodeAnimation({ completed }) {
     { array: [11, 12, 25, 22, 64], highlight: [3], message: "Found minimum: 22" },
     { array: [11, 12, 22, 25, 64], highlight: [2, 3], message: "Swap 25 and 22" },
     { array: [11, 12, 22, 25, 64], highlight: [0, 1, 2, 3, 4], message: "Array sorted!" },
-  ]
+  ])
 
   useEffect(() => {
     if (!completed) return
@@ -168,7 +168,7 @@ function CodeAnimation({ completed }) {
     }, 500)
 
     return () => clearInterval(interval)
-  }, [completed])
+  }, [completed, sortingSteps])
 
   const getBarHeight = (value) => {
     const max = Math.max(...numbers)

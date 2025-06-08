@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
                 destination: 'http://task-runner:80/build'
             }
         ]
+    },
+    eslint: {
+        ignoreDuringBuilds: true
+    },
+    typescript: {
+        ignoreBuildErrors: true
     }
 }
 

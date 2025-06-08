@@ -15,7 +15,7 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
     const itemCount = useMemo(() => step.order.length, [step])
     const setHighlightRanges = useVisualization(state => state.setHighlightRanges)
 
-    const highlightColors = ['bg-fuchsia-500', 'bg-teal-500', 'bg-blue-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500' ]
+    const [highlightColors, ] = useState(() => ['bg-fuchsia-500', 'bg-teal-500', 'bg-blue-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500' ])
     const highlightColorVariables = Object.fromEntries(highlightColors.map(color => [color, `--color-${color.slice(3)}`]))
 
     const comparisons = useMemo(() => step.arrayComparisons?.map((comp, index) => {
@@ -44,7 +44,7 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
             comp,
             startIndex
         }
-    }) ?? [], [step, itemCount])
+    }) ?? [], [step, itemCount, highlightColors])
 
     useEffect(() => {
         setHighlightRanges(comparisons.flatMap(comp => [
