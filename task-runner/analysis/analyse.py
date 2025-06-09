@@ -6,14 +6,18 @@ from collectors import CollectorManager
 from postprocessing import PostprocessingManager
 from output import print_result, print_error, print_status
 import preparation
+import sanitize_code
+from clang import cindex
 
 executable_filename = "/tmp/a.out"
 user_cpp_filename = "/tmp/user.cpp"
 
 def entrypoint(preset, code):
     try:
-        preparation.compile_target(preset, 'analysis', code, executable_filename, user_cpp_filename, compile_flags=['-g'])
-        
+        # Preparation:
+        tokens = preparation.prepare_and_compile(preset, 'analysis', code, executable_filename, user_cpp_filename)
+
+        # Analysis:
         function_name = preset['manifest']['entrypointFunction']
         collect_configs = preset['analysis']['collect']
         post_process_configs = preset['analysis'].get('postProcess', {})
@@ -21,7 +25,7 @@ def entrypoint(preset, code):
         print_status("Launching Analysis...")
         frame, process, thread, debugger = setup_debugger(function_name, executable_filename)
 
-        collect_manager = CollectorManager.from_dict(collect_configs, frame, user_cpp_filename)
+        collect_manager = CollectorManager.from_dict(collect_configs, frame, tokens)
 
         print_status("Analysing...")
         for frame in steps_of_function(frame, process, thread):

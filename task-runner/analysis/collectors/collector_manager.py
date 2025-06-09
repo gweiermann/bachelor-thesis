@@ -1,8 +1,9 @@
 from .collector import Collector
-
+from clang import cindex
+from lldb import SBFrame
 class CollectorManager:
-    def from_dict(config, frame, user_cpp_filename):
-        collectors = [Collector.from_dict(c, frame, user_cpp_filename) for c in config]
+    def from_dict(config, frame: SBFrame, tokens: cindex.Token):
+        collectors = [Collector.from_dict(c, frame, tokens) for c in config]
         return CollectorManager(collectors)
 
     def __init__(self, collectors):

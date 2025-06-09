@@ -48,7 +48,7 @@ def entrypoint(preset, code):
     Run the tests specified in the config.
     """
 
-    preparation.compile_target(preset, 'test', code, executable_filename, user_cpp_filename, compile_flags=['-O2'])
+    tokens = preparation.prepare_and_compile(preset, 'test', code, executable_filename, user_cpp_filename)
 
     print_status("Running tests...")
     
