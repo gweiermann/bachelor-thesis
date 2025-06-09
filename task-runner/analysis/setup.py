@@ -69,5 +69,4 @@ def steps_of_function(frame, process, thread):
 
         yield frame
 
-        print(f'step in {frame.GetLineEntry()}')
         thread.StepInto()
