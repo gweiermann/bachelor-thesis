@@ -118,7 +118,7 @@ function runBuild(type, presetName, code, onStatusUpdate) {
 
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
+            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', '--network', 'none', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
             { cwd: path.join(process.cwd())}
         );
 
