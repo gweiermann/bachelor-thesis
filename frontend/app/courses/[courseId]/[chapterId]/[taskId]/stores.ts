@@ -1,4 +1,4 @@
-import { AnalysisResult } from '@/lib/build'
+import { AnalysisResult, EditorMarker } from '@/lib/build'
 import { TestCase } from '@/lib/db'
 import { create, type StateCreator } from 'zustand'
 export type VisualizationType = 'sort'
@@ -43,8 +43,10 @@ export interface UserCodeStore {
     code?: string
     isDirty: boolean
     runCount: number
+    markers: EditorMarker[]
     setCode: (code: string) => void
     runCode: () => void
+    setMarkers: (markers: EditorMarker[]) => void
 }
 
 export const useUserCode = create<UserCodeStore>(
@@ -53,12 +55,16 @@ export const useUserCode = create<UserCodeStore>(
         codeToBeRun: null,
         isDirty: false,
         runCount: 0,
+        markers: [],
         setCode(code: string) {
             set(state => ({ code, isDirty: state.code !== state.codeToBeRun  }))
         },
         runCode() {
             set(state => ({ codeToBeRun: state.code, isDirty: false, runCount: state.runCount + 1 }))
-        }
+        },
+        setMarkers(markers: EditorMarker[]) {
+            set({ markers })
+        },
     })
 )
 

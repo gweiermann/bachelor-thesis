@@ -1,9 +1,10 @@
 import subprocess
 import shutil
 import os
-from output import print_status
+from output import CompilationError, UserError, print_status
 from clang import cindex
 import sanitize_code
+import re
 
 main_cpp_filename = "/tmp/main.cpp"
 exe = "/tmp/a.out"
@@ -44,9 +45,49 @@ def create_files(preset, type, code, user_cpp_filename):
 
     return [destination for _, destination in src_dsts]
 
+
+def run_command(command):
+    """
+    Runs a command and returns the output.
+    """
+    result = subprocess.run(command, capture_output=True)
+    if result.stderr:
+        return result.stderr.decode('utf-8')
+    return None
+
+
+# source chatgpt
+def parse_clang_output(output, restrict_to_filename: str):
+    regex = r'^(.*?):(\d+):(\d+): (\w+): (.+)$'
+    matches = re.finditer(regex, output, re.MULTILINE)
+    markers = []
+
+    for match in matches:
+        file, line, column, level, message = match.groups()
+        if file != restrict_to_filename:
+            continue
+        markers.append({
+            "startLineNumber": int(line),
+            "startColumn": int(column),
+            "endLineNumber": int(line),
+            "endColumn": int(column) + 1,
+            "message": message.strip(),
+            "severity": level or 'info'
+        })
+
+    return markers
+
+def run_compile(user_cpp_file, args):
+    """
+    Runs the compile command with the given arguments.
+    """
+    command = ['clang++-19', '-fdiagnostics-parseable-fixits', '-fno-caret-diagnostics', *args]
+    error = run_command(command)
+    if error:
+        raise CompilationError(parse_clang_output(error, restrict_to_filename=user_cpp_file))
     
 
-def compile_target(cpp_files, output_file, compile_flags=[]):
+def compile_target(user_cpp_file, cpp_files, output_file, compile_flags=[]):
     """
     Compiles and links all supplied source files.
     """
@@ -56,10 +97,10 @@ def compile_target(cpp_files, output_file, compile_flags=[]):
 
     print_status("Compiling...")
     for cpp_file, o_file in cpp_o_files:
-        subprocess.run(['clang++-19', *compile_flags, '-c', cpp_file, '-o', o_file], check=True)
-    
+        run_compile(user_cpp_file, [*compile_flags, '-c', cpp_file, '-o', o_file])
+
     file_flags = ['-o', output_file] + [o_file for _, o_file in cpp_o_files]
-    subprocess.run(['clang++-19', *compile_flags, *file_flags], check=True)
+    run_compile(user_cpp_file, [*compile_flags, *file_flags])
 
 
 def prepare_and_compile(preset, type, code, executable_filename, user_cpp_filename, template_cpp_filename):
@@ -80,6 +121,6 @@ def prepare_and_compile(preset, type, code, executable_filename, user_cpp_filena
     sanitize_code.ensure_code_structure(tokens, template_cpp_filename)
 
     print_status("Compiling...")
-    compile_target(cpp_files, executable_filename, compile_flags)
+    compile_target(user_cpp_filename, cpp_files, executable_filename, compile_flags)
 
     return tokens

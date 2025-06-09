@@ -3,8 +3,8 @@
 // @ts-ignore  
 import { constrainedEditor } from "constrained-editor-plugin";
 import MonacoEditor, { type Monaco } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
-import { useRef, useEffect, useMemo, useCallback } from 'react'
+import { editor } from 'monaco-editor';
+import { useRef, useEffect, useCallback } from 'react'
 import './style.css'
 import { HighlightRange } from "@/app/courses/[courseId]/[chapterId]/[taskId]/stores";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,21 @@ interface EditorProps {
     highlightRanges: HighlightRange[]
 }
 
-export default function Editor({ template, initialFunctionBodies, onChange, activeLines = [], highlightRanges = [] }: EditorProps) {
+// const severityMap = {   
+//     error: MarkerSeverity.Error,
+//     warning: MarkerSeverity.Warning,
+//     info: MarkerSeverity.Info,
+//     hint: MarkerSeverity.Hint
+// };
+const severityMap = {   
+    error: 8,
+    warning: 4,
+    info: 2,
+    hint: 1
+};
+
+export default function Editor({ template, initialFunctionBodies, onChange, activeLines = [], highlightRanges = [], markers = [] }: EditorProps) {
+    const editorRef = useRef(null);
     const monacoRef = useRef(null);
     const previousLineDecorationRef = useRef(null)
     const previousHighlightDecorationRef = useRef(null)
@@ -61,13 +75,16 @@ export default function Editor({ template, initialFunctionBodies, onChange, acti
     const defaultValue = template.template
 
     const handleChange = useCallback((value: string) => {
-        const functionBodies = monacoRef.current.getModel().getValueInEditableRanges()
+        const functionBodies = editorRef.current.getModel().getValueInEditableRanges()
         const bodiesAsArray = template.ranges.map((_, index) => functionBodies['body' + index]) as string[]
         onChange?.(bodiesAsArray, value)
-    }, [template, onChange, monacoRef])
+    }, [template, onChange, editorRef])
 
     const handleEditorDidMount = useCallback((editor: EditorType, monaco: Monaco) => {
-        monacoRef.current = editor
+        editorRef.current = editor
+        monacoRef.current = monaco
+
+        monaco.editor.setModelMarkers(editorRef.current.getModel(), 'owner', markers)
 
         constrainedInstance.current = constrainedEditor(monaco)
         const model = editor.getModel()
@@ -97,18 +114,23 @@ export default function Editor({ template, initialFunctionBodies, onChange, acti
 
     useEffect(() => {
         previousLineDecorationRef.current?.clear()
-        if (monacoRef.current && activeLines.length) {
-            previousLineDecorationRef.current = highlightLines(monacoRef.current, activeLines)
-            monacoRef.current.revealLine(activeLines[0])
+        if (editorRef.current && activeLines.length) {
+            previousLineDecorationRef.current = highlightLines(editorRef.current, activeLines)
+            editorRef.current.revealLine(activeLines[0])
         }
-    }, [activeLines, monacoRef, previousLineDecorationRef])
+    }, [activeLines, editorRef, previousLineDecorationRef])
+
+    useEffect(() => {
+        monacoRef.current?.editor.removeAllMarkers('compiler')
+        monacoRef.current?.editor.setModelMarkers(editorRef.current.getModel(), 'compiler', markers)
+    }, [markers, monacoRef, editorRef])
 
     useEffect(() => {
         previousHighlightDecorationRef.current?.clear()
-        if (monacoRef.current && highlightRanges.length) {
-            previousHighlightDecorationRef.current = highlightTheRanges(monacoRef.current, highlightRanges)
+        if (editorRef.current && highlightRanges.length) {
+            previousHighlightDecorationRef.current = highlightTheRanges(editorRef.current, highlightRanges)
         }
-    }, [highlightRanges, monacoRef, previousHighlightDecorationRef])
+    }, [highlightRanges, editorRef, previousHighlightDecorationRef])
     
     return (
         <MonacoEditor
