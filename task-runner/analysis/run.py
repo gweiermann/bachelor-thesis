@@ -34,4 +34,3 @@ if __name__ == '__main__':
     except TimeoutException:
         # will probably be caught by a different try except block, but just in case
         print_error("The operation timed out after 10 seconds. Please try again with a more efficient solution.")
-    
