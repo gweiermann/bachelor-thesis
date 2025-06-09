@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import sys
+import traceback
 import analyse
 import tests
 import config
 import json
 from execution_time_limit import TimeoutException, time_limit
-from output import print_error
+from output import CompilationError, UserError, print_compilation_error, print_error, print_user_error
 
 def load_json_string(json_string):
     """
@@ -31,6 +32,13 @@ if __name__ == '__main__':
                 tests.entrypoint(preset_name, preset, code)
             else:
                 raise ValueError("Invalid mode. Use 'analyse' or 'test'.")
+    except UserError as e:
+        print_user_error(str(e))
+    except CompilationError as e:
+        print_compilation_error(e.markers)
     except TimeoutException:
         # will probably be caught by a different try except block, but just in case
         print_error("The operation timed out after 10 seconds. Please try again with a more efficient solution.")
+    except Exception as e:
+        print_error(traceback.format_exc())
+        raise e

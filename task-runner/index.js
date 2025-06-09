@@ -90,10 +90,7 @@ app.ws('/build', (ws, req) => {
                     message
                 }))
             })
-            ws.send(JSON.stringify({
-                type: 'result',
-                result
-            }))
+            ws.send(JSON.stringify(result))
         } catch(e) {
             if ('type' in e) {
                 ws.send(JSON.stringify({
@@ -161,12 +158,8 @@ function runBuild(type, presetName, code, onStatusUpdate) {
                     if (data.type === 'status') {
                         onStatusUpdate?.(data.message)
                     }
-                    else if (data.type === 'error') {
-                        reject(new Error(data.message))
-                        return
-                    }
-                    else if (data.type === 'result') {
-                        resolve(data.result)
+                    else if (['error', 'user-error', 'compilation-error', 'result'].includes(data.type)) {
+                        resolve(data)
                         return
                     }
                     else {
