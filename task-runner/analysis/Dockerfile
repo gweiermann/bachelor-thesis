@@ -16,4 +16,8 @@ ENV PYTHONPATH=/usr/lib/python3/dist-packages:/app
 WORKDIR /app
 COPY . .
 
+RUN groupadd -r myuser && useradd -r -g myuser myuser
+RUN chown -R myuser:myuser /app
+USER myuser
+
 ENTRYPOINT ["python3", "/app/run.py"]
