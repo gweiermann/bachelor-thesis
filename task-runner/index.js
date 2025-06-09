@@ -4,7 +4,20 @@ import split2 from 'split2'
 import express from 'express'
 import expressWs from 'express-ws'
 import { getTemplate } from './get-template.js'
-import { error } from 'node:console'
+
+const containerRestrictions = [
+    '--network=none', // No network access
+    '--cap-drop=ALL', // Drop all capabilities
+    '--security-opt=no-new-privileges', // No new privileges
+    '-m=32m', // Memory limit of 32MB
+    '--cpus=1', // Limit to 100% of a CPU
+    '--read-only', // Read-only filesystem
+    '--tmpfs=/tmp:rw,exec', // Temporary filesystem for /tmp
+    '--ulimit', 'nproc=20:20', // Limit processes to 20 to prevent fork bombs
+    '--ulimit', 'nofile=20:20', // Limit open files to 20
+]
+
+const codeSizeLimit = 1024 * 1024; // 1MB
 
 const app = express()
 expressWs(app)
@@ -46,6 +59,14 @@ app.ws('/build', (ws, req) => {
                 throw ({
                     type: 'badRequest',
                     message: 'There is already a task running. Please wait for it to finish.'
+                })
+            }
+
+            if (data.length > codeSizeLimit) {
+                throw ({
+                    type: 'error',
+                    errorType: 'badRequest',
+                    errorMessage: 'Your request is too large. Please reduce the size of your code and try again.'
                 })
             }
     
@@ -118,7 +139,7 @@ function runBuild(type, presetName, code, onStatusUpdate) {
 
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
+            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', ...containerRestrictions, 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
             { cwd: path.join(process.cwd())}
         );
 

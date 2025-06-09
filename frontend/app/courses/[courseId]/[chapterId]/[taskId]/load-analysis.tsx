@@ -16,8 +16,9 @@ export default function LoadAnalysis({ task }: LoadAnalysisProps): null {
 
     const { data: analysisResult, isLoading, error } = useSWR(
         ['analyzeCode', task.name, codeToBeRun, runCount],
+        // () => runAnalysis(task, codeToBeRun.replaceAll('arr', 'arr2'), setLoadingMessage), // test if code structure can be malformed
         () => runAnalysis(task, codeToBeRun, setLoadingMessage),
-        { revalidateOnFocus: false, suspense: false, shouldRetryOnError: false }
+        { revalidateOnFocus: false, suspense: false }
     )
 
     useEffect(() => {

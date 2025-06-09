@@ -2,6 +2,8 @@ import subprocess
 import shutil
 import os
 from output import print_status
+from clang import cindex
+import sanitize_code
 
 main_cpp_filename = "/tmp/main.cpp"
 exe = "/tmp/a.out"
@@ -13,13 +15,10 @@ def copy_files(src_dsts):
     for src, dst in src_dsts:
         shutil.copyfile(src, dst)
 
-def compile_target(preset, type, code, output_file, user_cpp_filename, compile_flags=[]):
+def create_files(preset, type, code, user_cpp_filename):
     """
-    Creates source files based on user input and compiles them.
+    Creates source files based on user input
     """
-
-    print_status("Preparing...")
-
     # Find out which files to use
     main_cpp_filename = preset['analysis_cpp_filename'] if type == 'analysis' else preset['test_cpp_filename']
     
@@ -43,9 +42,17 @@ def compile_target(preset, type, code, output_file, user_cpp_filename, compile_f
         if src != dst:
             shutil.copyfile(src, dst)
 
-    # map cpp files to their o filenames
-    cpp_o_files = [(filename, filename.replace('.cpp', '.o')) for _, filename in src_dsts if filename.endswith('.cpp')]
+    return [destination for _, destination in src_dsts]
+
     
+
+def compile_target(cpp_files, output_file, compile_flags=[]):
+    """
+    Compiles and links all supplied source files.
+    """
+
+    # map cpp files to their o filenames
+    cpp_o_files = [(filename, filename.replace('.cpp', '.o')) for filename in cpp_files]
 
     print_status("Compiling...")
     for cpp_file, o_file in cpp_o_files:
@@ -53,3 +60,26 @@ def compile_target(preset, type, code, output_file, user_cpp_filename, compile_f
     
     file_flags = ['-o', output_file] + [o_file for _, o_file in cpp_o_files]
     subprocess.run(['clang++-19', *compile_flags, *file_flags], check=True)
+
+
+def prepare_and_compile(preset, type, code, executable_filename, user_cpp_filename, template_cpp_filename):
+    """
+    Prepares the environment for analysis or testing by copying files and compiling them.
+    """
+    compile_flags = type == 'analysis' and ['-g'] or ['-O2']
+
+    print_status("Preparing...")
+    files = create_files(preset, type, code, user_cpp_filename)
+    cpp_files = [f for f in files if f.endswith('.cpp')]
+
+    # Check if user code obeys to the rules
+    print_status("Validating...")
+    index = cindex.Index.create()
+    tokens = index.parse(user_cpp_filename, args=['-std=c++17'])
+    sanitize_code.check_code(tokens, allow_includes=False)
+    sanitize_code.ensure_code_structure(tokens, template_cpp_filename)
+
+    print_status("Compiling...")
+    compile_target(cpp_files, executable_filename, compile_flags)
+
+    return tokens

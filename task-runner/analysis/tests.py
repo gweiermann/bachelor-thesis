@@ -43,12 +43,12 @@ def run_tests(test_cases, is_secret):
             'passed': output == test_case['expected']
         } for output, test_case in zip(output_values, test_cases)]
 
-def entrypoint(preset, code):
+def entrypoint(preset_name, preset, code):
     """
     Run the tests specified in the config.
     """
 
-    preparation.compile_target(preset, 'test', code, executable_filename, user_cpp_filename, compile_flags=['-O2'])
+    tokens = preparation.prepare_and_compile(preset, 'test', code, executable_filename, user_cpp_filename, f'/app/config/{preset_name}/template.cpp')
 
     print_status("Running tests...")
     

@@ -1,13 +1,13 @@
 from datatypes import Array
 from .compare_operation_watcher import CompareOperationWatcher
-from clang import cindex
+from lldb import SBFrame
 
 class ArrayCompareOperationWatcher(CompareOperationWatcher):
-    def setup(self, frame, *, name, size):
+    def setup(self, frame: SBFrame, *, name, size):
         super().setup(frame)
         self.array = Array(frame, name, size)
 
-    def actual_step(self, frame):
+    def actual_step(self, frame: SBFrame):
         line_entry = frame.GetLineEntry()
         line = line_entry.GetLine()
         result_list = []
