@@ -17,6 +17,8 @@ const containerRestrictions = [
     '--ulimit', 'nofile=20:20', // Limit open files to 20
 ]
 
+const codeSizeLimit = 1024 * 1024; // 1MB
+
 const app = express()
 expressWs(app)
 
@@ -57,6 +59,14 @@ app.ws('/build', (ws, req) => {
                 throw ({
                     type: 'badRequest',
                     message: 'There is already a task running. Please wait for it to finish.'
+                })
+            }
+
+            if (data.length > codeSizeLimit) {
+                throw ({
+                    type: 'error',
+                    errorType: 'badRequest',
+                    errorMessage: 'Your request is too large. Please reduce the size of your code and try again.'
                 })
             }
     

@@ -62,7 +62,7 @@ def compile_target(cpp_files, output_file, compile_flags=[]):
     subprocess.run(['clang++-19', *compile_flags, *file_flags], check=True)
 
 
-def prepare_and_compile(preset, type, code, executable_filename, user_cpp_filename):
+def prepare_and_compile(preset, type, code, executable_filename, user_cpp_filename, template_cpp_filename):
     """
     Prepares the environment for analysis or testing by copying files and compiling them.
     """
@@ -77,6 +77,7 @@ def prepare_and_compile(preset, type, code, executable_filename, user_cpp_filena
     index = cindex.Index.create()
     tokens = index.parse(user_cpp_filename, args=['-std=c++17'])
     sanitize_code.check_code(tokens, allow_includes=False)
+    sanitize_code.ensure_code_structure(tokens, template_cpp_filename)
 
     print_status("Compiling...")
     compile_target(cpp_files, executable_filename, compile_flags)

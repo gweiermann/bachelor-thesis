@@ -12,10 +12,10 @@ from clang import cindex
 executable_filename = "/tmp/a.out"
 user_cpp_filename = "/tmp/user.cpp"
 
-def entrypoint(preset, code):
+def entrypoint(preset_name, preset, code):
     try:
         # Preparation:
-        tokens = preparation.prepare_and_compile(preset, 'analysis', code, executable_filename, user_cpp_filename)
+        tokens = preparation.prepare_and_compile(preset, 'analysis', code, executable_filename, user_cpp_filename, f'/app/config/{preset_name}/template.cpp')
 
         # Analysis:
         function_name = preset['manifest']['entrypointFunction']

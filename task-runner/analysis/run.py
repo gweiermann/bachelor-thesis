@@ -26,9 +26,9 @@ if __name__ == '__main__':
     try:
         with time_limit(10):
             if mode == 'analyse':
-                analyse.entrypoint(preset, code)
+                analyse.entrypoint(preset_name, preset, code)
             elif mode == 'test':
-                tests.entrypoint(preset, code)
+                tests.entrypoint(preset_name, preset, code)
             else:
                 raise ValueError("Invalid mode. Use 'analyse' or 'test'.")
     except TimeoutException:
