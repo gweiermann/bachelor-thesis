@@ -4,7 +4,7 @@ import split2 from 'split2'
 import express from 'express'
 import bodyparser from 'body-parser'
 import cors from 'cors'
-import { getTemplate } from './get-template.js'
+import { getTemplate } from '../db/get-template.js'
 
 // -- Custom Restrictions (for "security") --
 
@@ -119,14 +119,24 @@ function debugError(id, msg, force = false) {
     }
 }
 
-function runBuild(type, presetName, code, onStatusUpdate) {
+async function getConfig(presetName) {
+    return await fetch(`http://internal-db/config/${presetName}`).then(res => res.json())
+}
+
+async function runBuild(type, presetName, code, onStatusUpdate) {
     const id = String(idCounter++).padStart(3, '0')
     debug(id, `Starting build process. Type: ${type}, Preset: ${presetName}`)
 
+    const config = await getConfig(presetName)
+    if (!config) {
+        debugError(id, `Preset '${presetName}' not found`)
+        throw new Error(`Preset '${presetName}' not found`)
+    }
+
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', ...containerRestrictions, 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
-            { cwd: path.join(process.cwd())}
+            'docker', ['compose', 'run', '--rm', '-i', ...containerRestrictions, 'analysis-tool', type, presetName, JSON.stringify(config)],
+            { cwd: path.join(process.cwd()) }
         );
 
         let stderr = ''

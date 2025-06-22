@@ -1,4 +1,15 @@
 services:
+  preset-db:
+    build: ./db
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./db
+          target: /app
+        - action: rebuild
+          path: ./db/package.json
+
   reverse-proxy:
     image: nginx:latest
     restart: unless-stopped
@@ -9,7 +20,7 @@ services:
     develop:
       watch:
         - action: rebuild
-          path: nginx.conf
+          path: ./nginx.conf
 
   task-runner:
     build: ./task-runner
@@ -19,19 +30,25 @@ services:
     ports:
       - "3001:80"
     environment:
-      - CONFIG_PATH=$(pwd)/config
       - DEBUG=1
-    depends_on:
-      - registry
     develop:
       watch:
         - action: rebuild
           path: ./task-runner
           target: /app
 
-  registry:
-    image: registry:2
-    restart: unless-stopped
+  # we just need it to be built, not run
+  # it will error because there's no command
+  analysis-tool:
+    build: ./analysis-tool
+    restart: no # because we just want it to be build
+    # entrypoint: ['/bin/bash', '-c', 'echo rebuild is done']
+    # command: []
+    command: ['noop']
+    develop:
+      watch:
+        - action: rebuild
+          path: ./analysis-tool
 
   frontend:
     build:
