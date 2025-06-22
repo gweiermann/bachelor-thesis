@@ -72,44 +72,67 @@ type BuildPayload = {
     presetName: string
 }
 
-export function runBuild(payload: BuildPayload, onStatusUpdate: (message: string) => void): Promise<BuildResult<AnalysisResult | TestCaseResult>> | never {   
-    return new Promise((resolve, reject) => {
-        const endpoint = '/ws-api/run' // defined in next.config.js
-        const url = ((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + endpoint
-        const ws = new WebSocket(url)
+async function* readChunks<T>(reader: ReadableStreamDefaultReader): AsyncGenerator<T> {
+    const decoder = new TextDecoder('utf-8')
+    let buffer = ''
+    while (true) {
+        const { done, value } = await reader.read()
+        if (done) {
+            break
+        }
+        buffer += decoder.decode(value, { stream: true })
 
-        ws.addEventListener('error', e => reject(new Error('Service unavailable')))
+        let lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep the last incomplete line in the buffer
+        for (const line of lines) {
+            yield JSON.parse(line)
+        }
+    }
+    if (buffer.trim()) {
+        yield JSON.parse(buffer) // Process any remaining data in the buffer
+    }
+}
 
-        ws.addEventListener('open', function open() {
-            ws.send(JSON.stringify(payload));
-        });
+export async function runBuild(payload: BuildPayload, onStatusUpdate: (message: string) => void): Promise<BuildResult<AnalysisResult | TestCaseResult>> | never {   
+    const endpoint = '/api/build' // defined in nginx.conf
+    // const endpoint = 'http://' + window.location.hostname + ':3001' + '/build'
 
-        ws.addEventListener('message', ({ data: raw }) => {
-            const data = JSON.parse(raw)
-            if (data.type === 'result') {
-                resolve({
-                    status: 'success',
-                    result: data.result
-                })
-            } else if (data.type === 'status') {
-                onStatusUpdate?.(data.message)
-            } else if (data.type === 'error') {
-                reject(new Error(data.message))
-            } else if (data.type === 'user-error') {
-                resolve({
-                    status: 'user-error',
-                    message: data.message,
-                })
-            } else if (data.type === 'compilation-error') {
-                resolve({
-                    status: 'compilation-error',
-                    markers: data.markers
-                })
-            }
-        });
-
-        ws.addEventListener('close', function open() {
-            reject(new Error('Connection closed'));
-        });
+    console.log('fetching...')
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
     })
+    console.log('done fetching')
+    // todo: handle errors
+
+    const reader = response.body.getReader();
+
+    for await (const data of readChunks<any>(reader)) {
+        console.log('Received data:', data)
+        if (data.type === 'result') {
+            return {
+                status: 'success',
+                result: data.result
+            }
+        } else if (data.type === 'status') {
+            onStatusUpdate?.(data.message)
+        } else if (data.type === 'error') {
+            throw new Error(data.message)
+        } else if (data.type === 'user-error') {
+            return {
+                status: 'user-error',
+                message: data.message,
+            }
+        } else if (data.type === 'compilation-error') {
+            return {
+                status: 'compilation-error',
+                markers: data.markers
+            }
+        }
+    }
+
+    // ws.addEventListener('error', e => reject(new Error('Service unavailable')))
 }

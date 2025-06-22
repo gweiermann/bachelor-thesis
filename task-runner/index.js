@@ -2,8 +2,11 @@ import path from 'node:path'
 import { spawn } from 'node:child_process'
 import split2 from 'split2'
 import express from 'express'
-import expressWs from 'express-ws'
+import bodyparser from 'body-parser'
+import cors from 'cors'
 import { getTemplate } from './get-template.js'
+
+// -- Custom Restrictions (for "security") --
 
 const containerRestrictions = [
     '--network=none', // No network access
@@ -19,10 +22,18 @@ const containerRestrictions = [
 
 const codeSizeLimit = 1024 * 1024; // 1MB
 
-const app = express()
-expressWs(app)
 
+
+// ------ other settings -----------------
 const maxConnections = 5;
+
+// ---------------------------------------
+
+
+const app = express()
+app.use(bodyparser.json())
+app.use(cors())
+
 let connections = 0;
 
 const isDebugMode = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
@@ -36,85 +47,63 @@ app.get('/template/:taskId', async (req, res) => {
     res.json({ ok: true, data: template })
 })
 
-
-app.ws('/build', (ws, req) => {
+app.post('/build', async (req, res) => {
     if (connections >= maxConnections) {
-        ws.send(JSON.stringify({
-            type: 'error',
-            errorType: 'unavailable',
-            errorMessage: 'Server is exhausted at the moment. Please try again later.'
-        }))
-        ws.close()
+        res.status(503).json({
+            ok: false,
+            error: 'Server is exhausted at the moment. Please try again later.'
+        })
         return
     }
+
+    const clientRequest = req.body;
+
+    if (clientRequest.code.length > codeSizeLimit) {
+        res.status(413).json({
+            ok: false,
+            error: 'Your request is too large. Please reduce the size of your code and try again.'
+        })
+        return 
+    }
+
     connections++
 
-    let taskIsRunning = false
+    const sendJson = data => {
+        res.write(JSON.stringify(data) + '\n')
+    }
 
-    ws.on('error', console.error)
+    console.log('New connection established. Current connections:', connections)
 
-    ws.on('message', async data => {
-        try {
-            if (taskIsRunning) {
-                throw ({
-                    type: 'badRequest',
-                    message: 'There is already a task running. Please wait for it to finish.'
-                })
-            }
-
-            if (data.length > codeSizeLimit) {
-                throw ({
-                    type: 'error',
-                    errorType: 'badRequest',
-                    errorMessage: 'Your request is too large. Please reduce the size of your code and try again.'
-                })
-            }
-    
-            const dataStr = data.toString('utf-8')
-            let config
-            try {
-                config = JSON.parse(dataStr);
-            } catch(e) {
-                console.error('Invalid request received', dataStr)
-                throw ({
-                    type: 'error',
-                    errorType: 'badRequest',
-                    errorMessage: 'There seems to be a problem with your request. Please try again later.'
-                })
-            }
-
-            taskIsRunning = true
-            const result = await runBuild(config.type, config.presetName, config.code, message => {
-                ws.send(JSON.stringify({
-                    type: 'status',
-                    message
-                }))
+    try {
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Transfer-Encoding', 'chunked')
+        res.flushHeaders()
+        const result = await runBuild(clientRequest.type, clientRequest.presetName, clientRequest.code, message => {
+            sendJson({
+                type: 'status',
+                message
             })
-            ws.send(JSON.stringify(result))
-        } catch(e) {
-            if ('type' in e) {
-                ws.send(JSON.stringify({
-                    type: 'error',
-                    errorType: e.type,
-                    message: e.message
-                }))
-            }
-            else {
-                console.error(e)
-                ws.send(JSON.stringify({
-                    type: 'error',
-                    errorType: 'internalServerError',
-                    message: e.message
-                }))
-            }
+        })
+        sendJson(result)
+    } catch (e) {
+        if ('type' in e) {
+            sendJson({
+                type: 'error',
+                errorType: e.type,
+                message: e.message
+            })
+        } else {
+            console.error(e)
+            sendJson({
+                type: 'error',
+                errorType: 'internalServerError',
+                message: e.message
+            })
         }
-        ws.close()        
-    });
-
-    ws.on('close', () => {
-        connections--
-    });
-});
+    }
+    res.end()
+    connections--
+})
 
 let idCounter = 0;
 
