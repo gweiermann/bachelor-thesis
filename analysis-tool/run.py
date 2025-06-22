@@ -18,6 +18,11 @@ def load_json_string(json_string):
     return json.loads(json_string)
 
 if __name__ == '__main__':
+    if len(sys.argv) != 4:
+        # will be called by docker compose to build the image using mode 'noop'
+        if len(sys.argv) != 2 or sys.argv[1] != 'noop':
+            print_error("Usage: run.py <mode> <preset_name> <code>")
+        sys.exit(1)
     mode = sys.argv[1]
     preset_name = sys.argv[2]
     code = load_json_string(sys.argv[3])
