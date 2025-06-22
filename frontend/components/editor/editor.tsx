@@ -9,6 +9,7 @@ import './style.css'
 import { HighlightRange } from "@/app/courses/[courseId]/[chapterId]/[taskId]/stores";
 import { cn } from "@/lib/utils";
 import { Template } from "@/lib/get-template";
+import { EditorMarker } from "@/lib/build";
 
 type EditorType = editor.IStandaloneCodeEditor
 
@@ -50,6 +51,7 @@ interface EditorProps {
     onChange?: (bodies: string[], code: string) => void
     activeLines?: number[]
     highlightRanges: HighlightRange[]
+    markers: EditorMarker[]
 }
 
 // const severityMap = {   
@@ -83,8 +85,6 @@ export default function Editor({ template, initialFunctionBodies, onChange, acti
     const handleEditorDidMount = useCallback((editor: EditorType, monaco: Monaco) => {
         editorRef.current = editor
         monacoRef.current = monaco
-
-        monaco.editor.setModelMarkers(editorRef.current.getModel(), 'owner', markers)
 
         constrainedInstance.current = constrainedEditor(monaco)
         const model = editor.getModel()
@@ -122,7 +122,7 @@ export default function Editor({ template, initialFunctionBodies, onChange, acti
 
     useEffect(() => {
         monacoRef.current?.editor.removeAllMarkers('compiler')
-        monacoRef.current?.editor.setModelMarkers(editorRef.current.getModel(), 'compiler', markers)
+        monacoRef.current?.editor.setModelMarkers(editorRef.current.getModel(), 'compiler', markers.map(marker => ({...marker, severity: severityMap[marker.severity] })))
     }, [markers, monacoRef, editorRef])
 
     useEffect(() => {
