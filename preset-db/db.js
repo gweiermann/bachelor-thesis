@@ -1,9 +1,8 @@
 import express from 'express'
-import bodyparser from 'body-parser'
 import { getTemplate } from './get-template.js'
+import { getConfig } from './get-config.js'
 
 const app = express()
-app.use(bodyparser.json())
 
 app.get('/template/:taskId', async (req, res) => {
     const template = await getTemplate(req.params.taskId)

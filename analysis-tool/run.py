@@ -9,38 +9,27 @@ import json
 from execution_time_limit import TimeoutException, time_limit
 from output import CompilationError, UserError, print_compilation_error, print_error, print_user_error
 
-def load_json_string(json_string):
-    """
-    Load a JSON string and return the parsed object.
-    """
-    if not json_string.startswith('"') and not json_string.endswith('"'):
-        json_string = f'"{json_string}"'
-    return json.loads(json_string)
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        # will be called by docker compose to build the image using mode 'noop'
-        if len(sys.argv) != 2 or sys.argv[1] != 'noop':
-            print_error("Usage: run.py <mode> <preset_name> <code>")
+        print_error("Usage: run.py <mode> <preset> <code>")
         sys.exit(1)
     mode = sys.argv[1]
-    preset_name = sys.argv[2]
-    code = load_json_string(sys.argv[3])
-
-    preset = config.find_preset(preset_name)
+    preset = json.loads(sys.argv[2])
+    code = json.loads(sys.argv[3])
 
     try:
         with time_limit(10):
             if mode == 'analyse':
-                analyse.entrypoint(preset_name, preset, code)
+                analyse.entrypoint(preset, code)
             elif mode == 'test':
-                tests.entrypoint(preset_name, preset, code)
+                tests.entrypoint(preset, code)
             else:
                 raise ValueError("Invalid mode. Use 'analyse' or 'test'.")
     except UserError as e:
         print_user_error(str(e))
     except CompilationError as e:
-        print_compilation_error(e.markers)
+        print_compilation_error(e)
     except TimeoutException:
         # will probably be caught by a different try except block, but just in case
         print_error("The operation timed out after 10 seconds. Please try again with a more efficient solution.")

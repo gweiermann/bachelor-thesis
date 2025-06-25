@@ -1,7 +1,7 @@
 services:
   preset-db:
-    build: ./db
-    restart: unless-stopped
+    build: ./preset-db
+    restart: no
     develop:
       watch:
         - action: sync+restart
@@ -12,7 +12,7 @@ services:
 
   reverse-proxy:
     image: nginx:latest
-    restart: unless-stopped
+    restart: no
     ports:
       - "3000:80"
     volumes:
@@ -24,27 +24,25 @@ services:
 
   task-runner:
     build: ./task-runner
-    restart: unless-stopped
+    restart: no
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "3001:80"
-    environment:
-      - DEBUG=1
+    env_file:
+      - .env
     develop:
       watch:
-        - action: rebuild
+        - action: sync+restart
           path: ./task-runner
           target: /app
+        - action: rebuild
+          path: ./task-runner/package.json
 
   # we just need it to be built, not run
   # it will error because there's no command
   analysis-tool:
     build: ./analysis-tool
-    restart: no # because we just want it to be build
-    # entrypoint: ['/bin/bash', '-c', 'echo rebuild is done']
-    # command: []
-    command: ['noop']
+    network_mode: "none" # restriction for analysis tool
+    entrypoint: /bin/bash -c "while true; do sleep 1000; done" # we want it to be built, every time we change the code, but we don't want it to run
     develop:
       watch:
         - action: rebuild
@@ -60,5 +58,5 @@ services:
           path: ./frontend
           target: /app
         - action: rebuild
-          path: package.json
-    restart: unless-stopped
+          path: ./frontend/package.json
+    restart: no
