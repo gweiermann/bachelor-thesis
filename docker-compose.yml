@@ -19,11 +19,12 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     develop:
       watch:
-        - action: rebuild
+        - action: sync+restart
           path: ./nginx.conf
+          target: /etc/nginx/nginx.conf
 
-  task-runner:
-    build: ./task-runner
+  executor:
+    build: ./executor
     restart: no
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -32,10 +33,10 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./task-runner
+          path: ./executor
           target: /app
         - action: rebuild
-          path: ./task-runner/package.json
+          path: ./executor/package.json
 
   # we just need it to be built, not run
   # it will error because there's no command
