@@ -29,7 +29,7 @@ export default function LoadAnalysis({ task }: LoadAnalysisProps): null {
             return data.message
         }
         if (data?.status === 'compilation-error') {
-            return 'Compilation failed. See code editor for more details.'
+            return 'Compilation failed. See code editor for more details.\n' + data.message
         }
         return null
     }, [err, data])

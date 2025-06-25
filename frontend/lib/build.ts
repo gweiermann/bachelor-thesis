@@ -1,15 +1,16 @@
 import { TestCaseResult } from '@/app/courses/[courseId]/[chapterId]/[taskId]/stores'
-import { getTask, Task } from './db'
+import { Task } from './db'
 
 export type BuildResult<T> = {
-    status: 'success',
+    status: 'success'
     result: T
 } | {
-    status: 'user-error',
+    status: 'user-error'
     message: string
 } | {
-    status: 'compilation-error',
+    status: 'compilation-error'
     markers: EditorMarker[]
+    message: string
 }
 
 export type AnalysisResult = AnalysisResultStep[]
@@ -97,7 +98,6 @@ export async function runBuild(payload: BuildPayload, onStatusUpdate: (message: 
     const endpoint = '/api/build' // defined in nginx.conf
     // const endpoint = 'http://' + window.location.hostname + ':3001' + '/build'
 
-    console.log('fetching...')
     const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -105,13 +105,12 @@ export async function runBuild(payload: BuildPayload, onStatusUpdate: (message: 
         },
         body: JSON.stringify(payload),
     })
-    console.log('done fetching')
+
     // todo: handle errors
 
     const reader = response.body.getReader();
 
     for await (const data of readChunks<any>(reader)) {
-        console.log('Received data:', data)
         if (data.type === 'result') {
             return {
                 status: 'success',
@@ -129,7 +128,8 @@ export async function runBuild(payload: BuildPayload, onStatusUpdate: (message: 
         } else if (data.type === 'compilation-error') {
             return {
                 status: 'compilation-error',
-                markers: data.markers
+                markers: data.markers,
+                message: data.message
             }
         }
     }

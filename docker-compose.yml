@@ -1,37 +1,52 @@
 services:
+  preset-db:
+    build: ./preset-db
+    restart: no
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./db
+          target: /app
+        - action: rebuild
+          path: ./db/package.json
+
   reverse-proxy:
     image: nginx:latest
-    restart: unless-stopped
+    restart: no
     ports:
-      - "3000:80"
+      - "$PORT:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     develop:
       watch:
-        - action: rebuild
-          path: nginx.conf
+        - action: sync+restart
+          path: ./nginx.conf
+          target: /etc/nginx/nginx.conf
 
-  task-runner:
-    build: ./task-runner
-    restart: unless-stopped
+  executor:
+    build: ./executor
+    restart: no
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "3001:80"
-    environment:
-      - CONFIG_PATH=$(pwd)/config
-      - DEBUG=1
-    depends_on:
-      - registry
+    env_file:
+      - .env
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./executor
+          target: /app
+        - action: rebuild
+          path: ./executor/package.json
+
+  # we just need it to be built, not run
+  # it will error because there's no command
+  analysis-tool:
+    build: ./analysis-tool
+    entrypoint: /bin/bash -c "while true; do sleep 1000; done" # we want it to be built, every time we change the code, but we don't want it to run
     develop:
       watch:
         - action: rebuild
-          path: ./task-runner
-          target: /app
-
-  registry:
-    image: registry:2
-    restart: unless-stopped
+          path: ./analysis-tool
 
   frontend:
     build:
@@ -43,5 +58,5 @@ services:
           path: ./frontend
           target: /app
         - action: rebuild
-          path: package.json
-    restart: unless-stopped
+          path: ./frontend/package.json
+    restart: no

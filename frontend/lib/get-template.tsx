@@ -19,7 +19,7 @@ export interface Template {
 
 export async function getTemplate(presetName: string): Promise<Template> {
     'use server'
-    const response = await fetch(`http://task-runner/template/${presetName}`, {
+    const response = await fetch(`http://preset-db/template/${presetName}`, {
         method: 'GET'
     })
     const result = await response.json()

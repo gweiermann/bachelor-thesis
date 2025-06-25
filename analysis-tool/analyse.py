@@ -11,15 +11,16 @@ from clang import cindex
 
 executable_filename = "/tmp/a.out"
 user_cpp_filename = "/tmp/user.cpp"
+main_cpp_filename = "/tmp/main.cpp"
 
-def entrypoint(preset_name, preset, code):
+def entrypoint(preset, code):
     # Preparation:
-    tokens = preparation.prepare_and_compile(preset, 'analysis', code, executable_filename, user_cpp_filename, f'/app/config/{preset_name}/template.cpp')
+    tokens = preparation.prepare_and_compile(preset, 'analysis', code, executable_filename, main_cpp_filename, user_cpp_filename)
 
     # Analysis:
     function_name = preset['manifest']['entrypointFunction']
-    collect_configs = preset['analysis']['collect']
-    post_process_configs = preset['analysis'].get('postProcess', {})
+    collect_configs = preset['analysis']['config']['collect']
+    post_process_configs = preset['analysis']['config'].get('postProcess', {})
 
     print_status("Launching Analysis...")
     frame, process, thread, debugger = setup_debugger(function_name, executable_filename)

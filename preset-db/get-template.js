@@ -6,7 +6,7 @@ const markers = {
 }
 
 export async function getTemplate(presetName) {
-    const templatePath = `./analysis/config/${presetName}/template.cpp`
+    const templatePath = `./config/${presetName}/template.cpp`
     const data = await readFile(templatePath, 'utf-8').catch(() => null)
     if (!data) {
         return null

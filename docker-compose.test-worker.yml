@@ -1,6 +1,0 @@
-services:
-  test-worker:
-    build: ./task-runner/analysis
-    entrypoint: /bin/bash test.sh
-    volumes:
-      - ./task-runner/config:/config

@@ -3,8 +3,6 @@ import { spawn } from 'node:child_process'
 import split2 from 'split2'
 import express from 'express'
 import bodyparser from 'body-parser'
-import cors from 'cors'
-import { getTemplate } from './get-template.js'
 
 // -- Custom Restrictions (for "security") --
 
@@ -12,12 +10,12 @@ const containerRestrictions = [
     '--network=none', // No network access
     '--cap-drop=ALL', // Drop all capabilities
     '--security-opt=no-new-privileges', // No new privileges
-    '-m=32m', // Memory limit of 32MB
+    '-m=64m', // Memory limit of 64MB
     '--cpus=1', // Limit to 100% of a CPU
     '--read-only', // Read-only filesystem
     '--tmpfs=/tmp:rw,exec', // Temporary filesystem for /tmp
-    '--ulimit', 'nproc=20:20', // Limit processes to 20 to prevent fork bombs
-    '--ulimit', 'nofile=20:20', // Limit open files to 20
+    '--ulimit', 'nproc=40:40', // Limit processes to 40 to prevent fork bombs
+    '--ulimit', 'nofile=40:40', // Limit open files to 40
 ]
 
 const codeSizeLimit = 1024 * 1024; // 1MB
@@ -26,26 +24,17 @@ const codeSizeLimit = 1024 * 1024; // 1MB
 
 // ------ other settings -----------------
 const maxConnections = 5;
-
 // ---------------------------------------
 
 
 const app = express()
 app.use(bodyparser.json())
-app.use(cors())
 
 let connections = 0;
 
+// environment variables
 const isDebugMode = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
-
-app.get('/template/:taskId', async (req, res) => {
-    const template = await getTemplate(req.params.taskId)
-    if (!template) {
-        res.status(404).json({ ok: false, error: `Template '${req.params.taskId}' not found` })
-        return
-    }
-    res.json({ ok: true, data: template })
-})
+const dockerImage = process.env.ANALYSIS_DOCKER_IMAGE
 
 app.post('/build', async (req, res) => {
     if (connections >= maxConnections) {
@@ -119,14 +108,29 @@ function debugError(id, msg, force = false) {
     }
 }
 
-function runBuild(type, presetName, code, onStatusUpdate) {
+async function getConfig(presetName) {
+    return await fetch(`http://preset-db/config/${presetName}`).then(res => res.json()).then(data => {
+        if (!data.ok) {
+            throw new Error(data.error)
+        }
+        return data.data
+    })
+}
+
+async function runBuild(type, presetName, code, onStatusUpdate) {
     const id = String(idCounter++).padStart(3, '0')
     debug(id, `Starting build process. Type: ${type}, Preset: ${presetName}`)
 
+    const config = await getConfig(presetName)
+    if (!config) {
+        debugError(id, `Preset '${presetName}' not found`)
+        throw new Error(`Preset '${presetName}' not found`)
+    }
+
     return new Promise((resolve, reject) => {
         const child = spawn(
-            'docker', ['run', '--rm', '-i', '-v', 'task-config:/config', ...containerRestrictions, 'registry:5000/task-runner-worker', type, presetName, JSON.stringify(code)],
-            { cwd: path.join(process.cwd())}
+            'docker', ['run', '--rm', '-i', ...containerRestrictions, dockerImage, type, JSON.stringify(config), JSON.stringify(code)],
+            { cwd: path.join(process.cwd()) }
         );
 
         let stderr = ''

@@ -2,8 +2,9 @@ import json
 
 class UserError(Exception): pass
 class CompilationError(Exception):
-    def __init__(self, markers):
+    def __init__(self, message, markers):
         super().__init__("Compilation error")
+        self.errorMessage = message
         self.markers = markers
 
 def print_status(status_message):
@@ -24,10 +25,11 @@ def print_user_error(error_message):
         'message': error_message
     }), flush=True)
 
-def print_compilation_error(markers):
+def print_compilation_error(error):
     print(json.dumps({
         'type': 'compilation-error',
-        'markers': markers
+        'message': error.errorMessage,
+        'markers': error.markers
     }), flush=True)
 
 

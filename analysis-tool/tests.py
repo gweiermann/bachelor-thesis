@@ -4,6 +4,7 @@ import preparation
 
 executable_filename = "/tmp/a.out"
 user_cpp_filename = "/tmp/user.cpp"
+main_cpp_filename = "/tmp/main.cpp"
 
 
 def chunks(lst):
@@ -43,16 +44,16 @@ def run_tests(test_cases, is_secret):
             'passed': output == test_case['expected']
         } for output, test_case in zip(output_values, test_cases)]
 
-def entrypoint(preset_name, preset, code):
+def entrypoint(preset, code):
     """
     Run the tests specified in the config.
     """
 
-    tokens = preparation.prepare_and_compile(preset, 'test', code, executable_filename, user_cpp_filename, f'/app/config/{preset_name}/template.cpp')
+    tokens = preparation.prepare_and_compile(preset, 'test', code, executable_filename, user_cpp_filename, main_cpp_filename)
 
     print_status("Running tests...")
     
     print_result([
-        *run_tests(preset['testCases']['public'], False),
-        *run_tests(preset['testCases']['private'], True)
+        *run_tests(preset['test']['testcases']['public'], False),
+        *run_tests(preset['test']['testcases']['private'], True)
     ])

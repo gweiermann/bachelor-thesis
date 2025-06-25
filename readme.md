@@ -21,6 +21,3 @@ There's also a frontend which is quite handy and runs the command for you. To st
 docker compose up --watch
 ```
 Visit [http://localhost:3000](http://localhost:3000).
-
-Note: Running the command above will create an image `task-runner-worker` on your host machine.
-This will be tackled soon.
