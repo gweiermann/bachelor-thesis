@@ -42,7 +42,6 @@ services:
   # it will error because there's no command
   analysis-tool:
     build: ./analysis-tool
-    network_mode: "none" # restriction for analysis tool
     entrypoint: /bin/bash -c "while true; do sleep 1000; done" # we want it to be built, every time we change the code, but we don't want it to run
     develop:
       watch:
