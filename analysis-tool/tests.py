@@ -27,8 +27,6 @@ def run_tests(test_cases, is_secret):
         print_error("Test execution failed: " + p.stderr)
         return
     stdout = list(map(int, p.stdout.strip().split(' ')))
-    print_status('stdin: ' + stdin)
-    print_status('stdout: ' + p.stdout)
     output_values = chunks(stdout)
 
     if is_secret:

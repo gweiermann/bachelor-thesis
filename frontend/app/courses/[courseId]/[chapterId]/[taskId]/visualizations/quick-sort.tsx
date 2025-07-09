@@ -3,12 +3,12 @@
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect, useMemo } from "react";
-import { addAnimationsToSteps, addOrder, addPersistentIndexes, addRecursionStages, enrichPivotElement } from "./post-processors";
+import { addAnimationsToSteps, addOrder, addRecursionStages, enrichPartitionElement, enrichPivotElement, mergeAdditionals } from "./post-processors";
 import Xarrow, { Xwrapper } from "react-xarrows";
 import { useVisualization } from "../stores";
 
 export default function QuickSortVisualization({ analysis, timePerStep, currentStepIndex}) {
-    const steps = useMemo(() => analysis && addAnimationsToSteps(addPersistentIndexes(addRecursionStages(addOrder(analysis, enrichPivotElement)))), [analysis])
+    const steps = useMemo(() => analysis && addAnimationsToSteps(addRecursionStages(addOrder(analysis, mergeAdditionals(enrichPivotElement, enrichPartitionElement)))), [analysis])
     useEffect(() => console.log(steps), [steps])
     const step = useMemo(() => steps[currentStepIndex], [steps, currentStepIndex])
     const stageCount = useMemo(() => step.stages.length, [step])
@@ -107,7 +107,7 @@ export default function QuickSortVisualization({ analysis, timePerStep, currentS
                                                         step.className[stage.left + index],
                                                         {
                                                             'bg-amber-300': item.additional?.isPivot,
-                                                            'border-green-500 border-4 bg-green-200': step.persistentIndexes.includes(stage.left + index),
+                                                            'border-green-500 border-4 bg-green-200': item.additional?.isPartitionElement,
                                                             'bg-gray-300 border-0 text-gray-300': stageIndex < stageCount - 1 && step.stages[stageIndex + 1].left <= stage.left + index && step.stages[stageIndex + 1].right >= stage.left + index,
                                                         }
                                                     )}>
