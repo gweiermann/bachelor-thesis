@@ -6,7 +6,7 @@ class CurrentLine(Collector):
         self.current_line = 0
 
     def pre_step(self, frame):
-        self.current_line = self.previous_line
+        self.current_line = self.previous_line  # yes it's weird but correct...
         self.previous_line = frame.GetLineEntry().GetLine()
     
     def step(self, frame):

@@ -44,7 +44,7 @@ export default function Visualization({ task }: VisualizationProps) {
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
 
     const currentStep = useMemo(() => analysis?.[currentStepIndex], [analysis, currentStepIndex])
-    const correctScope = useMemo(() => currentStep?.scope?.['array' in currentStep ? 'previous' : 'current'] ?? {}, [currentStep])
+    const currentScope = useMemo(() => currentStep?.scope ?? {}, [currentStep])
     
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
 
@@ -58,11 +58,7 @@ export default function Visualization({ task }: VisualizationProps) {
 
     const allVariableNames = useMemo(() =>
         !analysis ? [] : [
-            ...analysis.reduce((result, current) => {
-                Object.keys(current.scope.current).map(key => result.add(key))
-                Object.keys(current.scope.previous).map(key => result.add(key))
-                return result
-            }, new Set<string>())
+            ...analysis.reduce((result, current) => result.union(new Set(Object.keys(current.scope))), new Set<string>())
         ]
     , [analysis])
 
@@ -111,13 +107,13 @@ export default function Visualization({ task }: VisualizationProps) {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Variable</TableHead>
-                        {Object.keys(correctScope).map(name => <TableHead key={name}>{name}</TableHead>)}
+                        {Object.keys(currentScope).map(name => <TableHead key={name}>{name}</TableHead>)}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     <TableRow>
                         <TableHead>Value</TableHead>
-                        {Object.entries(correctScope).map(([key, value]) => <TableCell key={key}>{currentStepIndex > 0 && (!value?.isPointer && !value?.isReference) ? value?.value : '-'}</TableCell>)}
+                        {Object.entries(currentScope).map(([key, value]) => <TableCell key={key}>{currentStepIndex > 0 && (!value?.isPointer && !value?.isReference) ? value?.value : '-'}</TableCell>)}
                     </TableRow>
                 </TableBody>
             </Table>

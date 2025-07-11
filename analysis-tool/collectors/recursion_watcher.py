@@ -4,6 +4,8 @@ class RecursionWatcher(Collector):
     def setup(self, frame):
         self.stack_trace = [(frame.GetFunction().GetDisplayName(), frame)]
         self.functions_with_breakpoints = set()
+        self.current_step = None
+        self.previous_step = None
 
     def activate_step_out_breakpoint(self, frame):
         """
@@ -27,8 +29,13 @@ class RecursionWatcher(Collector):
                 bp = target.BreakpointCreateByAddress(addr)
                 bp.SetScriptCallbackBody("frame.GetThread().StepOut()")
 
-    
     def step(self, frame):
+        self.current_step = self.previous_step
+        self.previous_step = self.intern_step(frame)
+        return self.previous_step
+        # return self.current_step
+    
+    def intern_step(self, frame):
         if len(self.stack_trace) == 0:
             return None
 

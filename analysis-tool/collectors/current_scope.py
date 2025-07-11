@@ -17,10 +17,7 @@ class CurrentScope(Collector):
         } for var in varlist}
 
     def step(self, frame):
-        return {
-            'current': self.previous_scope, # yes this is correct
-            'previous': self.current_scope
-        }
+        return self.previous_scope # yes this is correct
     
     def is_reason_for_new_step(self):
         return False
