@@ -22,8 +22,8 @@ class Collector:
         return self.key, value
 
     def setup(self, frame: SBFrame):
-        """Init function of any collector. Parameters will be passed as kwargs."""
-        raise NotImplementedError("Collector hasn't implemented its setup function")
+        """Init function of any collector. Parameters will be passed as kwargs. Supposed to be overridden by the collector."""
+        pass
 
     def pre_step(self, frame: SBFrame):
         """Will be called for every collector for any step."""

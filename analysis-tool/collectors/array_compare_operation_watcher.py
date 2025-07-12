@@ -7,7 +7,7 @@ class ArrayCompareOperationWatcher(CompareOperationWatcher):
         super().setup(frame)
         self.array = Array(frame, name, size)
 
-    def actual_step(self, frame: SBFrame):
+    def buffered_step(self, frame: SBFrame):
         line_entry = frame.GetLineEntry()
         line = line_entry.GetLine()
         result_list = []

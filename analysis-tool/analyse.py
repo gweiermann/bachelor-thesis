@@ -30,6 +30,8 @@ def entrypoint(preset, code):
     print_status("Analysing...")
     for frame in steps_of_function(frame, process, thread):
         collect_manager.collect(frame)
+
+    collect_manager.collect_buffered_results()  # collect all buffered results that is delayed by one step and has not come out yet
     
     debugger.Terminate()
 

@@ -1,4 +1,5 @@
 from .collector import Collector
+from .buffered_collector import BufferedCollector
 from clang import cindex
 from lldb import SBFrame
 class CollectorManager:
@@ -22,8 +23,15 @@ class CollectorManager:
         flc_results = dict( collector.process_step(frame) for collector in self.first_level_collectors )
         if all(v is None for v in flc_results.values()):
             return
-        slc_reults = dict( collector.process_step(frame) for collector in self.second_level_collectors )
-        self.result.append({**flc_results, **slc_reults})
+        slc_results = dict( collector.process_step(frame) for collector in self.second_level_collectors )
+        self.result.append({**flc_results, **slc_results})
+
+    def collect_buffered_results(self):
+        flc_results = dict( collector.get_buffered_step() for collector in self.first_level_collectors if isinstance(collector, BufferedCollector) )
+        if all(v is None for v in flc_results.values()):
+            return
+        slc_results = dict( collector.get_buffered_step() for collector in self.second_level_collectors if isinstance(collector, BufferedCollector) )
+        self.result.append({**flc_results, **slc_results})
 
     def get_result_list(self):
         return self.result

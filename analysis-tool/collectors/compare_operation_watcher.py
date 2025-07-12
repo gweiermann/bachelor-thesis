@@ -1,13 +1,12 @@
-from .collector import Collector
+from .buffered_collector import BufferedCollector
 from lldb import SBFrame
 from clang import cindex
 
-class CompareOperationWatcher(Collector):
+class CompareOperationWatcher(BufferedCollector):
     def setup(self, frame: SBFrame):
         self.compare_operations = CompareOperationWatcher.extract_compare_operations(self.tokens.cursor)
-        self.previous = None
     
-    def actual_step(self, frame: SBFrame):
+    def buffered_step(self, frame: SBFrame):
         line_entry = frame.GetLineEntry()
         line = line_entry.GetLine()
         result_list = []
@@ -21,11 +20,6 @@ class CompareOperationWatcher(Collector):
         if result_list == []:
             return None
         return result_list
-
-    def step(self, frame: SBFrame):
-        now = self.previous
-        self.previous = self.actual_step(frame)
-        return now
 
     def is_reason_for_new_step(self):
         return True

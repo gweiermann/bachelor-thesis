@@ -1,16 +1,8 @@
-from .collector import Collector
+from .buffered_collector import BufferedCollector
 
-class CurrentLine(Collector):
-    def setup(self, frame):
-        self.previous_line = 0
-        self.current_line = 0
-
-    def pre_step(self, frame):
-        self.current_line = self.previous_line  # yes it's weird but correct...
-        self.previous_line = frame.GetLineEntry().GetLine()
-    
-    def step(self, frame):
-        return self.current_line
+class CurrentLine(BufferedCollector):
+    def buffered_step(self, frame):
+        return frame.GetLineEntry().GetLine()
     
     def is_reason_for_new_step(self):
         return False

@@ -145,13 +145,9 @@ export function addRecursionStages(steps) {
 
 export function enrichPivotElement(step: AnalysisResultStep, stepIndex: number, count: number) {
     const event = step.recursion
-    if (event) {
-        if (event.to.startsWith('quickSortRecursive(')) {
-            if (event.type === 'step_in') {
-                if (parseInt(event.arguments.low) < parseInt(event.arguments.high)) {
-                    return new Array(count).fill(null).map((_, i) => ({ isPivot: i === parseInt(event.arguments.high) }))
-                }
-            }
+    if (event?.type === 'step_in' && event.to.startsWith('quickSortRecursive(')) {
+        if (parseInt(event.arguments.low) < parseInt(event.arguments.high)) {
+            return new Array(count).fill(null).map((_, i) => ({ isPivot: i === parseInt(event.arguments.high) }))
         }
     }
 }
