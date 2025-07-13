@@ -52,7 +52,7 @@ const db = [
                         presetName: 'quick-sort',
                         title: "Quick Sort",
                         status: 'not-started',
-                        description: 'Lorem Ipsum...'
+                        description: "## Quick Sort Erklärung\n\n**Quick Sort** ist ein **rekursiver Sortieralgorithmus**, der das **Teile-und-herrsche-Prinzip** verwendet. Die grundlegende Idee ist:\n\n1. Wähle ein **Pivot-Element** (in unserem Fall **immer das rechte Element des aktuellen Bereichs**).\n2. **Partitioniere** das Array so, dass alle Elemente, die **kleiner oder gleich** dem Pivot sind, **links** und alle größeren **rechts** liegen.\n3. Rufe den Algorithmus **rekursiv** auf die linken und rechten Teillisten auf.\n\n### Anforderungen an die Implementierung\n\n- Die Funktion `quickSort(array, length)` ist bereits vorhanden und stellt den Einstiegspunkt dar.\n- Die eigentliche Sortierlogik wird in `quickSortRecursive(array, low, high)` umgesetzt.\n- Die Partitionierung wird in der Funktion `partition(array, low, high)` durchgeführt.\n- Das Pivot-Element ist **immer das rechte Element des aktuellen Bereichs** `array[high]`."
                     },
                     { 
                         id: "merge-sort",
