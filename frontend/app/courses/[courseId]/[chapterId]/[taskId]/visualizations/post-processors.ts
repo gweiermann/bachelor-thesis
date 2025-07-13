@@ -69,7 +69,8 @@ export function addOrder<T>(steps: AnalysisResultStep[], additional?: (step: Ana
 
 export function mergeAdditionals(...additionals: ((step: AnalysisResultStep, stepIndex: number, count: number) => any[])[]) {
     return (step: AnalysisResultStep, stepIndex: number, count: number) => {
-        return additionals.map(additional => (additional(step, stepIndex, count)) ?? new Array(count).fill({}))
+        return additionals
+            .map(additional => (additional(step, stepIndex, count)) ?? new Array(count).fill({}))
             .reduce((acc, curr) => acc.map((item, index) => ({ ...item, ...curr[index] })), new Array(count).fill({}))
     }
 }
@@ -127,9 +128,9 @@ export function addRecursionStages(steps) {
                 if (event.from.startsWith('quickSortRecursive(') && event.to.startsWith('quickSortRecursive(')) {
                     if (event.type === 'step_in') {
                         stages.push({
-                            left: parseInt(event.arguments.low),
-                            right: parseInt(event.arguments.high),
-                            pivot: parseInt(event.arguments.high)
+                            left: parseInt(event.arguments.low.value),
+                            right: parseInt(event.arguments.high.value),
+                            pivot: parseInt(event.arguments.high.value)
                         })
                     } else if (event.type === 'step_out') {
                         stages.pop()
@@ -146,8 +147,10 @@ export function addRecursionStages(steps) {
 export function enrichPivotElement(step: AnalysisResultStep, stepIndex: number, count: number) {
     const event = step.recursion
     if (event?.type === 'step_in' && event.to.startsWith('quickSortRecursive(')) {
-        if (parseInt(event.arguments.low) < parseInt(event.arguments.high)) {
-            return new Array(count).fill(null).map((_, i) => ({ isPivot: i === parseInt(event.arguments.high) }))
+        const low = parseInt(event.arguments.low.value)
+        const high = parseInt(event.arguments.high.value)
+        if (low < high) {
+            return new Array(count).fill(null).map((_, i) => ({ isPivot: i === high }))
         }
     }
 }
@@ -155,23 +158,25 @@ export function enrichPivotElement(step: AnalysisResultStep, stepIndex: number, 
 export function enrichPartitionElement(step: AnalysisResultStep, stepIndex: number, count: number) {
     const event = step.recursion
     if (event) {
-        if (event.from.startsWith('quickSortRecursive(') && event.to.startsWith('quickSortRecursive(')) {
-            if (event.type === 'step_in') {
-                if (event.arguments.low >= event.arguments.high) {
-                    const index = parseInt(event.arguments.low)
+        if (event.type === 'step_in') {
+            if (event.from.startsWith('quickSortRecursive(') && event.to.startsWith('quickSortRecursive(')) {
+                const low = parseInt(event.arguments.low.value)
+                const high = parseInt(event.arguments.high.value)
+                if (low >= high) {
+                    const index = low
+                    // If low >= high, we are at the end of the partitioning step
                     const arr = new Array(count).fill(null)
                     arr[index] = { isPartitionElement: true }
                     return arr
                 }
             }
         }
-        if (event.from.startsWith('partition(')) {
-            if (event.type === 'step_out') {
-                const index = parseInt(event.returnValue)
-                const arr = new Array(count).fill(null)
-                arr[index] = { isPartitionElement: true }
-                return arr
-            }
+        // step out:
+        else if (event.from.startsWith('partition(')) {
+            const index = parseInt(event.returnValue)
+            const arr = new Array(count).fill(null)
+            arr[index] = { isPartitionElement: true }
+            return arr
         }
     }
 }

@@ -113,7 +113,7 @@ export default function Visualization({ task }: VisualizationProps) {
                 <TableBody>
                     <TableRow>
                         <TableHead>Value</TableHead>
-                        {Object.entries(currentScope).map(([key, value]) => <TableCell key={key}>{currentStepIndex > 0 && (!value?.isPointer && !value?.isReference) ? value?.value : '-'}</TableCell>)}
+                        {Object.entries(currentScope).map(([key, value]) => <TableCell key={key}>{currentStepIndex > 0 && (!value?.isPointer) ? value?.value : '-'}</TableCell>)}
                     </TableRow>
                 </TableBody>
             </Table>

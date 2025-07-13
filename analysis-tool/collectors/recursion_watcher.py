@@ -1,4 +1,5 @@
 from .collector import Collector
+from datatypes import transform_variable_list
 
 class RecursionWatcher(Collector):
     def setup(self, frame):
@@ -62,7 +63,7 @@ class RecursionWatcher(Collector):
             'type': 'step_in',
             'from': previous_name, 
             'to': frame.GetFunction().GetDisplayName(),
-            'arguments': {var.GetName(): var.GetValue() for var in frame.GetVariables(True, False, False, False)}
+            'arguments': transform_variable_list(frame.GetVariables(True, False, False, False))
         }
 
     def is_reason_for_new_step(self):
