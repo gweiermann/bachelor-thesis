@@ -19,7 +19,8 @@ class SkipInterSwappingSteps(Postprocessor):
         Skip the steps where the same item is swapped between two different positions.
         """
         lst = [{**copy.deepcopy(step), self.key: None} for step in collected_list]
-        filtered = list(filter(lambda x: self.array_key in x and x[self.array_key] is not None, lst))
+        filtered = [x for x in lst
+                        if x.get(self.array_key, None) is not None]
 
         # process only items with array_key in it. But also keep items that don't have it inbetween.
         index = 0
