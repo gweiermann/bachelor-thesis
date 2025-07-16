@@ -11,7 +11,7 @@ services:
           path: ./db/package.json
 
   reverse-proxy:
-    image: nginx:latest
+    build: ./reverse-proxy
     restart: no
     ports:
       - "$PORT:80"
