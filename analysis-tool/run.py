@@ -4,7 +4,6 @@ import sys
 import traceback
 import analyse
 import tests
-import config
 import json
 from execution_time_limit import TimeoutException, time_limit
 from output import CompilationError, UserError, print_compilation_error, print_error, print_user_error

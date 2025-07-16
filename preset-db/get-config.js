@@ -7,7 +7,6 @@ export async function getConfig(presetName) {
         'analysis/main.cpp',
         'test/main.cpp',
         'test/testcases.json',
-        'manifest.json',
         'template.cpp'
     ]
     const readFiles = await Promise.all(
@@ -22,7 +21,6 @@ export async function getConfig(presetName) {
 
     return {
         presetName,
-        manifest: JSON.parse(fileContents['manifest.json']),
         template: fileContents['template.cpp'],
         analysis: {
             config: JSON.parse(fileContents['analysis/analysis.json']),

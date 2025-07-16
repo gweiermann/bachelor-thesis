@@ -44,7 +44,7 @@ def run_tests(test_cases, is_secret):
 
 def entrypoint(preset, code):
     """
-    Run the tests specified in the config.
+    Run the tests specified in the preset.
     """
 
     tokens = preparation.prepare_and_compile(preset, 'test', code, executable_filename, user_cpp_filename, main_cpp_filename)

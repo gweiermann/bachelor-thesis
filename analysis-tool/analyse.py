@@ -18,7 +18,7 @@ def entrypoint(preset, code):
     tokens = preparation.prepare_and_compile(preset, 'analysis', code, executable_filename, main_cpp_filename, user_cpp_filename)
 
     # Analysis:
-    function_name = preset['manifest']['entrypointFunction']
+    function_name = preset['analysis']['config']['entrypointFunction']
     collect_configs = preset['analysis']['config']['collect']
     post_process_configs = preset['analysis']['config'].get('postProcess', {})
 

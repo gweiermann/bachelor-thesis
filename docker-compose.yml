@@ -5,10 +5,10 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./db
+          path: ./preset-db
           target: /app
         - action: rebuild
-          path: ./db/package.json
+          path: ./preset-db/package.json
 
   reverse-proxy:
     build: ./reverse-proxy

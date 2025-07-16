@@ -1,4 +1,5 @@
 {
+    "entrypointFunction": "sort",
     "collect": [
         {
             "type": "currentScope",
