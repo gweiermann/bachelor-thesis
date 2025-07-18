@@ -76,7 +76,6 @@ def parse_clang_output(output, restrict_to_filename: str):
             "message": message.strip(),
             "severity": level or 'info'
         })
-
     return markers
 
 def run_compile(user_cpp_file, args):

@@ -15,7 +15,7 @@ export type BuildResult<T> = {
 
 export type AnalysisResult = AnalysisResultStep[]
 
-export type EditorMarker = {
+export interface EditorMarker {
     startLineNumber: number
     startColumn: number
     endLineNumber: number
