@@ -18,7 +18,7 @@ def check_code(tokens: cindex.Token, *, allow_includes) -> None:
     if not allow_includes and next(tokens.get_includes(), None) != None:
         raise CodeException("Include statements are not allowed in this code.")
 
-def extract_structure(node: cindex.Cursor, remove_function_implementation=True) -> str:
+def extract_structure(node: cindex.Cursor, remove_function_implementation=True):
     items = []
     for child in node.get_children():
         spelling = ' '.join(c.spelling for c in child.get_tokens())

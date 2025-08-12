@@ -4,12 +4,10 @@ services:
     restart: unless-stopped
 
   reverse-proxy:
-    image: nginx:latest
+    build: ./reverse-proxy
     restart: unless-stopped
     ports:
       - "$PORT:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
 
   executor:
     build: ./executor

@@ -10,7 +10,6 @@ class BinaryTreeNode:
     def __init__(self, ref):
         self.ref = ref
 
-
     def get_address(self):
         return self.ref.GetValue()
 

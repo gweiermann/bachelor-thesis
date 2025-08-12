@@ -23,6 +23,7 @@ def test_case_to_stdin(test_case):
 def run_tests(test_cases, is_secret):
     stdin = str(len(test_cases)) + ' ' + ' '.join(map(test_case_to_stdin, test_cases))
     p = subprocess.run([executable_filename], input=stdin, text=True, capture_output=True)
+    
     if p.returncode != 0:
         print_error("Test execution failed: " + p.stderr)
         return

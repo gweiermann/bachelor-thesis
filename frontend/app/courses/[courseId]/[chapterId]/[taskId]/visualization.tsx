@@ -46,8 +46,7 @@ export default function Visualization({ task }: VisualizationProps) {
     const currentStep = useMemo(() => analysis?.[currentStepIndex], [analysis, currentStepIndex])
     const currentScope = useMemo(() => currentStep?.scope ?? {}, [currentStep])
     
-    const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])    
-
+    const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
     const activeLines = useMemo(() => {
         if (currentStepIndex === 0 || !analysis || currentStepIndex >= analysis.length) {
             return []
@@ -55,6 +54,12 @@ export default function Visualization({ task }: VisualizationProps) {
         const step = analysis[currentStepIndex]
         return [step.line, ...getLineNumberFromStepAsArray(step.skippedStep)]
     }, [currentStepIndex, analysis])
+
+    useEffect(() => {
+        if (analysis) {
+            console.log(analysis)
+        }
+    }, [analysis])
 
     const allVariableNames = useMemo(() =>
         !analysis ? [] : [
