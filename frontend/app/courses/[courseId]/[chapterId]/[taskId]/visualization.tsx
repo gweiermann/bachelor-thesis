@@ -34,7 +34,7 @@ export default function Visualization({ task }: VisualizationProps) {
     const TheVisualization = {
         'sort': SortVisualization,
         'quick-sort': QuickSortVisualization,
-        'bst-insert': BinarySearchTree,
+        'bst-insert': BinarySearchTree
     }[task.presetName]
 
     const timePerStep = 1 // 1x means 1 second
