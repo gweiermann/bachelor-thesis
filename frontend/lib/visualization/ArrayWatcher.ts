@@ -1,4 +1,5 @@
-import { Collector, State } from './collector'
+import { Postprocessor, State } from './collector'
+import { Hook, HookTransformer } from './derive'
 
 
 type ArrayWatcherStep = string[]
@@ -9,7 +10,7 @@ type ArrayWatcherEvent =
     { event: 'replace', from: number, to: number, index: number } |
     { event: 'swap', first: { item: number, index: number }, second: { item: number, index: number } }
 
-export class ArrayWatcher extends Collector<ArrayWatcherStep, ArrayWatcherState> {
+export class ArrayWatcher extends Postprocessor<ArrayWatcherStep, ArrayWatcherState> {
     next(previousStates: ArrayWatcherState[], step: ArrayWatcherStep): State<ArrayWatcherState> {
         const array = step.map(item => parseInt(item, 10))
 
@@ -45,6 +46,16 @@ export class ArrayWatcher extends Collector<ArrayWatcherStep, ArrayWatcherState>
                 event: 'replace',
                 ...changes[1]
             })
+    }
+
+    hook<T>(eventName: string, transformer: HookTransformer<ArrayWatcherStep, T>): Hook<ArrayWatcherStep, T> {
+        return (index) => {
+            const state = super.getLatest(index)
+            if (state.event === eventName) {
+                return transformer
+            }
+            return null
+        }
     }
 }
 
