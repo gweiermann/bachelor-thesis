@@ -1,5 +1,4 @@
-import { Postprocessor, State } from './collector'
-import { Hook, HookTransformer } from './derive'
+import { Preprocessor, State } from './Preprocessor'
 
 
 type ArrayWatcherStep = string[]
@@ -10,57 +9,63 @@ type ArrayWatcherEvent =
     { event: 'replace', from: number, to: number, index: number } |
     { event: 'swap', first: { item: number, index: number }, second: { item: number, index: number } }
 
-export class ArrayWatcher extends Postprocessor<ArrayWatcherStep, ArrayWatcherState> {
+export class ArrayWatcher extends Preprocessor<ArrayWatcherStep, ArrayWatcherState> {
     next(previousStates: ArrayWatcherState[], step: ArrayWatcherStep): State<ArrayWatcherState> {
         const array = step.map(item => parseInt(item, 10))
 
         // initial collect
         if (!previousStates.length) {
-            return new State<ArrayWatcherState>().result({ event: 'init', array })
+            return new State<ArrayWatcherState>()
+                .result({ event: 'init', array })
+                .event('init')
         }
-        
-        // detect swap
-        const changes = extractInbetweenChanges([
-            previousStates[previousStates.length - 2].array,
-            previousStates[previousStates.length - 1].array,
-            array
-        ])
 
-        if (changes[0].index !== changes[1].index &&
-            changes[0].from === changes[1].to &&
-            changes[1].from === changes[0].to) {
-                return new State<ArrayWatcherState>()
-                    .delete(-1)
-                    .result({
-                        array,
-                        event: 'swap',
-                        first:  { item: changes[0].to, index: changes[0].index },
-                        second: { item: changes[1].to, index: changes[1].index }
-                    })
+        if (previousStates.length >= 2) {        
+            // detect swap
+            const changes = extractInbetweenChanges([
+                previousStates[previousStates.length - 2].array,
+                previousStates[previousStates.length - 1].array,
+                array
+            ])
+
+            if (!changes[0].hasMultipleChanges) { // skip already processed swap
+                if (changes[0].index !== changes[1].index &&
+                    changes[0].from === changes[1].to &&
+                    changes[1].from === changes[0].to) {
+                        return new State<ArrayWatcherState>()
+                            .delete(-1)
+                            .result({
+                                array,
+                                event: 'swap',
+                                first:  { item: changes[0].to, index: changes[0].index },
+                                second: { item: changes[1].to, index: changes[1].index }
+                            })
+                            .event('swap')
+                }
+            }
         }
 
         // recognized a replace
+        const previousArray = previousStates[previousStates.length - 1].array
+        const changedIndex = findChangedIndex(previousArray, array)
         return new State<ArrayWatcherState>()
             .result({
                 array,
                 event: 'replace',
-                ...changes[1]
+                from: previousArray[changedIndex],
+                to: array[changedIndex],
+                index: changedIndex
             })
-    }
-
-    hook<T>(eventName: string, transformer: HookTransformer<ArrayWatcherStep, T>): Hook<ArrayWatcherStep, T> {
-        return (index) => {
-            const state = super.getLatest(index)
-            if (state.event === eventName) {
-                return transformer
-            }
-            return null
-        }
+            .event('replace')
     }
 }
 
 function findChangedIndex(array1: number[], array2: number[], startIndex = 0) {
-    return array1.slice(startIndex).findIndex((item, index) => array2[index] !== item)
+    const index = array1.slice(startIndex).findIndex((item, index) => item !== array2[index + startIndex])
+    if (index === -1) {
+        return -1
+    }
+    return index + startIndex
 }
 
 function extractInbetweenChanges(listOfArrays: number[][]) {
@@ -70,9 +75,7 @@ function extractInbetweenChanges(listOfArrays: number[][]) {
         if (change === -1) {
             throw new Error("There was no change in array")
         }
-        if (findChangedIndex(prev, curr, change + 1) !== -1) {
-            throw new Error("It is illegal to have a second change in array")
-        }
-        return { index: change, from: prev[change], to: curr[change] }
+        const hasMultipleChanges = findChangedIndex(prev, curr, change + 1) !== -1
+        return { index: change, from: prev[change], to: curr[change], hasMultipleChanges }
     })
 }

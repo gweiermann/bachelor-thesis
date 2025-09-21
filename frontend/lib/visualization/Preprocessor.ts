@@ -1,16 +1,18 @@
 interface Result<T> {
     index: number,
-    state: T
+    state: T,
+    events: string[]
 }
 
 export abstract class VisualizationPreparer<T> {
+    static currentHookIndex: number | null = null
     public resultList: Result<T>[]
     public length: number = 0;
 
     *fullListIter() {
         let lastIndex = 0
         for (const result of this.resultList) {
-            for (; lastIndex < result.index; lastIndex += 1) {
+            for (; lastIndex <= result.index; lastIndex += 1) {
                 yield result.state
             }
         }
@@ -40,6 +42,17 @@ export abstract class VisualizationPreparer<T> {
             previous = result.state
         }
     }
+
+    on(eventName: string, callback: (state: T, index: number) => void) {
+        this.resultList.forEach(result => {
+            if (result.events.includes(eventName)) {            
+                const prevHookIndex = VisualizationPreparer.currentHookIndex
+                VisualizationPreparer.currentHookIndex = result.index
+                callback(result.state, result.index)
+                VisualizationPreparer.currentHookIndex = prevHookIndex
+            }
+        })
+    }
 }
 
 export abstract class Preprocessor<T, R> extends VisualizationPreparer<R> {
@@ -51,11 +64,16 @@ export abstract class Preprocessor<T, R> extends VisualizationPreparer<R> {
     process(steps: Record<string, T>[], key: string): Preprocessor<T, R> {
         const resultList: Result<R>[] = []
         steps.forEach((step, index) => {
-            if (!(key in step)) {
+            const stepValue = step[key]
+            if (!stepValue) {
                 return
             }
 
-            const state = this.next(resultList.map(r => r.state), step[key])
+            const state = this.next(resultList.map(r => r.state), stepValue)
+
+            if (!state) {                
+                return
+            }
 
             for (const operation of state.deleteOperations) {
                 resultList.splice(resultList.length + operation.relativeIndex, 1)
@@ -66,7 +84,7 @@ export abstract class Preprocessor<T, R> extends VisualizationPreparer<R> {
             }
 
             for (const operation of state.resultOperations) {
-                resultList.push({ index, state: operation.data })
+                resultList.push({ index, state: operation.data, events: state.events })
             }
         })
         this.resultList = resultList
@@ -87,6 +105,7 @@ interface DeleteOperation {
 export class State<T> {
     public resultOperations: ResultOperation<T>[] = []
     public deleteOperations: DeleteOperation[] = []
+    public events: string[] = []
 
     result(data: T) {
         this.resultOperations.push({ data })
@@ -102,6 +121,11 @@ export class State<T> {
     }
 
     skip() {
+        return this
+    }
+
+    event(eventName: string) {
+        this.events.push(eventName)
         return this
     }
 }

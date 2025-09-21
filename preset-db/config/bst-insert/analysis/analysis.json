@@ -20,8 +20,5 @@
             "type": "recursionWatcher",
             "key": "recursion"
         }
-    ],
-    "postProcess": [
-        
     ]
 }

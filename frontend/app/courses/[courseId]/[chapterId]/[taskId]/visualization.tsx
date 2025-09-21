@@ -18,6 +18,8 @@ import QuickSortVisualization from './visualizations/quick-sort'
 import { useVisualization } from './stores'
 import { AnalysisResult } from '@/lib/build'
 import BinarySearchTree from './visualizations/binary-search-tree'
+import { ArrayWatcher } from '@/lib/visualization/ArrayWatcher'
+import { ArrayOrder } from '@/lib/visualization/ArrayVisualizer'
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
     if (!step) {
@@ -103,6 +105,13 @@ export default function Visualization({ task }: VisualizationProps) {
             </div>
         )
     }
+
+    // test:
+    const array = new ArrayWatcher(analysis as any, 'array')
+    const listBehaviour = new ArrayOrder(array)
+    console.log(analysis)
+    console.log([...array.getFullList()])
+    console.log([...listBehaviour.getFullList()])
 
     
     
