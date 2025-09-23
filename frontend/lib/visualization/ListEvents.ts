@@ -4,6 +4,7 @@ import { State } from "./VisualizationStates"
 
 type MyStep = number[]
 type MyState = Event
+export type ListEventName = 'init' | 'replace' | 'swap'
 
 type Event =
     { event: 'init', array: number[] }  |

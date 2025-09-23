@@ -25,8 +25,12 @@ export abstract class VisualizationStates<T> {
         return [...this.fullListIter()]
     }
 
+    getList() {
+        return this.resultList.map(r => r.state)
+    }
+
     get(index: number) {
-        return this.resultList.find(state => state.index === index)
+        return this.resultList.find(state => state.index === index)?.state
     }
 
     // returns a state that is the latest in the result list which index is <= the given index

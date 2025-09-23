@@ -22,7 +22,7 @@ import { ArrayWatcher } from '@/lib/visualization/ArrayWatcher'
 import { ArrayOrder } from '@/lib/visualization/ArrayVisualizer'
 import { List } from '@/lib/visualization/List'
 import { ListEvents } from '@/lib/visualization/ListEvents'
-import { ListOrders } from '@/lib/visualization/ListOrders'
+import { ListItemEnrichment } from '@/lib/visualization/ListItemEnrichment'
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
     if (!step) {
@@ -108,14 +108,6 @@ export default function Visualization({ task }: VisualizationProps) {
             </div>
         )
     }
-
-    // test:
-    const array = new List(analysis as any, 'array')
-    const events = new ListEvents(array)
-    const order = new ListOrders(events)
-    console.log([...array.getFullList()])
-    console.log([...events.getFullList()])
-    console.log([...order.getFullList()])
 
     
     
