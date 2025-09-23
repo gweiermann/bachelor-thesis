@@ -1,16 +1,16 @@
-import { VisualizationPreparer } from "./Preprocessor";
+import { VisualizationStates } from "./VisualizationStates";
 
 export type Setter<T> = (value: Value<T>) => void
 type Value<T> = T | ((previous: T | null) => T)
 
-export class Derived<T> extends VisualizationPreparer<T> {
+export class Derived<T> extends VisualizationStates<T> {
     constructor(environment: (set: Setter<T>) => void) {
         super()
 
         this.resultList = []
 
         const set = (value: Value<T>) => {
-            const index = VisualizationPreparer.currentHookIndex
+            const index = VisualizationStates.currentHookIndex
             
             // find entry with same index or its previouso entry
             let previous = null

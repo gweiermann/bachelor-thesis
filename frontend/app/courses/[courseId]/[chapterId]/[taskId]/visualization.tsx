@@ -20,6 +20,9 @@ import { AnalysisResult } from '@/lib/build'
 import BinarySearchTree from './visualizations/binary-search-tree'
 import { ArrayWatcher } from '@/lib/visualization/ArrayWatcher'
 import { ArrayOrder } from '@/lib/visualization/ArrayVisualizer'
+import { List } from '@/lib/visualization/List'
+import { ListEvents } from '@/lib/visualization/ListEvents'
+import { ListOrders } from '@/lib/visualization/ListOrders'
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
     if (!step) {
@@ -107,11 +110,12 @@ export default function Visualization({ task }: VisualizationProps) {
     }
 
     // test:
-    const array = new ArrayWatcher(analysis as any, 'array')
-    const listBehaviour = new ArrayOrder(array)
-    console.log(analysis)
+    const array = new List(analysis as any, 'array')
+    const events = new ListEvents(array)
+    const order = new ListOrders(events)
     console.log([...array.getFullList()])
-    console.log([...listBehaviour.getFullList()])
+    console.log([...events.getFullList()])
+    console.log([...order.getFullList()])
 
     
     

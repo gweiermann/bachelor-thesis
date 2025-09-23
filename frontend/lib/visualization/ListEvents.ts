@@ -1,21 +1,20 @@
-import { Preprocessor, State } from './Preprocessor'
+import { Preprocessor } from "./Preprocessor"
+import { State } from "./VisualizationStates"
 
 
-type ArrayWatcherStep = string[]
-type ArrayWatcherState = { array: number[] } & ArrayWatcherEvent
+type MyStep = number[]
+type MyState = Event
 
-type ArrayWatcherEvent =
-    { event: 'init' }  |
+type Event =
+    { event: 'init', array: number[] }  |
     { event: 'replace', from: number, to: number, index: number } |
     { event: 'swap', first: { item: number, index: number }, second: { item: number, index: number } }
 
-export class ArrayWatcher extends Preprocessor<ArrayWatcherStep, ArrayWatcherState> {
-    next(previousStates: ArrayWatcherState[], step: ArrayWatcherStep): State<ArrayWatcherState> {
-        const array = step.map(item => parseInt(item, 10))
-
+export class ListEvents extends Preprocessor<MyStep, MyState> {
+    next(array: MyStep, previousStates: MyState[], allSteps: MyStep[], index: number): State<MyState> {
         // initial collect
         if (!previousStates.length) {
-            return new State<ArrayWatcherState>()
+            return new State<MyState>()
                 .result({ event: 'init', array })
                 .event('init')
         }
@@ -23,8 +22,8 @@ export class ArrayWatcher extends Preprocessor<ArrayWatcherStep, ArrayWatcherSta
         if (previousStates.length >= 2) {        
             // detect swap
             const changes = extractInbetweenChanges([
-                previousStates[previousStates.length - 2].array,
-                previousStates[previousStates.length - 1].array,
+                allSteps[index - 2],
+                allSteps[index - 1],
                 array
             ])
 
@@ -32,10 +31,9 @@ export class ArrayWatcher extends Preprocessor<ArrayWatcherStep, ArrayWatcherSta
                 if (changes[0].index !== changes[1].index &&
                     changes[0].from === changes[1].to &&
                     changes[1].from === changes[0].to) {
-                        return new State<ArrayWatcherState>()
+                        return new State<MyState>()
                             .delete(-1)
                             .result({
-                                array,
                                 event: 'swap',
                                 first:  { item: changes[0].to, index: changes[0].index },
                                 second: { item: changes[1].to, index: changes[1].index }
@@ -46,11 +44,10 @@ export class ArrayWatcher extends Preprocessor<ArrayWatcherStep, ArrayWatcherSta
         }
 
         // recognized a replace
-        const previousArray = previousStates[previousStates.length - 1].array
+        const previousArray = allSteps[index - 1]
         const changedIndex = findChangedIndex(previousArray, array)
-        return new State<ArrayWatcherState>()
+        return new State<MyState>()
             .result({
-                array,
                 event: 'replace',
                 from: previousArray[changedIndex],
                 to: array[changedIndex],
