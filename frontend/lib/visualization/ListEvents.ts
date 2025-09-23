@@ -3,28 +3,28 @@ import { State } from "./VisualizationStates"
 
 
 type MyStep = number[]
-type MyState = Event
+type MyState = ListEvent
 export type ListEventName = 'init' | 'replace' | 'swap'
 
-type Event =
-    { event: 'init', array: number[] }  |
-    { event: 'replace', from: number, to: number, index: number } |
-    { event: 'swap', first: { item: number, index: number }, second: { item: number, index: number } }
+export type ListEvent =
+    { type: 'init', array: number[] }  |
+    { type: 'replace', from: number, to: number, index: number } |
+    { type: 'swap', first: { item: number, index: number }, second: { item: number, index: number } }
 
 export class ListEvents extends Preprocessor<MyStep, MyState> {
-    next(array: MyStep, previousStates: MyState[], allSteps: MyStep[], index: number): State<MyState> {
+    next(array: MyStep): State<MyState> {
         // initial collect
-        if (!previousStates.length) {
+        if (!this.resultList.length) {
             return new State<MyState>()
-                .result({ event: 'init', array })
+                .result({ type: 'init', array })
                 .event('init')
         }
 
-        if (previousStates.length >= 2) {        
+        if (this.resultList.length >= 2) {        
             // detect swap
             const changes = extractInbetweenChanges([
-                allSteps[index - 2],
-                allSteps[index - 1],
+                this.steps.get(-2),
+                this.steps.get(-1),
                 array
             ])
 
@@ -35,7 +35,7 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
                         return new State<MyState>()
                             .delete(-1)
                             .result({
-                                event: 'swap',
+                                type: 'swap',
                                 first:  { item: changes[0].to, index: changes[0].index },
                                 second: { item: changes[1].to, index: changes[1].index }
                             })
@@ -45,11 +45,11 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
         }
 
         // recognized a replace
-        const previousArray = allSteps[index - 1]
+        const previousArray = this.steps.get(-1)
         const changedIndex = findChangedIndex(previousArray, array)
         return new State<MyState>()
             .result({
-                event: 'replace',
+                type: 'replace',
                 from: previousArray[changedIndex],
                 to: array[changedIndex],
                 index: changedIndex

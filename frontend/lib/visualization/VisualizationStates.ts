@@ -6,8 +6,23 @@ export interface Result<T> {
 
 export abstract class VisualizationStates<T> {
     static currentHookIndex: number | null = null
-    public resultList: Result<T>[]
-    public length: number = 0;
+    public resultList: Result<T>[] = []
+    
+    get length() {
+        const len = this.resultList.length
+        if (!len) {
+            return 0
+        }
+        return this.resultList[len - 1].index + 1
+    }
+
+    static withContext<T>(index: number, callback: () => T) {
+        const prevHookIndex = VisualizationStates.currentHookIndex
+        VisualizationStates.currentHookIndex = index
+        const result = callback()
+        VisualizationStates.currentHookIndex = prevHookIndex
+        return result
+    }
 
     *fullListIter() {
         let lastIndex = 0
@@ -29,7 +44,7 @@ export abstract class VisualizationStates<T> {
         return this.resultList.map(r => r.state)
     }
 
-    get(index: number) {
+    getRealAtAbsoluteIndex(index: number) {
         return this.resultList.find(state => state.index === index)?.state
     }
 
@@ -45,6 +60,23 @@ export abstract class VisualizationStates<T> {
             }
             previous = result.state
         }
+        return previous
+    }
+
+    // does only work inside a Preprocessor or Derivation
+    get(relativeIndex: number = 0) {
+        if (VisualizationStates.currentHookIndex === -1) {
+            throw new Error(`VisualizationStates.get() does only work inside a Preprocessor or Derivation`)
+        }
+        return this.getLatest(VisualizationStates.currentHookIndex + relativeIndex)
+    }
+
+    // does only work inside a Preprocessor or Derivation
+    getReal(relativeIndex: number = 0) {
+        if (VisualizationStates.currentHookIndex === -1) {
+            throw new Error(`VisualizationStates.get() does only work inside a Preprocessor or Derivation`)
+        }
+        return this.getRealAtAbsoluteIndex(VisualizationStates.currentHookIndex + relativeIndex)
     }
 
     on(eventName: string, callback: (state: T, index: number) => void) {

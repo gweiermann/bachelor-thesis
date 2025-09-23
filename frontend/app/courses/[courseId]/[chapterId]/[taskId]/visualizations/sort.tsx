@@ -1,57 +1,31 @@
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "motion/react";
-import { useMemo } from "react";
-import { addAnimationsToSteps, addOrder } from "./post-processors";
 import { List } from "@/lib/visualization/List";
 import { ListEvents } from "@/lib/visualization/ListEvents";
-import { ListItemEnrichment } from "@/lib/visualization/ListItemEnrichment";
+import { ListOrders } from "@/lib/visualization/ListOrders";
+import { ListStylings } from "@/lib/visualization/ListStylings";
+import { motion, AnimatePresence } from "motion/react";
+import { useEffect, useMemo } from "react";
+
+
+
+
 
 export default function SortVisualization({ analysis, timePerStep, currentStepIndex}) {
     const { orders, classNames } = useMemo(() => {
         const array = new List(analysis as any, 'array')
         const events = new ListEvents(array)
-        const orders = new ListItemEnrichment(events, () => {
-            let id = 0
-            return {
-                init(array) {
-                    return array.map(value => ({ id: ++id, orderId: id, value }))
-                },
-                replace(item, index, withValue) {
-                    return { ...item, value: withValue, id: ++id }
-                },
-                swap(first, second){
-                    return {
-                        first: first.item,
-                        second: second.item
-                    }
-                }
-            }
-        })
-        const classNames = new ListItemEnrichment(events, () => ({
-            init(array) {
-                return array.map(i => [] as string[])
-            },
-            preEvent(eventName, items) {
-                return items.map(item => []) // clear with each event
-            },
-            replace(classes, index, withValue) {
-                return ['bg-amber-400']
-            },
-            swap(first, second){
-                return {
-                    first: ['bg-sky-200'],
-                    second: ['bg-sky-200']
-                }
-            }
-        }))
+        const orders = new ListOrders(events)
+        const classNames = new ListStylings(events)
         return { orders, classNames }
     }, [analysis])
 
     const currentOrder = useMemo(() => orders.getLatest(currentStepIndex), [orders, currentStepIndex])
     const currentClassNames = useMemo(() => classNames.getLatest(currentStepIndex), [classNames, currentStepIndex])
 
-    console.log('orders', orders.getFullList())
-    console.log('classNames', classNames.getFullList())
+    useEffect(() => {
+        console.log('orders', orders.getFullList())
+        console.log('classNames', classNames.getFullList())
+    }, [orders, classNames])
 
     return (
         <ul className="flex space-x-4">

@@ -10,7 +10,7 @@ export abstract class Collector<In, Out> extends VisualizationStates<Out> {
                 if (!step) {
                     return null
                 }
-                return { index, events: [], state: this.transform(step) } satisfies Result<Out>
+                return { index, events: [] as string[], state: this.transform(step) } satisfies Result<Out>
             })
             .filter(Boolean)
     }
