@@ -20,7 +20,7 @@ import { AnalysisResult } from '@/lib/build'
 import BinarySearchTree from './visualizations/binary-search-tree'
 import { ArrayWatcher } from '@/lib/visualization/ArrayWatcher'
 import { ArrayOrder } from '@/lib/visualization/ArrayVisualizer'
-import { List } from '@/lib/visualization/List'
+import { ListCollector } from '@/lib/visualization/ListCollector'
 import { ListEvents } from '@/lib/visualization/ListEvents'
 import { ListItemEnrichment } from '@/lib/visualization/ListItemEnrichment'
 
@@ -35,6 +35,12 @@ interface VisualizationProps {
     task: Task
 }
 
+export interface VisualizationSpecializationProps<T extends Record<string, any>> {
+    timePerStep: number,
+    currentStepIndex: number,
+    analysis: T
+}
+
 export default function Visualization({ task }: VisualizationProps) {
     const TheVisualization = {
         'sort': SortVisualization,
@@ -44,7 +50,7 @@ export default function Visualization({ task }: VisualizationProps) {
 
     const timePerStep = 1 // 1x means 1 second
 
-    const { loadingMessage, errorMessage, setActiveLines, state, result: analysis } = useVisualization()
+    const { loadingMessage, errorMessage, stepCount, state, result: analysis } = useVisualization()
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
 
@@ -52,13 +58,6 @@ export default function Visualization({ task }: VisualizationProps) {
     const currentScope = useMemo(() => currentStep?.scope ?? {}, [currentStep])
     
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
-    const activeLines = useMemo(() => {
-        if (currentStepIndex === 0 || !analysis || currentStepIndex >= analysis.length) {
-            return []
-        }
-        const step = analysis[currentStepIndex]
-        return [step.line, ...getLineNumberFromStepAsArray(step.skippedStep)]
-    }, [currentStepIndex, analysis])
 
     useEffect(() => {
         if (analysis) {
@@ -66,17 +65,7 @@ export default function Visualization({ task }: VisualizationProps) {
         }
     }, [analysis])
 
-    const allVariableNames = useMemo(() =>
-        !analysis ? [] : [
-            ...analysis.reduce((result, current) => result.union(new Set(Object.keys(current.scope))), new Set<string>())
-        ]
-    , [analysis])
-
     const resetProp = useMemo(() => JSON.stringify(analysis), [analysis])  // force rerender on reset
-
-    useEffect(() => {
-        setActiveLines(activeLines)
-    }, [activeLines, setActiveLines])
 
     if (state === 'unrun') {
         return (
@@ -108,8 +97,6 @@ export default function Visualization({ task }: VisualizationProps) {
             </div>
         )
     }
-
-    
     
     return (
         <div className="grid grid-rows-[auto_1fr_auto] grid-cols-[1fr] gap-8 items-center justify-center h-full w-full px-12">
@@ -129,7 +116,7 @@ export default function Visualization({ task }: VisualizationProps) {
             </Table>
             <TheVisualization analysis={analysis} timePerStep={derivedTimePerStep / 2} currentStepIndex={currentStepIndex} />
             <AnimationControlBar
-                totalSteps={analysis.length}
+                totalSteps={stepCount}
                 timePerStep={timePerStep}
                 currentStepIndex={currentStepIndex}
                 onStepChange={setCurrentStepIndex}

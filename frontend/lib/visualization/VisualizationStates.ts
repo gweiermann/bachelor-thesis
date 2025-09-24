@@ -1,3 +1,4 @@
+
 export interface Result<T> {
     index: number,
     state: T,
@@ -47,6 +48,15 @@ export abstract class VisualizationStates<T> {
         stateCollections.forEach(c => c.resultList = c.resultList.filter(r => !set.has(r.index)))
     }
 
+    static export<O extends Record<PropertyKey, VisualizationStates<any>>>(stateCollections: O): O {
+        const values = Object.values(Object.values(stateCollections))
+        VisualizationStates.shareDeletes(...values)
+        VisualizationStates.makeCompact(...values)
+        return stateCollections
+    }
+
+    constructor(private initialValue: T = null) {}
+
     get length() {
         const len = this.resultList.length
         if (!len) {
@@ -57,13 +67,13 @@ export abstract class VisualizationStates<T> {
 
     *fullListIter() {
         let lastIndex = 0
-        let previous = null
+        let previous = this.initialValue
         for (const result of this.resultList) {
             for (; lastIndex < result.index; lastIndex += 1) {
-                yield previous.state
+                yield previous
             }
             yield result.state
-            previous = result
+            previous = result.state
         }
         for (; lastIndex < this.length; lastIndex += 1) {
             yield previous

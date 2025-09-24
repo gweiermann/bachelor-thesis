@@ -1,7 +1,9 @@
 import { Result, VisualizationStates } from "./VisualizationStates";
 
-export abstract class Collector<In, Out> extends VisualizationStates<Out> {
-    constructor(steps: Record<string, In>[], key: string) {
+export type HasKey<K extends PropertyKey, T> = { [P in K]: T };
+
+export abstract class Collector<In, Out, Key extends string> extends VisualizationStates<Out> {
+    constructor(steps: HasKey<Key, In>[], key: Key) {
         super()
 
         this.resultList = steps

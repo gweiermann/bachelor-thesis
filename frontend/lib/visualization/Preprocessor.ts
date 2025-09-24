@@ -1,10 +1,23 @@
-import { VisualizationStates, Result, State } from "./VisualizationStates"
+import { VisualizationStates, State } from "./VisualizationStates"
 
 export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
 
-    constructor(protected steps: VisualizationStates<In>) {
-        super()
+    constructor(protected steps: VisualizationStates<In>, initialState?: Out) {
+        super(initialState)
         this.process(steps)
+    }
+
+    
+    static map<In, Out>(states: VisualizationStates<In>, mapPredicate: (state: In) => Out, initialState: Out = null) {
+        return new class extends Preprocessor<In, Out> {
+            constructor(states: VisualizationStates<In>) {
+                super(states, initialState)
+            }
+            next(step: In) {
+                const result = mapPredicate(step)
+                return new State<Out>().result(result)
+            }
+        }(states)
     }
 
     process(steps: VisualizationStates<In>): this {
@@ -39,3 +52,18 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
 
     abstract next(currentStep: In): State<Out>
 }
+
+export function mapStates<In, Out>(steps: VisualizationStates<In>, mapPredicate: (state: In) => Out, initialState: Out = null) {
+    return new class extends Preprocessor<In, Out> {
+        constructor(states: VisualizationStates<In>) {
+            super(states, initialState)
+        }
+        next(step: In) {
+            const result = mapPredicate(step)
+            return new State<Out>().result(result)
+        }
+    }(steps)
+}
+
+
+

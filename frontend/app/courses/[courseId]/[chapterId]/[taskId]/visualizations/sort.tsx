@@ -1,34 +1,54 @@
 import { cn } from "@/lib/utils";
-import { List } from "@/lib/visualization/List";
+import { LineCollector, LineCollectorRaw } from "@/lib/visualization/LineCollector";
+import { ListCollector, ListCollectorRaw } from "@/lib/visualization/ListCollector";
 import { ListEvents } from "@/lib/visualization/ListEvents";
 import { ListOrders } from "@/lib/visualization/ListOrders";
 import { ListStylings } from "@/lib/visualization/ListStylings";
+import { mapStates, Preprocessor } from "@/lib/visualization/Preprocessor";
 import { VisualizationStates } from "@/lib/visualization/VisualizationStates";
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useMemo } from "react";
+import { useVisualization } from "../stores";
+import { VisualizationSpecializationProps } from "../visualization";
 
+type Analysis = (ListCollectorRaw<'array'> & LineCollectorRaw<'line'>)[]
 
-
-
-
-export default function SortVisualization({ analysis, timePerStep, currentStepIndex}) {
-    const { orders, classNames } = useMemo(() => {
-        const array = new List(analysis as any, 'array')
+export default function SortVisualization({ analysis, timePerStep, currentStepIndex}: VisualizationSpecializationProps<Analysis>) {
+    const { orders, classNames, activeLines } = useMemo(() => {
+        const lines = new LineCollector(analysis, 'line')
+        const array = new ListCollector(analysis, 'array')
         const events = new ListEvents(array)
         const orders = new ListOrders(events)
         const classNames = new ListStylings(events)
-        VisualizationStates.shareDeletes(array, events, orders, classNames)
-        VisualizationStates.makeCompact(array, events, orders, classNames)
-        return { orders, classNames }
+        const activeLines = Preprocessor.map(lines, line => {
+            if (events.get().type === 'swap') {
+                return [ line, lines.get(-1) ]
+            }
+            return [ line ]
+        }, [])
+        return VisualizationStates.export({activeLines, events, orders, classNames})
     }, [analysis])
 
     const currentOrder = useMemo(() => orders.getLatest(currentStepIndex), [orders, currentStepIndex])
     const currentClassNames = useMemo(() => classNames.getLatest(currentStepIndex), [classNames, currentStepIndex])
+    const currentActiveLines = useMemo(() => activeLines.getLatest(currentStepIndex), [activeLines, currentStepIndex])
 
     useEffect(() => {
         console.log('orders', orders.getFullList())
         console.log('classNames', classNames.getFullList())
     }, [orders, classNames])
+
+    const setActiveLines = useVisualization(state => state.setActiveLines)
+    const setStepCount = useVisualization(state => state.setStepCount)
+
+    useEffect(() => {
+        setActiveLines(currentActiveLines ?? [])
+    }, [setActiveLines, currentActiveLines])
+
+    useEffect(() => {
+        setStepCount(orders.length)
+    }, [setStepCount, orders])
+    
 
     return (
         <ul className="flex space-x-4">

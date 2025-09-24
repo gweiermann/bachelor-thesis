@@ -32,6 +32,8 @@ export interface HighlightRange {
 }
 interface VisualizationStore extends FetchStore<AnalysisResult> {
     type: VisualizationType
+    stepCount: number,
+    setStepCount: (stepCount: numnber) => void
     activeLines: number[]
     setActiveLines: (activeLines: number[]) => void
     highlightRanges: HighlightRange[],
@@ -107,6 +109,8 @@ export const useVisualization = create<VisualizationStore>((set, get) => ({
     type: 'sort',
     activeLines: [],
     setActiveLines: activeLines => set({ activeLines }),
+    stepCount: null,
+    setStepCount: stepCount => set({ stepCount }),
     highlightRanges: [],
     setHighlightRanges: highlightRanges => set({ highlightRanges }),
     ...useFetchStore(set, get),
