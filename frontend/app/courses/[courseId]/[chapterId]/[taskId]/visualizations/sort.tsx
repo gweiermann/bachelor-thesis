@@ -3,6 +3,7 @@ import { List } from "@/lib/visualization/List";
 import { ListEvents } from "@/lib/visualization/ListEvents";
 import { ListOrders } from "@/lib/visualization/ListOrders";
 import { ListStylings } from "@/lib/visualization/ListStylings";
+import { VisualizationStates } from "@/lib/visualization/VisualizationStates";
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useMemo } from "react";
 
@@ -16,6 +17,8 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
         const events = new ListEvents(array)
         const orders = new ListOrders(events)
         const classNames = new ListStylings(events)
+        VisualizationStates.shareDeletes(array, events, orders, classNames)
+        VisualizationStates.makeCompact(array, events, orders, classNames)
         return { orders, classNames }
     }, [analysis])
 

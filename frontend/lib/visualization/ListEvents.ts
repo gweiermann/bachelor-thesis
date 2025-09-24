@@ -1,5 +1,5 @@
 import { Preprocessor } from "./Preprocessor"
-import { State } from "./VisualizationStates"
+import { State, VisualizationStates } from "./VisualizationStates"
 
 
 type MyStep = number[]
@@ -20,27 +20,29 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
                 .event('init')
         }
 
-        if (this.resultList.length >= 2) {        
+        if (this.resultList.length >= 2) {
+            const a1 = this.steps.get(-2)
+            const a2 = this.steps.get(-1)
+            const a3 = array
             // detect swap
-            const changes = extractInbetweenChanges([
-                this.steps.get(-2),
-                this.steps.get(-1),
-                array
-            ])
+            const changes = extractInbetweenChanges([ a1, a2, a3 ])
 
-            if (!changes[0].hasMultipleChanges) { // skip already processed swap
-                if (changes[0].index !== changes[1].index &&
-                    changes[0].from === changes[1].to &&
-                    changes[1].from === changes[0].to) {
-                        return new State<MyState>()
-                            .delete(-1)
-                            .result({
-                                type: 'swap',
-                                first:  { item: changes[0].to, index: changes[0].index },
-                                second: { item: changes[1].to, index: changes[1].index }
-                            })
-                            .event('swap')
-                }
+            const i1 = changes[0].index
+            const i2 = changes[1].index
+
+            if (changes[0].index !== changes[1].index &&
+                a1[i1] == a3[i2] &&
+                a3[i1] == a1[i2] &&
+                changes[0].from === changes[1].to &&
+                changes[1].from === changes[0].to) {
+                    return new State<MyState>()
+                        .delete(-1)
+                        .result({
+                            type: 'swap',
+                            first:  { item: changes[0].to, index: i1 },
+                            second: { item: changes[1].to, index: i2 }
+                        })
+                        .event('swap')
             }
         }
 

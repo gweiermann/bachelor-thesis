@@ -1,6 +1,7 @@
 import { VisualizationStates, Result, State } from "./VisualizationStates"
 
 export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
+
     constructor(protected steps: VisualizationStates<In>) {
         super()
         this.process(steps)
@@ -18,13 +19,17 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
             }
 
             for (const operation of state.deleteOperations) {
-                this.resultList.splice(this.resultList.length + operation.relativeIndex, 1)
+                const index = this.resultList.length + operation.relativeIndex
+                const globalIndex = this.resultList[index].index
+                this.resultList.splice(index, 1)
+                this.deleteList.push(globalIndex)
             }
 
             if (state.resultOperations.length > 1) {
                 throw new Error("Multiple result operations are not supported")
             }
 
+            
             for (const operation of state.resultOperations) {
                 this.resultList.push({ index, state: operation.data, events: state.events })
             }
