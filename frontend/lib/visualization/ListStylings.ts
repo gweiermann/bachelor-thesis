@@ -22,28 +22,28 @@ export class ListStylings extends Preprocessor<ListEvent, ListStylingState> {
         /// To assess the amount of elements in the array we utilise the fact that the actual array is shown on an 'init' event.
         /// When 'init' is hit it initializes the first state.
         /// If it's not empty the previous state `this.get(-1)` holds an array with the same size so we can also use it to initialize an empty class names array
-        const result = event.type === 'init' ?
+        const classNames = event.type === 'init' ?
             event.array.map(() => '') : this.get(-1).map(() => '')
 
         if (event.type === 'replace') {
-            result[event.index] = classNameMapping.replace
+            classNames[event.index] = classNameMapping.replace
         } else if (event.type === 'swap') {
-            result[event.first.index] = classNameMapping.swap
-            result[event.second.index] = classNameMapping.swap
+            classNames[event.first.index] = classNameMapping.swap
+            classNames[event.second.index] = classNameMapping.swap
         }
 
         const upcomingEvent = this.steps.getReal(+1)
         if (upcomingEvent) {
             if (upcomingEvent.type === 'replace') {
-                result[upcomingEvent.index] += classNameMapping.upcoming
+                classNames[upcomingEvent.index] += classNameMapping.upcoming
             } else if (upcomingEvent.type === 'swap') {
-                result[upcomingEvent.first.index] += classNameMapping.upcoming
-                result[upcomingEvent.second.index] += classNameMapping.upcoming
+                classNames[upcomingEvent.first.index] += classNameMapping.upcoming
+                classNames[upcomingEvent.second.index] += classNameMapping.upcoming
             }
         }
 
-        transformByEvent(event, result)
+        transformByEvent(event, classNames)
 
-        return new State<ListStylingState>().result(result)
+        return new State<ListStylingState>().result(classNames)
     }
 }
