@@ -6,8 +6,6 @@ import { State } from "./VisualizationStates"
 type ListStylingState = string[] // class names
 
 export class ListStylings extends Preprocessor<ListEvent, ListStylingState> {
-    private id: number
-
     constructor(events: ListEvents) {
         super(events)
     }
