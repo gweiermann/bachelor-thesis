@@ -1,5 +1,5 @@
 import { Preprocessor } from "./Preprocessor"
-import { State, VisualizationStates } from "./VisualizationStates"
+import { State } from "./VisualizationStates"
 
 
 type MyStep = number[]

@@ -4,7 +4,7 @@ import { ListCollector, ListCollectorRaw } from "@/lib/visualization/ListCollect
 import { ListEvents } from "@/lib/visualization/ListEvents";
 import { ListOrders } from "@/lib/visualization/ListOrders";
 import { ListStylings } from "@/lib/visualization/ListStylings";
-import { mapStates, Preprocessor } from "@/lib/visualization/Preprocessor";
+import { Preprocessor } from "@/lib/visualization/Preprocessor";
 import { VisualizationStates } from "@/lib/visualization/VisualizationStates";
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useMemo } from "react";

@@ -1,6 +1,6 @@
 import { ListEvent } from "./ListEvents"
 import { Preprocessor } from "./Preprocessor"
-import { State, VisualizationStates } from "./VisualizationStates"
+import { State } from "./VisualizationStates"
 
 export function transformByEvent<T>(event: ListEvent, listToBeTransformed: T[], handlers: {
     replace?: (item: T, newValue: number) => T,
@@ -28,8 +28,9 @@ export class ListOrders extends Preprocessor<ListEvent, ListOrderState> {
     private id: number
 
     next(event: ListEvent) {
-        // TODO: find a better solution
+        // TODO: find a better solution:
         this.id ??= 0 // because next() will be called in super and this.id can't be initialized before
+
         if (event.type === 'init') {
             const result = event.array.map(value => ({ id: ++this.id, orderId: this.id, value }))
             return new State<ListOrderState>().result(result)
