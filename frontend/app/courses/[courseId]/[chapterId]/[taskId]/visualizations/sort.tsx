@@ -33,11 +33,6 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
     const currentClassNames = useMemo(() => classNames.getLatest(currentStepIndex), [classNames, currentStepIndex])
     const currentActiveLines = useMemo(() => activeLines.getLatest(currentStepIndex), [activeLines, currentStepIndex])
 
-    useEffect(() => {
-        console.log('orders', orders.getFullList())
-        console.log('classNames', classNames.getFullList())
-    }, [orders, classNames])
-
     const setActiveLines = useVisualization(state => state.setActiveLines)
     const setStepCount = useVisualization(state => state.setStepCount)
 
