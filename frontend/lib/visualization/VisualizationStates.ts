@@ -19,7 +19,7 @@ export abstract class VisualizationStates<T> {
     }
 
     // if there are index gaps these gaps are closed through modifying all of the indices
-    static makeCompact(...stateCollections: VisualizationStates<any>[]) {   
+    static removeGaps(...stateCollections: VisualizationStates<any>[]) {   
         let nextIndex = 0
         const maxLen = Math.max(...stateCollections.map(c => c.resultList[c.resultList.length - 1].index + 1))
         // generate a lookup table `offsetList` that shrinks all 
@@ -51,7 +51,7 @@ export abstract class VisualizationStates<T> {
     static export<O extends Record<PropertyKey, VisualizationStates<any>>>(stateCollections: O): O {
         const values = Object.values(Object.values(stateCollections))
         VisualizationStates.shareDeletes(...values)
-        VisualizationStates.makeCompact(...values)
+        VisualizationStates.removeGaps(...values)
         return stateCollections
     }
 

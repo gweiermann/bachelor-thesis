@@ -18,15 +18,21 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
         const lines = new LineCollector(analysis, 'line')
         const array = new ListCollector(analysis, 'array')
         const events = new ListEvents(array)
-        const orders = new ListOrders(events)
-        const classNames = new ListStylings(events)
+
         const activeLines = Preprocessor.map(lines, line => {
             if (events.get().type === 'swap') {
                 return [ line, lines.get(-1) ]
             }
             return [ line ]
         }, [])
-        return VisualizationStates.export({activeLines, events, orders, classNames})
+
+        VisualizationStates.shareDeletes(lines, array, events, activeLines)
+        VisualizationStates.removeGaps(lines, array, events, activeLines)
+
+        const orders = new ListOrders(events)
+        const classNames = new ListStylings(events)
+
+        return {activeLines, events, orders, classNames}
     }, [analysis])
 
     const currentOrder = useMemo(() => orders.getLatest(currentStepIndex), [orders, currentStepIndex])
