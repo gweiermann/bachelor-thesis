@@ -16,12 +16,10 @@ type Analysis = (ArrayCollector<'array'> & LineCollector<'line'> & ScopeCollecto
 
 export default function SortVisualization({ analysis, timePerStep, currentStepIndex}: VisualizationSpecializationProps<Analysis>) {
     const steps = useMemo(() => {
-        const array = Preprocessor.map(
-            new Collector(analysis, 'array'),
-            array => array.map(item => parseInt(item))
-        )
+        const arraysRaw = new Collector(analysis, 'array')
+        const arrays = Preprocessor.map(arraysRaw, array => array.map(item => parseInt(item)))
 
-        const events = new ListEvents(array)
+        const events = new ListEvents(arrays)
 
         const lines = new Collector(analysis, 'line')
         const activeLines = Preprocessor.map(lines, (line, index) => {
@@ -33,12 +31,12 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
 
         const scopes = new Collector(analysis, 'scope')
 
-        VisualizationStates.shareDeletesAndRemoveGaps(lines, array, events, activeLines, scopes)
+        VisualizationStates.shareDeletesAndRemoveGaps(arrays, events, activeLines, scopes)
 
         const orders = new ListOrders(events)
         const classNames = new ListStylings(events)
 
-        return new Grouped({ lines, array, events, activeLines, scopes, orders, classNames })
+        return new Grouped({ arrays, events, activeLines, scopes, orders, classNames })
     }, [analysis])
 
     const { orders: order, classNames, activeLines, scopes: scope } = useMemo(() => steps.get(currentStepIndex), [steps, currentStepIndex])
