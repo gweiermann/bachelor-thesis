@@ -12,7 +12,7 @@ export type ListEvent =
     { type: 'swap', first: { item: number, index: number }, second: { item: number, index: number } }
 
 export class ListEvents extends Preprocessor<MyStep, MyState> {
-    next(array: MyStep): State<MyState> {
+    next(array: MyStep, index: number): State<MyState> {
         // initial collect
         if (!this.resultList.length) {
             return new State<MyState>()
@@ -21,8 +21,8 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
         }
 
         if (this.resultList.length >= 2) {
-            const a1 = this.steps.get(-2)
-            const a2 = this.steps.get(-1)
+            const a1 = this.steps.get(index - 2)
+            const a2 = this.steps.get(index - 1)
             const a3 = array
             // detect swap
             const changes = extractInbetweenChanges([ a1, a2, a3 ])
@@ -47,7 +47,7 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
         }
 
         // recognized a replace
-        const previousArray = this.steps.get(-1)
+        const previousArray = this.steps.get(index - 1)
         const changedIndex = findChangedIndex(previousArray, array)
         return new State<MyState>()
             .result({

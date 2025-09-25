@@ -10,7 +10,7 @@ export class ListStylings extends Preprocessor<ListEvent, ListStylingState> {
         super(events)
     }
 
-    next(event: ListEvent) {
+    next(event: ListEvent, index: number) {
         const classNameMapping = {
             replace: 'bg-amber-400 ',
             swap: 'bg-sky-200 ',
@@ -23,7 +23,7 @@ export class ListStylings extends Preprocessor<ListEvent, ListStylingState> {
         /// When 'init' is hit it initializes the first state.
         /// If it's not empty the previous state `this.get(-1)` holds an array with the same size so we can also use it to initialize an empty class names array
         const classNames = event.type === 'init' ?
-            event.array.map(() => '') : this.get(-1).map(() => '')
+            event.array.map(() => '') : this.get(index - 1).map(() => '')
 
         if (event.type === 'replace') {
             classNames[event.index] = classNameMapping.replace
@@ -32,7 +32,7 @@ export class ListStylings extends Preprocessor<ListEvent, ListStylingState> {
             classNames[event.second.index] = classNameMapping.swap
         }
 
-        const upcomingEvent = this.steps.getReal(+1)
+        const upcomingEvent = this.steps.getWithGaps(index + 1)
         if (upcomingEvent) {
             if (upcomingEvent.type === 'replace') {
                 classNames[upcomingEvent.index] += classNameMapping.upcoming

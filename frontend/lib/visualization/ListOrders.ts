@@ -27,7 +27,7 @@ type ListOrderState = { id: number, orderId: number, value: number }[]
 export class ListOrders extends Preprocessor<ListEvent, ListOrderState> {
     private id: number
 
-    next(event: ListEvent) {
+    next(event: ListEvent, index: number) {
         // TODO: find a better solution:
         this.id ??= 0 // because next() will be called in super and this.id can't be initialized before
 
@@ -36,7 +36,7 @@ export class ListOrders extends Preprocessor<ListEvent, ListOrderState> {
             return new State<ListOrderState>().result(result)
         } else {
 
-            const result = transformByEvent(event, this.get(-1), {
+            const result = transformByEvent(event, this.get(index - 1), {
                 replace: (item, newValue) => {
                     return {
                         ...item,

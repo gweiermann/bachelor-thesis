@@ -19,9 +19,9 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
         const array = new ListCollector(analysis, 'array')
         const events = new ListEvents(array)
 
-        const activeLines = Preprocessor.map(lines, line => {
-            if (events.get().type === 'swap') {
-                return [ line, lines.get(-1) ]
+        const activeLines = Preprocessor.map(lines, (line, index) => {
+            if (events.get(index).type === 'swap') {
+                return [ line, lines.get(index - 1) ]
             }
             return [ line ]
         }, [])
@@ -35,9 +35,9 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
         return {activeLines, events, orders, classNames}
     }, [analysis])
 
-    const currentOrder = useMemo(() => orders.getLatest(currentStepIndex), [orders, currentStepIndex])
-    const currentClassNames = useMemo(() => classNames.getLatest(currentStepIndex), [classNames, currentStepIndex])
-    const currentActiveLines = useMemo(() => activeLines.getLatest(currentStepIndex), [activeLines, currentStepIndex])
+    const currentOrder = useMemo(() => orders.get(currentStepIndex), [orders, currentStepIndex])
+    const currentClassNames = useMemo(() => classNames.get(currentStepIndex), [classNames, currentStepIndex])
+    const currentActiveLines = useMemo(() => activeLines.get(currentStepIndex), [activeLines, currentStepIndex])
 
     const setActiveLines = useVisualization(state => state.setActiveLines)
     const setStepCount = useVisualization(state => state.setStepCount)

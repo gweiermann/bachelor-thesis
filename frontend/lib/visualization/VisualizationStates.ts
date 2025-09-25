@@ -88,12 +88,12 @@ export abstract class VisualizationStates<T> {
         return this.resultList.map(r => r.state)
     }
 
-    getRealAtAbsoluteIndex(index: number) {
+    getWithGaps(index: number) {
         return this.resultList.find(state => state.index === index)?.state
     }
 
     // returns a state that is the latest in the result list which index is <= the given index
-    getLatest(index: number) {
+    get(index: number) {
         let previous = null
         for (const result of this.resultList) {
             if (result.index === index) {
@@ -105,22 +105,6 @@ export abstract class VisualizationStates<T> {
             previous = result.state
         }
         return previous
-    }
-
-    // does only work inside a Preprocessor or Derivation
-    get(relativeIndex: number = 0) {
-        if (VisualizationStates.currentHookIndex === -1) {
-            throw new Error(`VisualizationStates.get() does only work inside a Preprocessor or Derivation`)
-        }
-        return this.getLatest(VisualizationStates.currentHookIndex + relativeIndex)
-    }
-
-    // does only work inside a Preprocessor or Derivation
-    getReal(relativeIndex: number = 0) {
-        if (VisualizationStates.currentHookIndex === -1) {
-            throw new Error(`VisualizationStates.get() does only work inside a Preprocessor or Derivation`)
-        }
-        return this.getRealAtAbsoluteIndex(VisualizationStates.currentHookIndex + relativeIndex)
     }
 
     on(eventName: string, callback: (state: T, index: number) => void) {
@@ -158,6 +142,7 @@ export class State<T> {
 
     delete(relativeIndex: number) {
         if (relativeIndex >= 0) {
+            // well it is possible but currently not needed. So therefore it has not been implemented
             throw new Error('delete operation can only delete entries in past')
         }
         this.deleteOperations.push({ relativeIndex })

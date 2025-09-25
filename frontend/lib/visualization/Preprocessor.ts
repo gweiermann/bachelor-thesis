@@ -8,13 +8,13 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
     }
 
     
-    static map<In, Out>(states: VisualizationStates<In>, mapPredicate: (state: In) => Out, initialState: Out = null) {
+    static map<In, Out>(states: VisualizationStates<In>, mapPredicate: (state: In, index: number) => Out, initialState: Out = null) {
         return new class extends Preprocessor<In, Out> {
             constructor(states: VisualizationStates<In>) {
                 super(states, initialState)
             }
-            next(step: In) {
-                const result = mapPredicate(step)
+            next(step: In, index: number) {
+                const result = mapPredicate(step, index)
                 return new State<Out>().result(result)
             }
         }(states)
@@ -24,7 +24,7 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
         steps.resultList.forEach(({ state: step, index }) => {
             const state = VisualizationStates.withContext(
                 index,
-                () => this.next(step)
+                () => this.next(step, index)
             )
 
             if (!state) {
@@ -50,20 +50,6 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
         return this
     }
 
-    abstract next(currentStep: In): State<Out>
+    abstract next(currentStep: In, index: number): State<Out>
 }
-
-export function mapStates<In, Out>(steps: VisualizationStates<In>, mapPredicate: (state: In) => Out, initialState: Out = null) {
-    return new class extends Preprocessor<In, Out> {
-        constructor(states: VisualizationStates<In>) {
-            super(states, initialState)
-        }
-        next(step: In) {
-            const result = mapPredicate(step)
-            return new State<Out>().result(result)
-        }
-    }(steps)
-}
-
-
 
