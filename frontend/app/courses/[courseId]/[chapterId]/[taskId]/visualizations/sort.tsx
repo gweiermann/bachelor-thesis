@@ -10,11 +10,12 @@ import { useVisualization } from "../stores";
 import { VisualizationSpecializationProps } from "../visualization";
 import { Collector } from "@/lib/visualization/Collector";
 import { ArrayCollector, LineCollector, ScopeCollector } from "@/lib/visualization/CollectorTypes";
+import { Grouped } from "@/lib/visualization/Grouped";
 
 type Analysis = (ArrayCollector<'array'> & LineCollector<'line'> & ScopeCollector<'scope'>)[]
 
 export default function SortVisualization({ analysis, timePerStep, currentStepIndex}: VisualizationSpecializationProps<Analysis>) {
-    const { orders, classNames, activeLines, scopes } = useMemo(() => {
+    const steps = useMemo(() => {
         const array = Preprocessor.map(
             new Collector(analysis, 'array'),
             array => array.map(item => parseInt(item))
@@ -32,39 +33,35 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
 
         const scopes = new Collector(analysis, 'scope')
 
+        VisualizationStates.shareDeletesAndRemoveGaps(lines, array, events, activeLines, scopes)
+
         const orders = new ListOrders(events)
         const classNames = new ListStylings(events)
 
-        VisualizationStates.shareDeletes(lines, array, events, activeLines, scopes, orders, classNames)
-        VisualizationStates.removeGaps(lines, array, events, activeLines, scopes, orders, classNames)
-
-        return {activeLines, events, orders, classNames, scopes}
+        return new Grouped({ lines, array, events, activeLines, scopes, orders, classNames })
     }, [analysis])
 
-    const currentOrder = useMemo(() => orders.get(currentStepIndex), [orders, currentStepIndex])
-    const currentClassNames = useMemo(() => classNames.get(currentStepIndex), [classNames, currentStepIndex])
-    const currentActiveLines = useMemo(() => activeLines.get(currentStepIndex), [activeLines, currentStepIndex])
-    const currentScope = useMemo(() => scopes.get(currentStepIndex), [scopes, currentStepIndex])
+    const { orders: order, classNames, activeLines, scopes: scope } = useMemo(() => steps.get(currentStepIndex), [steps, currentStepIndex])
 
     const setActiveLines = useVisualization(state => state.setActiveLines)
     const setStepCount = useVisualization(state => state.setStepCount)
     const setCurrentScope = useVisualization(state => state.setCurrentScope)
 
     useEffect(() => {
-        setActiveLines(currentActiveLines ?? [])
-    }, [setActiveLines, currentActiveLines])
+        setActiveLines(activeLines ?? [])
+    }, [setActiveLines, activeLines])
 
     useEffect(() => {
-        setStepCount(orders.length)
-    }, [setStepCount, orders])
+        setStepCount(steps.length)
+    }, [setStepCount, steps])
 
     useEffect(() => {
-        setCurrentScope(currentScope)
-    }, [setCurrentScope, currentScope])
+        setCurrentScope(scope)
+    }, [setCurrentScope, scope])
     
     return (
         <ul className="flex space-x-4">
-            {currentOrder.map((item, index) => 
+            {order.map((item, index) => 
                 <motion.li
                     key={item.orderId}
                     layout
@@ -88,7 +85,7 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
                                 exit={{ y: 100, opacity: 0, scale: 0.5 }}
                                 className={cn(
                                     "absolute size-full border-2 border-black bg-white rounded-sm flex items-center justify-center",
-                                    currentClassNames[index]
+                                    classNames[index]
                                 )}>
                                 {item.value}
                             </motion.div>

@@ -1,4 +1,3 @@
-
 export interface Result<T> {
     index: number,
     state: T,
@@ -36,6 +35,11 @@ export abstract class VisualizationStates<T> {
     static shareDeletes(...stateCollections: VisualizationStates<any>[]) {
         const set = new Set(stateCollections.flatMap(c => c.deleteList))
         stateCollections.forEach(c => c.resultList = c.resultList.filter(r => !set.has(r.index)))
+    }
+
+    static shareDeletesAndRemoveGaps(...stateCollections: VisualizationStates<any>[]) {
+        VisualizationStates.shareDeletes(...stateCollections)
+        VisualizationStates.removeGaps(...stateCollections)
     }
 
     static export<O extends Record<PropertyKey, VisualizationStates<any>>>(stateCollections: O): O {
