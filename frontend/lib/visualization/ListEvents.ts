@@ -17,7 +17,6 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
         if (!this.resultList.length) {
             return new State<MyState>()
                 .result({ type: 'init', array })
-                .event('init')
         }
 
         if (this.resultList.length >= 2) {
@@ -42,7 +41,6 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
                             first:  { item: changes[0].to, index: i1 },
                             second: { item: changes[1].to, index: i2 }
                         })
-                        .event('swap')
             }
         }
 
@@ -56,7 +54,6 @@ export class ListEvents extends Preprocessor<MyStep, MyState> {
                 to: array[changedIndex],
                 index: changedIndex
             })
-            .event('replace')
     }
 }
 

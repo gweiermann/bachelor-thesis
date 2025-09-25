@@ -44,7 +44,7 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
 
             
             for (const operation of state.resultOperations) {
-                this.resultList.push({ index, state: operation.data, events: state.events })
+                this.resultList.push({ index, state: operation.data })
             }
         })
         return this

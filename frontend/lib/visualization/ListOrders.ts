@@ -35,7 +35,6 @@ export class ListOrders extends Preprocessor<ListEvent, ListOrderState> {
             const result = event.array.map(value => ({ id: ++this.id, orderId: this.id, value }))
             return new State<ListOrderState>().result(result)
         } else {
-
             const result = transformByEvent(event, this.get(index - 1), {
                 replace: (item, newValue) => {
                     return {

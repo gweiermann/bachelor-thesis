@@ -2,7 +2,6 @@
 export interface Result<T> {
     index: number,
     state: T,
-    events: string[]
 }
 
 export abstract class VisualizationStates<T> {
@@ -106,18 +105,6 @@ export abstract class VisualizationStates<T> {
         }
         return previous
     }
-
-    on(eventName: string, callback: (state: T, index: number) => void) {
-        this.resultList.forEach(result => {
-            if (result.events.includes(eventName)) {
-                const prevHookIndex = VisualizationStates.currentHookIndex
-                VisualizationStates.currentHookIndex = result.index
-                callback(result.state, result.index)
-                VisualizationStates.currentHookIndex = prevHookIndex
-            }
-        })
-        return this
-    }
 }
 
 
@@ -133,7 +120,6 @@ interface DeleteOperation {
 export class State<T> {
     public resultOperations: ResultOperation<T>[] = []
     public deleteOperations: DeleteOperation[] = []
-    public events: string[] = []
 
     result(data: T) {
         this.resultOperations.push({ data })
@@ -150,11 +136,6 @@ export class State<T> {
     }
 
     skip() {
-        return this
-    }
-
-    event(eventName: string) {
-        this.events.push(eventName)
         return this
     }
 }
