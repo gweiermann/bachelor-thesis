@@ -5,17 +5,8 @@ export interface Result<T> {
 }
 
 export abstract class VisualizationStates<T> {
-    static currentHookIndex: number | null = null
     public resultList: Result<T>[] = []
     public deleteList: number[] = [] // list of indices that got deleted whilst generating the resultList and other operations
-
-    static withContext<T>(index: number, callback: () => T) {
-        const prevHookIndex = VisualizationStates.currentHookIndex
-        VisualizationStates.currentHookIndex = index
-        const result = callback()
-        VisualizationStates.currentHookIndex = prevHookIndex
-        return result
-    }
 
     // if there are index gaps these gaps are closed through modifying all of the indices
     static removeGaps(...stateCollections: VisualizationStates<any>[]) {   
@@ -93,7 +84,7 @@ export abstract class VisualizationStates<T> {
 
     // returns a state that is the latest in the result list which index is <= the given index
     get(index: number) {
-        let previous = null
+        let previous = this.initialValue
         for (const result of this.resultList) {
             if (result.index === index) {
                 return result.state
@@ -106,7 +97,6 @@ export abstract class VisualizationStates<T> {
         return previous
     }
 }
-
 
 
 interface ResultOperation<T> {

@@ -22,10 +22,7 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
 
     process(steps: VisualizationStates<In>): this {
         steps.resultList.forEach(({ state: step, index }) => {
-            const state = VisualizationStates.withContext(
-                index,
-                () => this.next(step, index)
-            )
+            const state = this.next(step, index)
 
             if (!state) {
                 return
