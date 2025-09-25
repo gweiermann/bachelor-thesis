@@ -1,5 +1,6 @@
 import { AnalysisResult, EditorMarker } from '@/lib/build'
 import { TestCase } from '@/lib/db'
+import { VariableScope } from '@/lib/visualization/CollectorTypes'
 import { create, type StateCreator } from 'zustand'
 export type VisualizationType = 'sort'
 export type State = 'unrun' | 'loading' | 'ready' | 'error'
@@ -30,10 +31,15 @@ export interface HighlightRange {
     className: string
     hoverMessage?: string
 }
+
+
+
 interface VisualizationStore extends FetchStore<AnalysisResult> {
     type: VisualizationType
     stepCount: number,
-    setStepCount: (stepCount: numnber) => void
+    setStepCount: (stepCount: number) => void
+    currentScope: VariableScope
+    setCurrentScope: (currentScope: VariableScope) => void
     activeLines: number[]
     setActiveLines: (activeLines: number[]) => void
     highlightRanges: HighlightRange[],
@@ -109,6 +115,8 @@ export const useVisualization = create<VisualizationStore>((set, get) => ({
     type: 'sort',
     activeLines: [],
     setActiveLines: activeLines => set({ activeLines }),
+    currentScope: {},
+    setCurrentScope: currentScope => set({ currentScope }),
     stepCount: null,
     setStepCount: stepCount => set({ stepCount }),
     highlightRanges: [],

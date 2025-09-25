@@ -1,9 +1,8 @@
+import { HasKey } from "./CollectorTypes";
 import { Result, VisualizationStates } from "./VisualizationStates";
 
-export type HasKey<K extends PropertyKey, T> = { [P in K]: T };
-
-export abstract class Collector<In, Out, Key extends string> extends VisualizationStates<Out> {
-    constructor(steps: HasKey<Key, In>[], key: Key) {
+export class Collector<A extends HasKey<Key, any>, Key extends string> extends VisualizationStates<A[Key]> {
+    public constructor(steps: A[], key: Key) {
         super()
 
         this.resultList = steps
@@ -12,10 +11,8 @@ export abstract class Collector<In, Out, Key extends string> extends Visualizati
                 if (!step) {
                     return null
                 }
-                return { index, events: [] as string[], state: this.transform(step) } satisfies Result<Out>
+                return { index, state: step } satisfies Result<A[Key]>
             })
             .filter(Boolean)
     }
-
-    abstract transform(currentStep: In): Out
 }

@@ -1,6 +1,4 @@
 import { cn } from "@/lib/utils";
-import { LineCollector, LineCollectorRaw } from "@/lib/visualization/LineCollector";
-import { ListCollector, ListCollectorRaw } from "@/lib/visualization/ListCollector";
 import { ListEvents } from "@/lib/visualization/ListEvents";
 import { ListOrders } from "@/lib/visualization/ListOrders";
 import { ListStylings } from "@/lib/visualization/ListStylings";
@@ -10,15 +8,21 @@ import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useMemo } from "react";
 import { useVisualization } from "../stores";
 import { VisualizationSpecializationProps } from "../visualization";
+import { Collector } from "@/lib/visualization/Collector";
+import { ArrayCollector, LineCollector, ScopeCollector } from "@/lib/visualization/CollectorTypes";
 
-type Analysis = (ListCollectorRaw<'array'> & LineCollectorRaw<'line'>)[]
+type Analysis = (ArrayCollector<'array'> & LineCollector<'line'> & ScopeCollector<'scope'>)[]
 
 export default function SortVisualization({ analysis, timePerStep, currentStepIndex}: VisualizationSpecializationProps<Analysis>) {
-    const { orders, classNames, activeLines } = useMemo(() => {
-        const lines = new LineCollector(analysis, 'line')
-        const array = new ListCollector(analysis, 'array')
+    const { orders, classNames, activeLines, scopes } = useMemo(() => {
+        const array = Preprocessor.map(
+            new Collector(analysis, 'array'),
+            array => array.map(item => parseInt(item))
+        )
+
         const events = new ListEvents(array)
 
+        const lines = new Collector(analysis, 'line')
         const activeLines = Preprocessor.map(lines, (line, index) => {
             if (events.get(index).type === 'swap') {
                 return [ line, lines.get(index - 1) ]
@@ -26,21 +30,25 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
             return [ line ]
         }, [])
 
-        VisualizationStates.shareDeletes(lines, array, events, activeLines)
-        VisualizationStates.removeGaps(lines, array, events, activeLines)
+        const scopes = new Collector(analysis, 'scope')
 
         const orders = new ListOrders(events)
         const classNames = new ListStylings(events)
 
-        return {activeLines, events, orders, classNames}
+        VisualizationStates.shareDeletes(lines, array, events, activeLines, scopes, orders, classNames)
+        VisualizationStates.removeGaps(lines, array, events, activeLines, scopes, orders, classNames)
+
+        return {activeLines, events, orders, classNames, scopes}
     }, [analysis])
 
     const currentOrder = useMemo(() => orders.get(currentStepIndex), [orders, currentStepIndex])
     const currentClassNames = useMemo(() => classNames.get(currentStepIndex), [classNames, currentStepIndex])
     const currentActiveLines = useMemo(() => activeLines.get(currentStepIndex), [activeLines, currentStepIndex])
+    const currentScope = useMemo(() => scopes.get(currentStepIndex), [scopes, currentStepIndex])
 
     const setActiveLines = useVisualization(state => state.setActiveLines)
     const setStepCount = useVisualization(state => state.setStepCount)
+    const setCurrentScope = useVisualization(state => state.setCurrentScope)
 
     useEffect(() => {
         setActiveLines(currentActiveLines ?? [])
@@ -49,8 +57,11 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
     useEffect(() => {
         setStepCount(orders.length)
     }, [setStepCount, orders])
-    
 
+    useEffect(() => {
+        setCurrentScope(currentScope)
+    }, [setCurrentScope, currentScope])
+    
     return (
         <ul className="flex space-x-4">
             {currentOrder.map((item, index) => 
@@ -62,8 +73,7 @@ export default function SortVisualization({ analysis, timePerStep, currentStepIn
                         type: 'spring',
                         bounce: 0.25
                     }}
-                    className="size-16"
-                    >
+                    className="size-16">
                     <motion.div
                         initial={{ y: -50, opacity: 0, scale: 0.5 }}
                         animate={{ y: 0, opacity: 1, scale: 1 }}

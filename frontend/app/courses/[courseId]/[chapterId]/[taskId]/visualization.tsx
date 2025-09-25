@@ -50,12 +50,9 @@ export default function Visualization({ task }: VisualizationProps) {
 
     const timePerStep = 1 // 1x means 1 second
 
-    const { loadingMessage, errorMessage, stepCount, state, result: analysis } = useVisualization()
+    const { loadingMessage, errorMessage, stepCount, state, currentScope, result: analysis } = useVisualization()
     const [currentStepIndex, setCurrentStepIndex] = useState(0)
     const [playbackSpeed, setPlaybackSpeed] = useState(1)
-
-    const currentStep = useMemo(() => analysis?.[currentStepIndex], [analysis, currentStepIndex])
-    const currentScope = useMemo(() => currentStep?.scope ?? {}, [currentStep])
     
     const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
 
@@ -125,13 +122,4 @@ export default function Visualization({ task }: VisualizationProps) {
             />
         </div>
     )
-}
-
-function addAnimationsToSteps(arg0: any): any {
-    throw new Error('Function not implemented.')
-}
-
-
-function addIdsToItems(result: AnalysisResult): any {
-    throw new Error('Function not implemented.')
 }
