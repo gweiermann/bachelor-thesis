@@ -49,7 +49,7 @@ export abstract class VisualizationStates<T> {
         return stateCollections
     }
 
-    constructor(private initialValue: T = null) {}
+    constructor(public initialValue: T = null) {}
 
     get length() {
         const len = this.resultList.length
@@ -86,7 +86,11 @@ export abstract class VisualizationStates<T> {
         return this.resultList.find(state => state.index === index)?.state
     }
 
-    // returns a state that is the latest in the result list which index is <= the given index
+    // 
+    /**
+     * @param index global index
+     * @returns the state that is addressed by the global index. If it refers to a gap it returns the most previous state
+     */
     get(index: number) {
         let previous = this.initialValue
         for (const result of this.resultList) {
@@ -99,6 +103,15 @@ export abstract class VisualizationStates<T> {
             previous = result.state
         }
         return previous
+    }
+
+    /**
+     * use local addressing (using resultList) not global addressing
+     * @param index local index of resultList
+     * @returns local addressed state
+     */
+    getLocal(index: number) {
+        return this.resultList[index]?.state
     }
 }
 

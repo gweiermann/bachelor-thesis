@@ -14,7 +14,7 @@ export class ListStylings extends Preprocessor<ListEvent, ListStylingState> {
         const classNameMapping = {
             replace: 'bg-amber-400 ',
             swap: 'bg-sky-200 ',
-            upcoming: 'border-2 border-dashed animate-wiggle '
+            upcoming: 'border-2 border-dashed  '
         }
 
         // TODO: find a better solution:

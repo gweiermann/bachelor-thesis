@@ -8,21 +8,24 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
     }
 
     
-    static map<In, Out>(states: VisualizationStates<In>, mapPredicate: (state: In, index: number) => Out, initialState: Out = null) {
-        return new class extends Preprocessor<In, Out> {
+    static map<In, Out>(states: VisualizationStates<In>, mapPredicate: (this: Preprocessor<In, Out>, state: In, globalIndex: number, localIndex: number) => Out, initialState: Out = null) {
+        return new class Preprocessed extends Preprocessor<In, Out> {
             constructor(states: VisualizationStates<In>) {
                 super(states, initialState)
             }
-            next(step: In, index: number) {
-                const result = mapPredicate(step, index)
+            next(step: In, globalIndex: number, localIndex: number) {
+                const result = mapPredicate.call(this, step, globalIndex, localIndex)
+                if (!result) {
+                    return new State<Out>().skip()
+                }
                 return new State<Out>().result(result)
             }
         }(states)
     }
 
     process(steps: VisualizationStates<In>): this {
-        steps.resultList.forEach(({ state: step, index }) => {
-            const state = this.next(step, index)
+        steps.resultList.forEach(({ state: step, index: globalIndex }, localIndex) => {
+            const state = this.next(step, globalIndex, localIndex)
 
             if (!state) {
                 return
@@ -41,12 +44,12 @@ export abstract class Preprocessor<In, Out> extends VisualizationStates<Out> {
 
             
             for (const operation of state.resultOperations) {
-                this.resultList.push({ index, state: operation.data })
+                this.resultList.push({ index: globalIndex, state: operation.data })
             }
         })
         return this
     }
 
-    abstract next(currentStep: In, index: number): State<Out>
+    abstract next(currentStep: In, globalIndex: number, localIndex: number): State<Out>
 }
 
