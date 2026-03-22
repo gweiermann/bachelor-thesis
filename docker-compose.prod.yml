@@ -17,12 +17,6 @@ services:
     env_file:
       - .env
 
-  # we just need it to be built, not run
-  # it will error because there's no command
-  analysis-tool:
-    build: ./analysis-tool
-    entrypoint: /bin/bash -c "echo it's ok for me to be stopped :)" # we want it to be built, but we don't want it to be run
-
   frontend:
     build:
       context: ./frontend

@@ -1,5 +1,9 @@
+import fs from 'node:fs/promises'
+import { constants as fsConstants } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
+import { promisify } from 'node:util'
 import split2 from 'split2'
 import express from 'express'
 import bodyparser from 'body-parser'
@@ -35,6 +39,55 @@ let connections = 0;
 // environment variables
 const isDebugMode = process.env.DEBUG === 'true' || process.env.DEBUG === '1'
 const dockerImage = process.env.ANALYSIS_DOCKER_IMAGE
+
+const execFileAsync = promisify(execFile)
+
+function getCollectorExtensionsRoot() {
+    if (process.env.COLLECTOR_EXTENSIONS_PATH) {
+        return path.resolve(process.cwd(), process.env.COLLECTOR_EXTENSIONS_PATH)
+    }
+    return path.join(process.cwd(), 'collector-extensions')
+}
+
+/**
+ * Stage collector-extensions + preset.json + code.json, then gzip-tar the tree for stdin.
+ * Throws if the extensions directory or register_extensions.py is missing, or if packing fails.
+ */
+async function buildRunBundleTarball(extensionsRoot, preset, code) {
+    let st
+    try {
+        st = await fs.stat(extensionsRoot)
+    } catch (e) {
+        if (e?.code === 'ENOENT') {
+            throw new Error(`Collector extensions directory missing or not a directory: ${extensionsRoot}`)
+        }
+        throw e
+    }
+    if (!st.isDirectory()) {
+        throw new Error(`Collector extensions directory missing or not a directory: ${extensionsRoot}`)
+    }
+
+    const reg = path.join(extensionsRoot, 'register_extensions.py')
+    try {
+        await fs.access(reg, fsConstants.F_OK)
+    } catch {
+        throw new Error(`register_extensions.py missing in ${extensionsRoot}`)
+    }
+
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'analysis-bundle-'))
+    try {
+        await fs.cp(extensionsRoot, tmp, { recursive: true })
+        await fs.writeFile(path.join(tmp, 'preset.json'), JSON.stringify(preset), 'utf8')
+        await fs.writeFile(path.join(tmp, 'code.json'), JSON.stringify(code), 'utf8')
+
+        const { stdout } = await execFileAsync('tar', ['-czf', '-', '-C', tmp, '.'], {
+            maxBuffer: 20 * 1024 * 1024,
+        })
+        return stdout
+    } finally {
+        await fs.rm(tmp, { recursive: true, force: true })
+    }
+}
 
 app.post('/build', async (req, res) => {
     if (connections >= maxConnections) {
@@ -121,17 +174,43 @@ async function runBuild(type, presetName, code, onStatusUpdate) {
     const id = String(idCounter++).padStart(3, '0')
     debug(id, `Starting build process. Type: ${type}, Preset: ${presetName}`)
 
+    if (!dockerImage) {
+        throw new Error('ANALYSIS_DOCKER_IMAGE is not set')
+    }
+
     const config = await getConfig(presetName)
     if (!config) {
         debugError(id, `Preset '${presetName}' not found`)
         throw new Error(`Preset '${presetName}' not found`)
     }
 
+    const extensionsRoot = getCollectorExtensionsRoot()
+    let tarball
+    try {
+        tarball = await buildRunBundleTarball(extensionsRoot, config, code)
+    } catch (e) {
+        debugError(id, `Failed to build run bundle tarball: ${e.message}`, true)
+        throw e
+    }
+
+    const dockerArgs = [
+        'run',
+        '--rm',
+        '-i',
+        ...containerRestrictions,
+        dockerImage,
+        '--extensions-from-stdin',
+        type,
+    ]
+
     return new Promise((resolve, reject) => {
-        const child = spawn(
-            'docker', ['run', '--rm', '-i', ...containerRestrictions, dockerImage, type, JSON.stringify(config), JSON.stringify(code)],
-            { cwd: path.join(process.cwd()) }
-        );
+        const child = spawn('docker', dockerArgs, {
+            cwd: path.join(process.cwd()),
+            stdio: ['pipe', 'pipe', 'pipe'],
+        })
+
+        child.stdin.write(tarball)
+        child.stdin.end()
 
         let stderr = ''
         child.stderr.on('data', data => {

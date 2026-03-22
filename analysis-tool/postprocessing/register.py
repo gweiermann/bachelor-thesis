@@ -6,6 +6,12 @@ postProcessors = {
     'keepTrackOfItems': KeepTrackOfItems
 }
 
+
+def register_postprocessor(name, cls):
+    """Register an extra postprocessor (used by register_extensions.py)."""
+    postProcessors[name] = cls
+
+
 def get_postprocessor(name):
     """
     Get a postprocessor class by its name.
