@@ -49,6 +49,7 @@ export async function buildRunBundleTarball(extensionsRoot, preset, code) {
 
         const { stdout } = await execFileAsync('tar', ['-czf', '-', '-C', tmp, '.'], {
             maxBuffer: 20 * 1024 * 1024,
+            encoding: 'buffer',
         })
         return stdout
     } finally {
