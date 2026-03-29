@@ -5,12 +5,12 @@ export const containerRestrictions = [
     '--network=none',
     '--cap-drop=ALL',
     '--security-opt=no-new-privileges',
-    '-m=256m',
-    '--cpus=2',
+    '-m=64m',
+    '--cpus=1',
     '--read-only',
     '--tmpfs=/tmp:rw,exec',
-    '--ulimit', 'nproc=128:128',
-    '--ulimit', 'nofile=1024:1024',
+    '--ulimit', 'nproc=40:40',
+    '--ulimit', 'nofile=128:128',
 ]
 
 export const codeSizeLimit = 1024 * 1024 // 1MB
