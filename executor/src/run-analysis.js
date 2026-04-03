@@ -4,6 +4,7 @@ import { fetchPresetConfig } from './preset-client.js'
 import { buildRunBundleTarball } from './bundle-builder.js'
 import { spawnAnalysisDocker } from './docker-analysis.js'
 import { pipeAnalysisJsonLines } from './analysis-stdout.js'
+import { AnalysisProcessError, handleProcess } from './analysis-docker-process.js'
 
 /**
  * Fetch preset, build bundle tarball, run analysis container, return final JSON line payload.
@@ -25,40 +26,30 @@ export async function runAnalysis(type, presetName, code, onStatusUpdate) {
     })
 
     const child = spawnAnalysisDocker(type)
-    child.stdin.write(tarball)
-    child.stdin.end()
 
-    let stderr = ''
-    child.stderr.on('data', (data) => {
-        const chunk = data.toString('utf-8')
-        stderr += chunk
-        log.err(chunk)
-    })
-
-    const result = await new Promise((resolve, reject) => {
-        let settled = false
+    return new Promise((resolve, reject) => {
+        const { writeStdin } = handleProcess(child, {
+            onError: reject,
+            logStderr: (chunk) => log.err(chunk),
+        })
 
         pipeAnalysisJsonLines(child.stdout, {
             onStatus: onStatusUpdate,
             onNonJsonLine: (line) => log.info(line),
-            onTerminal: (data) => {
-                if (settled) {
-                    return
-                }
-                settled = true
-                resolve(data)
-            },
+            onTerminated: (data) => resolve(data),
         })
 
-        child.stdout.on('close', () => {
-            if (!settled) {
-                reject(new Error('Process closed unexpectedly: ' + stderr))
-            }
-        })
+        writeStdin(tarball)
     }).catch((e) => {
-        log.err('Build process failed: ' + e.message)
+        if (e instanceof AnalysisProcessError) {
+            const lines = [`Build process failed (${e.kind}): ${e.message}`]
+            if (e.stderr.trim()) {
+                lines.push(e.stderr.trim())
+            }
+            log.err(lines.join('\n'), true)
+        } else {
+            log.err('Build process failed: ' + e.message)
+        }
         throw e
     })
-
-    return result
 }
