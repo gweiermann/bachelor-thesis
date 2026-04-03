@@ -16,6 +16,12 @@ collectors = {
     'binaryTreeWatcher': BinaryTreeWatcher,
 }
 
+
+def register_collector(name, cls):
+    """Register an extra collector (used by register_extensions.py)."""
+    collectors[name] = cls
+
+
 def get_collector(name):
     """
     Get a collector class by its name.

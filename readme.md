@@ -79,12 +79,30 @@ Auch **Vergleiche** zwischen Elementen werden erkannt und im Ablauf hervorgehobe
 
 # Installation
 
-1. Konfiguriere die `.env`-Datei (z. B. Port, Umgebungsvariablen).  
-2. Starte das Projekt mit:  
+1. Konfiguriere die `.env`-Datei (z. B. Port, Umgebungsvariablen).
+
+2. **Analysis-Tool-Docker-Image (aktuell manuell):**  
+   Der Executor startet den Analyse-Container über `ANALYSIS_DOCKER_IMAGE`. In `docker-compose.prod.yml` wird das Image **nicht** mehr mitgebaut; du musst es **einmal** selbst bauen (oder ein bereits gebautes Image von einer Registry pullen) und den **Image-Namen** in der `.env` setzen.
+
+   Beispiel: Image aus dem Projektverzeichnis bauen und Namen wählen:
+
+   ```sh
+   docker build -t bachelor-thesis-analysis-tool ./analysis-tool
+   ```
+
+   In der `.env` denselben Namen eintragen:
+
+   ```
+   ANALYSIS_DOCKER_IMAGE=bachelor-thesis-analysis-tool
+   ```
+
+   Für die lokale Entwicklung mit `docker compose` (ohne `-f docker-compose.prod.yml`) kannst du das `analysis-tool`-Service weiterhin nutzen, damit Compose das Image baut; der Compose-Projektname ergibt dann typischerweise ein Image wie `<projektordner>-analysis-tool` – diesen vollen Namen trägst du ebenfalls in `ANALYSIS_DOCKER_IMAGE` ein.
+
+3. Starte das Projekt mit:  
    ```sh
    docker compose up -d
-    ```
-3. Wenn der Port in der .env-Datei nicht angepasst wurde, ist die Webseite anschließend unter http://localhost:3000  erreichbar.
+   ```
+4. Wenn der Port in der .env-Datei nicht angepasst wurde, ist die Webseite anschließend unter http://localhost:3000  erreichbar.
 
 # Ausblick
 
