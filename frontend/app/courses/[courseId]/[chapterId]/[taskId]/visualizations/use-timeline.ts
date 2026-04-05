@@ -71,32 +71,33 @@ type TimelineOnce<TEvents extends Record<string, unknown>> = {
 }
 
 export function useTimeline<TEvents extends Record<string, unknown> = Record<string, unknown>>() {
-    const keyframesRef = useRef<Map<number, TimelineKeyframe>>(new Map())
-    const handlersRef = useRef<Map<string, RegisteredHandler[]>>(new Map())
-    const onceFiredRef = useRef<Set<Function>>(new Set())
+    const keyframesRef = useRef<Map<number, TimelineKeyframe[]>>(new Map()) // keyframeIndex -> keyframes at that step
+    const handlersRef = useRef<Map<string, RegisteredHandler[]>>(new Map()) // eventName -> handlers
+    const onceFiredRef = useRef<Set<Function>>(new Set()) // handler callbacks
     const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndex, registerBakingRecipe } = useVisualizationBaking()
 
-    const getPayloadWithFallback = useCallback((rawIndex: number) => {
+    const getPayloadWithFallback = useCallback((rawIndex: number): TEvents[string] | null => {
         // fixme: performance of sorting each time is not optimal
-        if (rawIndex in keyframesRef.current) {
-            return keyframesRef.current.get(rawIndex)?.payload
+        const keyframesAt = keyframesRef.current.get(rawIndex)
+        if (keyframesAt?.length) {
+            return Object.assign({}, ...keyframesAt.map(k => k.payload)) as TEvents[string]
         }
-        const indices = Object.keys(keyframesRef.current).map(Number)
-        const ind = indices.toSorted((a, b) => a - b).findIndex(i => i < rawIndex)
+        const indices = [...keyframesRef.current.keys()].toSorted((a, b) => a - b)
+        const ind = indices.findLastIndex(i => i < rawIndex)
         if (ind === -1) {
             return null
         }
-        return keyframesRef.current.get(indices[ind]).payload
+        const payloads = keyframesRef.current.get(indices[ind])?.map(k => k.payload)
+        return Object.assign({}, ...payloads)
     }, [keyframesRef])
 
     const current = useMemo(() => getPayloadWithFallback(currentRawIndex), [getPayloadWithFallback, currentRawIndex])
 
-
-    const getPayloads = useCallback((rawIndex: number, groupSize: number) => {
-        const payloads = []
+    const getPayloads = useCallback((rawIndex: number, groupSize: number): TEvents[string][] => {
+        const payloads: TEvents[string][] = []
         for (let i = 0; i < groupSize; i++) {
-            const payload = keyframesRef.current.get(rawIndex + i)?.payload
-            payloads.push(payload)
+            const keyframesAt = keyframesRef.current.get(rawIndex + i) ?? []
+            payloads.push(Object.assign({}, ...keyframesAt.map(k => k.payload)))
         }
         return payloads
     }, [keyframesRef])
@@ -168,30 +169,32 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
             const fullList: Scheduled[] = []
 
             for (let i = 0; i < lastIndex; ++i) {
-                const keyframe = keyframesRef.current.get(i)
-                if (!keyframe) {
+                const keyframesAt = keyframesRef.current.get(i)
+                if (!keyframesAt?.length) {
                     continue
                 }
 
-                const handlers = handlersRef.current.get(keyframe.eventName) ?? []
-                for (const handler of handlers) {
-                    const chunkSize = handler.options.chunked
-                    if (typeof chunkSize === 'number') {
-                        const count = chunkedHandlers.get(handler) + 1
-                        if (count < chunkSize) {
-                            chunkedHandlers.set(handler, count)
-                            createGroup(i - chunkSize, chunkSize)
-                            continue
-                        } else {
-                            chunkedHandlers.set(handler, 0)
+                for (const keyframe of keyframesAt) {
+                    const handlers = handlersRef.current.get(keyframe.eventName) ?? []
+                    for (const handler of handlers) {
+                        const chunkSize = handler.options.chunked
+                        if (typeof chunkSize === 'number') {
+                            const count = (chunkedHandlers.get(handler) ?? 0) + 1
+                            if (count < chunkSize) {
+                                chunkedHandlers.set(handler, count)
+                                createGroup(i - chunkSize, chunkSize)
+                                continue
+                            } else {
+                                chunkedHandlers.set(handler, 0)
+                            }
                         }
+                        fullList.push({
+                            callback: handler.callback,
+                            payloadIndex: i,
+                            placementIndex: i + handler.options.globalRelativeOffset,
+                            isSinglePayload: !handler.options.grouped,
+                        })
                     }
-                    fullList.push({
-                        callback: handler.callback,
-                        payloadIndex: i,
-                        placementIndex: i + handler.options.globalRelativeOffset,
-                        isSinglePayload: !handler.options.grouped,
-                    })
                 }
             }
 
@@ -230,9 +233,11 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
             } else {
                 payload = payloadOrUpdater
             }
-            keyframesRef.current.set(index, { eventName, payload })
+            const existing = keyframesRef.current.get(index) ?? []
+            existing.push({ eventName, payload })
+            keyframesRef.current.set(index, existing)
         },
-        [wrappedIndex]
+        [wrappedIndex, getPayloadWithFallback]
     )
 
     const reset = useCallback(() => {
