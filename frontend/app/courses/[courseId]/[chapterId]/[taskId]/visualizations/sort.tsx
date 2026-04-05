@@ -1,5 +1,6 @@
 'use client'
 
+import { compareArrays } from './compare-arrays'
 import { useArrayChangesTimeline } from './use-array-changes-timeline'
 import { ArrayChangesVisualization } from './array-changes-visualization'
 import { Timeline } from './use-timeline'
@@ -18,14 +19,13 @@ export default function SortVisualization({ steps }: SortVisualizationProps) {
 
     steps.chunked('arrayWatcher', 2, ([ array, array2 ]) => {
         const comparison = compareArrays(array, array2)
+        if (comparison.reason === 'error') {
+            throw new Error(comparison.message)
+        }
         if (comparison.reason === 'swap') {
             timeline.swap(comparison.firstIndex, comparison.secondIndex) // swap event references this whole group as one step 
-        }
-        else if (comparison.reason === 'replace') {
+        } else {
             timeline.replace(comparison.index, comparison.newValue)
-        }
-        else {
-            throw new Error(`Unknown comparison reason: ${comparison.reason}`)
         }
     })
 

@@ -19,6 +19,7 @@ import {
     Bake,
     VisualizationBakingProvider,
 } from './visualizations/visualization-baking-context'
+import { useTimeline } from './visualizations/use-timeline'
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
     if (!step) {
@@ -104,10 +105,17 @@ export default function Visualization({ task }: VisualizationProps) {
         )
     }
 
+    const steps = useTimeline()
+    useEffect(() => {
+        steps.reset()
+        analysis.forEach((rawStep, rawIndex) => {
+            Object.entries(rawStep).forEach(([collector, data]) => steps.emit(collector, data, { rawIndex }))
+        })
+    }, [analysis, steps])
+
     return (
         <VisualizationBakingProvider
             analysis={analysis}
-            currentStepIndex={currentStepIndex}
             timePerStep={vizTimePerStep}
         >
             <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 gap-8 items-center justify-center h-full w-full px-12">
@@ -137,7 +145,7 @@ export default function Visualization({ task }: VisualizationProps) {
                         </TableRow>
                     </TableBody>
                 </Table>
-                <TheVisualization key={resetProp} />
+                <TheVisualization key={resetProp} steps={steps} />
                 <AnimationControlBar
                     totalSteps={analysis.length}
                     timePerStep={timePerStep}

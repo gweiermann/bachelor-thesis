@@ -236,6 +236,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
             after,
             once,
             chunked,
+            reset,
         }),
         [
             emit,
@@ -244,6 +245,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
             after,
             once,
             chunked,
+            reset,
         ]
     )
 }
