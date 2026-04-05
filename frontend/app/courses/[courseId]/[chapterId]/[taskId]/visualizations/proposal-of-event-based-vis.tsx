@@ -87,6 +87,12 @@ export function useTimeline<TPayload = unknown>() {
         // TODO: as soon as chunk gets called e.g. with a value of 2, it automatically groups the global steps (except when returning false in the handler)
     }
 
+    /**
+     * This will be called for every registered timeline before baking.
+     * It checks what is ok to bake and what needs waiting. 
+     * As soon as the analysis/rawSteps are completely received this doesn't get called anymore since we won't get more steps so unfinished chunks won't get completed anyway.
+     * In that case baking gets called with lastPossibleKeyframeIndex as its toKeyframeIndex parameter without incorporating blockers
+     */
     function getLastProcessableKeyframeIndex(lastPossibleKeyframeIndex: number) {
         let blocker = 0;
 
