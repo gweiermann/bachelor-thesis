@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useTimeline } from './use-timeline'
 
 export type Item = {
@@ -11,57 +11,51 @@ export type Item = {
 }
 
 type ItemsEvents = {
-    set: Item[],
-    swap: { index1: number, index2: number },
-    replace: { index: number, newValue: number },
-    addClass: { index: number, className: string },
-    removeClass: { index: number, className: string }
+    set: Item[]
 }
 
 export function useItemsTimeline() {
     const timeline = useTimeline<ItemsEvents>()
-    const [id, setId] = useState(0)
+    const nextId = useRef(0)
     
-    return {
+    return useMemo(() => ({
         ...timeline,
-        set: (rawItems) => {
-            setId(id => id + 1)
-            timeline.set(rawItems.map((num, index) => ({
+        set: (rawItems: number[]) => {
+            timeline.emit('set', rawItems.map((num, index) => ({
                 value: num,
-                id,
+                id: nextId.current++,
                 orderId: index,
                 classList: []
             })))
         },
-        swap: ({index1, index2}) => {
-            timeline.set((current) => {
-            const temp = current[index1]
-                current[index1] = current[index2]
-                current[index2] = temp
+        swap: (firstIndex: number, secondIndex: number) => {
+            timeline.emit('set', (current) => {
+                const temp = current[firstIndex]
+                current[firstIndex] = current[secondIndex]
+                current[secondIndex] = temp
                 return current
             })
         },
-        replace: ({index, newValue}) => {
-            timeline.set((current) => {
+        replace: (index: number, newValue: number) => {
+            timeline.emit('set', (current) => {
                 current[index].value = newValue
-                setId(id => id + 1)
-                current[index].id = id
+                current[index].id = nextId.current++
                 return current
             })
         },
-        addClass: ({index, className}) => {
-            timeline.set((current) => {
+        addClass: (index: number, className: string) => {
+            timeline.emit('set', (current) => {
                 current[index].classList.push(className)
                 return current
             })
         },
-        removeClass: ({index, className}) => {
-            timeline.set((current) => {
+        removeClass: (index: number, className: string) => {
+            timeline.emit('set', (current) => {
                 current[index].classList = current[index].classList.filter(cls => cls !== className)
                 return current
             })
         }
-    }
+    }), [timeline, nextId])
 }
 
 export type ItemsTimeline = ReturnType<typeof useItemsTimeline>

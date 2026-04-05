@@ -9,10 +9,6 @@ export type ArrayChangesEvents = {
     replace: { index: number; newValue: number }
 }
 
-/**
- * Thin domain layer on {@link useTimeline} (proposal `use-array-changes-timeline.ts`):
- * swap / replace / seedArray → `emit` with typed payloads.
- */
 export function useArrayChangesTimeline(): ArrayChangesTimeline {
     const timeline = useTimeline<ArrayChangesEvents>()
 

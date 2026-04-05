@@ -76,18 +76,21 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
     const onceFiredRef = useRef<Set<Function>>(new Set())
     const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndex, registerBakingRecipe } = useVisualizationBaking()
 
-    const current = useMemo(() => {
+    const getPayloadWithFallback = useCallback((rawIndex: number) => {
         // fixme: performance of sorting each time is not optimal
-        if (currentRawIndex in keyframesRef.current) {
-            return keyframesRef.current.get(currentRawIndex)?.payload
+        if (rawIndex in keyframesRef.current) {
+            return keyframesRef.current.get(rawIndex)?.payload
         }
         const indices = Object.keys(keyframesRef.current).map(Number)
-        const ind = indices.toSorted((a, b) => a - b).findIndex(i => i < currentRawIndex)
+        const ind = indices.toSorted((a, b) => a - b).findIndex(i => i < rawIndex)
         if (ind === -1) {
             return null
         }
         return keyframesRef.current.get(indices[ind]).payload
     }, [keyframesRef])
+
+    const current = useMemo(() => getPayloadWithFallback(currentRawIndex), [getPayloadWithFallback, currentRawIndex])
+
 
     const getPayloads = useCallback((rawIndex: number, groupSize: number) => {
         const payloads = []
@@ -208,10 +211,29 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
                 })
         }, [handlersRef])
 
-    const emit = useCallback(<K extends keyof TEvents & string>(eventName: K, payload: TEvents[K], options: { rawIndex?: number } = {}) => {
-        const index = options.rawIndex ?? wrappedIndex
-        keyframesRef.current.set(index, { eventName, payload })
-    }, [])
+    const emit = useCallback(
+        <K extends keyof TEvents & string>(
+            eventName: K,
+            payloadOrUpdater: TEvents[K] | ((previous: TEvents[K] | null) => TEvents[K]),
+            options: { rawIndex?: number } = {}
+        ) => {
+            const index = options.rawIndex ?? wrappedIndex
+            let payload: TEvents[K]
+            if (typeof payloadOrUpdater === 'function') {
+                const updater = payloadOrUpdater as (previous: TEvents[K] | null) => TEvents[K]
+                const previousRaw = getPayloadWithFallback(index)
+                const previous =
+                    previousRaw === null
+                        ? null
+                        : (structuredClone(previousRaw) as TEvents[K])
+                payload = updater(previous)
+            } else {
+                payload = payloadOrUpdater
+            }
+            keyframesRef.current.set(index, { eventName, payload })
+        },
+        [wrappedIndex]
+    )
 
     const reset = useCallback(() => {
         keyframesRef.current.clear()
