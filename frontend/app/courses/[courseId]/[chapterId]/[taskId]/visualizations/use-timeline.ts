@@ -16,17 +16,63 @@ export type HandlerOptions = {
     chunked?: number
 }
 
-type HandlerCallback<TPayload> = (payload: TPayload | TPayload[]) => void
+/** Internal: runtime invokes with either one payload or an array of payloads. */
+type DispatchPayload = unknown
 
-type Handler<TPayload> = {
+type RegisteredHandler = {
     eventName: string
-    callback: HandlerCallback<TPayload>
+    callback: (payload: DispatchPayload) => void
     options: HandlerOptions
 }
 
-export function useTimeline<TPayload>() {
+type OnUngroupedOptions = Omit<HandlerOptions, 'grouped'> & { grouped?: false }
+type OnGroupedOptions = Omit<HandlerOptions, 'grouped'> & { grouped: true }
+
+type TimelineOn<TEvents extends Record<string, unknown>> = {
+    <E extends keyof TEvents & string>(
+        eventName: E,
+        callback: (payload: TEvents[E]) => void,
+        options?: OnUngroupedOptions
+    ): void
+    <E extends keyof TEvents & string>(
+        eventName: E,
+        callback: (payload: TEvents[E][]) => void,
+        options: OnGroupedOptions
+    ): void
+}
+
+type RelativeUngroupedOptions = Omit<HandlerOptions, 'grouped' | 'globalRelativeOffset'> & { grouped?: false }
+type RelativeGroupedOptions = Omit<HandlerOptions, 'grouped' | 'globalRelativeOffset'> & { grouped: true }
+
+type TimelineRelative<TEvents extends Record<string, unknown>> = {
+    <E extends keyof TEvents & string>(
+        eventName: E,
+        callback: (payload: TEvents[E]) => void,
+        options?: RelativeUngroupedOptions
+    ): void
+    <E extends keyof TEvents & string>(
+        eventName: E,
+        callback: (payload: TEvents[E][]) => void,
+        options: RelativeGroupedOptions
+    ): void
+}
+
+type TimelineOnce<TEvents extends Record<string, unknown>> = {
+    <E extends keyof TEvents & string>(
+        eventName: E,
+        handler: (payload: TEvents[E]) => void,
+        options?: OnUngroupedOptions
+    ): void
+    <E extends keyof TEvents & string>(
+        eventName: E,
+        handler: (payload: TEvents[E][]) => void,
+        options: OnGroupedOptions
+    ): void
+}
+
+export function useTimeline<TEvents extends Record<string, unknown> = Record<string, unknown>>() {
     const keyframesRef = useRef<Map<number, TimelineKeyframe>>(new Map())
-    const handlersRef = useRef<Map<string, Handler<TPayload>[]>>(new Map())
+    const handlersRef = useRef<Map<string, RegisteredHandler[]>>(new Map())
     const onceFiredRef = useRef<Set<Function>>(new Set())
     const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndex, registerBakingRecipe } = useVisualizationBaking()
 
@@ -52,65 +98,69 @@ export function useTimeline<TPayload>() {
         return payloads
     }, [keyframesRef])
     
-    const on = useCallback(
-        (eventName: string, callback: HandlerCallback<TPayload>, options?: HandlerOptions) => {
+    const register = useCallback(
+        (eventName: keyof TEvents & string, callback: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
             const handlers = handlersRef.current.get(eventName) ?? []
             handlers.push({
                 eventName,
                 callback,
-                options
+                options: options ?? {}
             })
             handlersRef.current.set(eventName, handlers)
-        }, [handlersRef]
+        },
+        [handlersRef]
     )
 
+    const on = register as unknown as TimelineOn<TEvents>
+
     const before = useCallback(
-        (eventName: string, callback: HandlerCallback<TPayload>, options?: Omit<HandlerOptions, 'globalRelativeOffset'>) => {
-            on(eventName, callback, { ...options, globalRelativeOffset: -1 })
-        }, [on]
+        ((eventName: keyof TEvents & string, callback: (payload: DispatchPayload) => void, options?: Omit<HandlerOptions, 'globalRelativeOffset'>) => {
+            register(eventName, callback, { ...options, globalRelativeOffset: -1 })
+        }) as TimelineRelative<TEvents>,
+        [register]
     )
 
     const after = useCallback(
-        (eventName: string, callback: HandlerCallback<TPayload>, options?: Omit<HandlerOptions, 'globalRelativeOffset'>) => {
-            on(eventName, callback, { ...options, globalRelativeOffset: +1 })
-        }, [on]
+        ((eventName: keyof TEvents & string, callback: (payload: DispatchPayload) => void, options?: Omit<HandlerOptions, 'globalRelativeOffset'>) => {
+            register(eventName, callback, { ...options, globalRelativeOffset: +1 })
+        }) as TimelineRelative<TEvents>,
+        [register]
     )
 
     const once = useCallback(
-        (
-            eventName: string,
-            handler: HandlerCallback<TPayload>,
-            options?: HandlerOptions
-        ) => {
-            on(eventName, (...args) => {
+        ((eventName: keyof TEvents & string, handler: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
+            register(eventName, parameter => {
                 if (onceFiredRef.current.has(handler)) {
                     return
                 }
                 onceFiredRef.current.add(handler)
-                handler(...args)
+                handler(parameter)
             }, { ...options })
-        },
-        [on, onceFiredRef]
+        }) as TimelineOnce<TEvents>,
+        [register, onceFiredRef]
     )
 
-    const chunked = useCallback((eventName: string, chunkSize: number, handler: HandlerCallback<TPayload>) => {
-        if (chunkSize <= 1) {
-            throw new Error("chunkSize must be at least 2")
-        }
-        on(eventName, handler, { chunked: chunkSize })
-    }, [])
+    const chunked = useCallback(
+        <TEventName extends keyof TEvents & string>(eventName: TEventName, chunkSize: number, handler: (payload: TEvents[TEventName][]) => void) => {
+            if (chunkSize <= 1) {
+                throw new Error("chunkSize must be at least 2")
+            }
+            register(eventName, handler as (payload: DispatchPayload) => void, { chunked: chunkSize, grouped: true })
+        },
+        [register]
+    )
 
     const runEventHandlers = useCallback(
         () => {
             type Scheduled = {
-                callback: HandlerCallback<TPayload>
+                callback: (payload: DispatchPayload) => void
                 placementIndex: number
                 payloadIndex: number
                 isSinglePayload: boolean
             }
 
             const lastIndex = Math.max(...keyframesRef.current.keys())
-            const chunkedHandlers = new Map<Handler<unknown>, number>()
+            const chunkedHandlers = new Map<RegisteredHandler, number>()
 
             const fullList: Scheduled[] = []
 
@@ -158,7 +208,7 @@ export function useTimeline<TPayload>() {
                 })
         }, [handlersRef])
 
-    const emit = useCallback((eventName: string, payload: unknown, options: { rawIndex: number }) => {
+    const emit = useCallback(<K extends keyof TEvents & string>(eventName: K, payload: TEvents[K], options: { rawIndex?: number } = {}) => {
         const index = options.rawIndex ?? wrappedIndex
         keyframesRef.current.set(index, { eventName, payload })
     }, [])
@@ -198,4 +248,6 @@ export function useTimeline<TPayload>() {
     )
 }
 
-export type TimelineApi = ReturnType<typeof useTimeline>
+export type Timeline<TEvents extends Record<string, unknown> = Record<string, unknown>> = ReturnType<typeof useTimeline<TEvents>>
+
+export type TimelineApi<TEvents extends Record<string, unknown> = Record<string, unknown>> = Timeline<TEvents>

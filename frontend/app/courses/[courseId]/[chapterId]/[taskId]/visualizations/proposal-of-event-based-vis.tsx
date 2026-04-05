@@ -245,14 +245,13 @@ export function ArrayChangesVisualization({ timeline }) {
         itemsVis.removeClass(index, replaceClass)
     })
 
-    // with motion.js like in sort.tsx, animatepresence and so on
     return (
         <ItemsVisualization timeline={itemsTimeline} />
     )
 }
 
-// use-items-visualization.ts
-export function useItemsVisualization() {
+// use-items-timeline.ts
+export function useItemsTimeline() {
     const timeline = useTimeline()
     const [id, setId] = useState(0)
     

@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'motion/react'
-import type { ItemsVisualizationTimeline } from './use-items-visualization'
+import type { ItemsVisualizationTimeline } from './use-items-timeline'
 
 export function ItemsVisualization({
     timeline,
