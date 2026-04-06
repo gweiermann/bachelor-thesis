@@ -21,7 +21,7 @@ function mustHaveItems(current: Item[] | null): Item[] {
 }
 
 export function useItemsTimeline() {
-    const timeline = useTimeline<ItemsStringEvents, Item[]>()
+    const timeline = useTimeline<ItemsStringEvents, Item[]>('items')
     const nextId = useRef(0)
 
     return useMemo(() => ({

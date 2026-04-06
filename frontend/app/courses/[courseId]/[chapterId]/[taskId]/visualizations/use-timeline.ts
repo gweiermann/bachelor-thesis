@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVisualizationBaking } from './visualization-baking-context'
+import { register } from 'module'
 
 /** Channel for payloads exposed as `timeline.current` (not a string event name). */
 export const TIMELINE_CURRENT = Symbol('timeline.current')
@@ -103,14 +104,57 @@ function assertNoDuplicateEventAtIndex(
     }
 }
 
+type AnyTimeline = any
+// type AnyTimeline = Timeline<Record<string, unknown>, unknown>
+
+export function useDefineTimelineHandlers<T extends AnyTimeline>(inputTimeline: T, outputTimeline: T, effect: (timeline: T) => void, dependencies: unknown[]) {
+    useEffect(() => {
+        console.log('useDefineTimelineHandlers', inputTimeline.debugName, '->', outputTimeline.debugName)
+        const cleanup = inputTimeline.wrapTimelineHandlers(() => effect(outputTimeline))
+        registerDependency(inputTimeline, outputTimeline)
+        return () => {
+            cleanup()
+            console.log('cleanup', inputTimeline.debugName, '->', outputTimeline.debugName)
+        }
+    }, [])
+    // }, [inputTimeline, outputTimeline, effect, ...dependencies])
+}
+
+export function registerDependency(parentTimeline: AnyTimeline, childTimeline: AnyTimeline) {
+    parentTimeline.addDependency(childTimeline)
+    childTimeline.setParent(parentTimeline)
+}
+
 export function useTimeline<
-    TEvents extends Record<string, unknown> = Record<string, unknown>,
-    TCurrent = unknown,
->() {
+    TEvents extends Partial<Record<TimelineEventKey, unknown>> = Record<TimelineEventKey, unknown>,
+    TCurrent = TEvents[typeof TIMELINE_CURRENT],
+>(debugName: string = 'unnamed') {
     const keyframesRef = useRef<Map<number, TimelineKeyframe[]>>(new Map()) // keyframeIndex -> keyframes at that step
     const handlersRef = useRef<Map<TimelineEventKey, RegisteredHandler[]>>(new Map())
-    const onceFiredRef = useRef<Set<Function>>(new Set()) // handler callbacks
+    const nextHandlerIdRef = useRef<number>(0) // for referencing in `onceFiredRef`
+    const onceFiredRef = useRef<Set<number>>(new Set()) // handler callbacks
+    const dependenciesRef = useRef<Set<AnyTimeline>>(new Set()) // used for building up a dependency graph to recursively render children timelines
     const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndex, registerBakingRecipe } = useVisualizationBaking()
+    const [triggerRender, setTriggerRender] = useState(0)
+    const [parent, setParent] = useState<AnyTimeline | null>(null)
+    const handlerCollectorRef = useRef<(() => void)[] | null>(null)
+
+    const wrapTimelineHandlers = useCallback((handlerRegistrations: () => void) => {
+        if (handlerCollectorRef.current !== null) {
+            throw new Error('wrapTimelineHandlers can only be called once')
+        }
+        handlerCollectorRef.current = []
+
+        handlerRegistrations()
+
+        const handlers = handlerCollectorRef.current
+        const cleanup = () => {
+            handlers.forEach((handler) => handler())
+        }
+
+        handlerCollectorRef.current = null
+        return cleanup
+    }, [handlerCollectorRef])
 
     const getPayloadWithFallback = useCallback((rawIndex: number, eventKey: TimelineEventKey): unknown | null => {
         // fixme: performance of sorting each time is not optimal
@@ -144,13 +188,21 @@ export function useTimeline<
 
     const registerByKey = useCallback(
         (eventKey: TimelineEventKey, callback: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
-            const handlers = handlersRef.current.get(eventKey) ?? []
-            handlers.push({
+            const handler = {
                 eventKey,
                 callback,
                 options: options ?? {}
-            })
+            }
+
+            if (handlerCollectorRef.current === null) {
+                throw new Error('registerByKey can only be called within a wrapTimelineHandlers block')
+            }
+
+            const handlers = handlersRef.current.get(eventKey) ?? []
+            handlers.push(handler)
             handlersRef.current.set(eventKey, handlers)
+
+            handlerCollectorRef.current.push(() => handlers.splice(handlers.indexOf(handler), 1))
         },
         [handlersRef]
     )
@@ -168,7 +220,7 @@ export function useTimeline<
         ((eventName: keyof TEvents & string, callback: (payload: DispatchPayload) => void, options?: Omit<HandlerOptions, 'globalRelativeOffset'>) => {
             register(eventName, callback, { ...options, globalRelativeOffset: -1 })
         }) as TimelineRelative<TEvents>,
-        [register]
+        [register, nextHandlerIdRef, onceFiredRef]
     )
 
     const after = useCallback(
@@ -180,15 +232,17 @@ export function useTimeline<
 
     const once = useCallback(
         ((eventName: keyof TEvents & string, handler: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
+            const handlerId = nextHandlerIdRef.current++
             register(eventName, parameter => {
-                if (onceFiredRef.current.has(handler)) {
+                if (onceFiredRef.current.has(handlerId)) {
                     return
                 }
-                onceFiredRef.current.add(handler)
+                onceFiredRef.current.add(handlerId)
+                console.log('once', {handlerId, eventName, parameter})
                 handler(parameter)
             }, { ...options })
         }) as TimelineOnce<TEvents>,
-        [register, onceFiredRef]
+        [register]
     )
 
     const chunked = useCallback(
@@ -201,8 +255,21 @@ export function useTimeline<
         [register]
     )
 
-    const runEventHandlers = useCallback(
+    const render = useCallback(
         () => {
+            // TODO: remove this once its working
+            if (keyframesRef.current.size === 0 || handlersRef.current.size === 0) {
+                console.log('render', debugName, 'noop')
+                return
+            }
+
+            console.log('render', debugName, { dependencies: dependenciesRef.current.size, handlers: handlersRef.current.size, keyframes: keyframesRef.current.size })
+
+
+            dependenciesRef.current.forEach((timeline) => {
+                timeline.reset()
+            })
+            
             type Scheduled = {
                 callback: (payload: DispatchPayload) => void
                 eventKey: TimelineEventKey
@@ -261,7 +328,32 @@ export function useTimeline<
                     const parameter = schedule.isSinglePayload ? payloads[0] : payloads
                     wrapWithIndex(schedule.placementIndex, () => schedule.callback(parameter))
                 })
-        }, [createGroup, getGroup, getPayloads, handlersRef, wrapWithIndex])
+
+            console.log('dependencies', dependenciesRef.current.size)
+            dependenciesRef.current.forEach((timeline) => {
+                timeline.render()
+            })
+
+            console.log('rendered', debugName)
+            debug()
+        }, [createGroup, getGroup, getPayloads, keyframesRef, handlersRef, wrapWithIndex])
+
+    // const render = useCallback(
+    //     () => {
+    //         setTriggerRender(value => value + 1)
+    //     }, [setTriggerRender]
+    // )
+
+    const fullRender = useCallback(
+        () => {
+            return;
+            if (parent) {
+                parent.fullRender()
+            } else {
+                render()
+            }
+        }, [render, parent]
+    )
 
     const emit = useCallback(
         <K extends keyof TEvents & string>(
@@ -286,7 +378,7 @@ export function useTimeline<
             assertNoDuplicateEventAtIndex(existing, eventName, index)
             keyframesRef.current.set(index, [...existing, { eventKey: eventName, payload }])
         },
-        [wrappedIndex, getPayloadWithFallback]
+        [wrappedIndex, getPayloadWithFallback, keyframesRef]
     )
 
     const set = useCallback(
@@ -307,29 +399,48 @@ export function useTimeline<
             } else {
                 payload = payloadOrUpdater
             }
+            console.log(`${debugName}.set(${index}, ${payload})`)
             const existing = keyframesRef.current.get(index) ?? []
             assertNoDuplicateEventAtIndex(existing, TIMELINE_CURRENT, index)
             keyframesRef.current.set(index, [...existing, { eventKey: TIMELINE_CURRENT, payload }])
         },
-        [wrappedIndex, getPayloadWithFallback]
+        [wrappedIndex, getPayloadWithFallback, keyframesRef]
     )
 
     const reset = useCallback(() => {
+        console.log('reset', debugName)
         keyframesRef.current.clear()
         handlersRef.current.clear()
-        onceFiredRef.current = new Set()
-    }, [keyframesRef, handlersRef, onceFiredRef])
+        onceFiredRef.current.clear()
+        nextHandlerIdRef.current = 0
+    }, [keyframesRef, handlersRef, onceFiredRef, nextHandlerIdRef])
 
-    useEffect(() => {
-        registerBakingRecipe({
-            reset,
-            bake: runEventHandlers
+    const debug = useCallback(() => {
+        const steps = Object.fromEntries(keyframesRef.current.entries().map(([index, keyframes]) => [index, Object.fromEntries(keyframes.map(kf => [formatEventKeyForError(kf.eventKey), kf.payload]))]))
+        // keyframesRef.current.forEach((keyframes, index) => {
+        //     console.log('keyframes', index, keyframes)
+        //     steps.push({ index, keyframes })
+        // })
+        console.log('debug', debugName, '\n', {
+            handlers: handlersRef.current.size,
+            steps
         })
-    }, [reset, runEventHandlers, registerBakingRecipe])
+    }, [debugName])
 
+    const addDependency = useCallback((timeline: AnyTimeline): void => {
+        dependenciesRef.current.add(timeline)
+    }, [dependenciesRef, render])
+
+    // useEffect(() => {
+    //     if (triggerRender > 0) {
+    //         internalRender()
+    //     }
+    // }, [triggerRender, internalRender])
 
     return useMemo(
         () => ({
+            fullRender,
+            debug,
             current,
             emit,
             set,
@@ -339,8 +450,14 @@ export function useTimeline<
             once,
             chunked,
             reset,
+            addDependency,
+            render,
+            setParent,
+            wrapTimelineHandlers,
+            debugName
         }),
         [
+            wrapTimelineHandlers,
             current,
             emit,
             set,
@@ -350,6 +467,12 @@ export function useTimeline<
             once,
             chunked,
             reset,
+            debug,
+            addDependency,
+            render,
+            setParent,
+            fullRender,
+            debugName
         ]
     )
 }

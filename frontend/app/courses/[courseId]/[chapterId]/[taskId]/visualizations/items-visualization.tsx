@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'motion/react'
 import { useVisualizationBaking } from './visualization-baking-context'
 import { ItemsTimeline } from './use-items-timeline'
+import { useEffect } from 'react'
 
 export function ItemsVisualization({
     timeline
@@ -12,6 +13,10 @@ export function ItemsVisualization({
 }) {
     const list = timeline.current ?? []
     const { timePerStep } = useVisualizationBaking()
+
+    useEffect(() => {
+        timeline.fullRender()
+    }, [timeline])
 
     return (
         <ul className="flex space-x-4">

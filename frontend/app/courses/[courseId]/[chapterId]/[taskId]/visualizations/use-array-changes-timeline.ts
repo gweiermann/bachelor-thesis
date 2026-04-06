@@ -10,7 +10,7 @@ export type ArrayChangesEvents = {
 }
 
 export function useArrayChangesTimeline(): ArrayChangesTimeline {
-    const timeline = useTimeline<ArrayChangesEvents>()
+    const timeline = useTimeline<ArrayChangesEvents>('arrayChanges')
 
     return useMemo(
         (): ArrayChangesTimeline => ({

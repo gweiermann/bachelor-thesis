@@ -17,18 +17,11 @@ import SortVisualization from './visualizations/sort'
 import { useVisualization } from './stores'
 import {
     Bake,
-    VisualizationBakingProvider,
+    useVisualizationBaking,
 } from './visualizations/visualization-baking-context'
-import { useTimeline, type Timeline } from './visualizations/use-timeline'
+import { registerDependency, TIMELINE_CURRENT, useDefineTimelineHandlers, useTimeline, type Timeline } from './visualizations/use-timeline'
 
 type ArrayWatcherStepsTimeline = Timeline<{ arrayWatcher: number[] }>
-
-function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
-    if (!step) {
-        return []
-    }
-    return [step.line]
-}
 
 interface VisualizationProps {
     task: Task
@@ -42,125 +35,146 @@ function VisualizationPlaceholder() {
     )
 }
 
+/*
+{
+    "array": [
+        "0",
+        "34",
+        "25",
+        "12",
+        "22",
+        "11",
+        "90"
+    ],
+    "line": 8,
+    "scope": {
+        "arr": {
+            "value": "0x0000fffff254f250",
+            "type": "int *",
+            "isPointer": true,
+            "isReference": false
+        },
+        "n": {
+            "value": "7",
+            "type": "int",
+            "isPointer": false,
+            "isReference": false
+        }
+    }
+}
+*/
+
+type VariableScope = Record<string, { isReference: boolean, isPointer: boolean, value: number }>
+type VariableScopeCollector = Record<'scope', VariableScope>
+type ActiveLinesCollector = Record<'line', number[]>
+
+type Step = VariableScopeCollector & ActiveLinesCollector
+
 export default function Visualization({ task }: VisualizationProps) {
     const presetName = task.presetName
     const TheVisualization =
         presetName === 'sort' ? SortVisualization : VisualizationPlaceholder
 
-    const timePerStep = 1 // 1x means 1 second
+    const analysis = useVisualization(s => s.result)
+    const setActiveLines = useVisualization(s => s.setActiveLines)
 
-    const { loadingMessage, errorMessage, setActiveLines, state, result: analysis } = useVisualization()
-    const [currentStepIndex, setCurrentStepIndex] = useState(0)
-    const [playbackSpeed, setPlaybackSpeed] = useState(1)
+    const { currentStepIndex, timePerStep, forward, backward } = useVisualizationBaking()
 
-    const currentStep = useMemo(() => analysis?.[currentStepIndex], [analysis, currentStepIndex])
-    const currentScope = useMemo(() => currentStep?.scope ?? {}, [currentStep])
-
-    const derivedTimePerStep = useMemo(() => timePerStep / playbackSpeed, [timePerStep, playbackSpeed])
-    const vizTimePerStep = useMemo(() => derivedTimePerStep / 2, [derivedTimePerStep])
-
-    const activeLines = useMemo(() => {
-        if (currentStepIndex === 0 || !analysis || currentStepIndex >= analysis.length) {
-            return []
+    // steps timeline
+    const steps = useTimeline<Step>('steps')
+    useEffect(() => {
+        console.log('initializing steps')
+        analysis.forEach((rawStep, rawIndex) => {
+            Object.entries(rawStep)
+                .filter(([, data]) => !!data)
+                .forEach(([collector, data]) => steps.emit(collector as 'scope' | 'line', data, { rawIndex }))
+        })
+        // steps.render()
+        setTimeout(() => {
+            steps.render()
+            // steps.debug()
+        }, 100)
+        return () => {
+            steps.reset()
         }
-        const step = analysis[currentStepIndex]
-        return [step.line, ...getLineNumberFromStepAsArray(step.skippedStep)]
-    }, [currentStepIndex, analysis])
+    }, [])
+
+    // current step
+    const currentStep = useMemo(() => currentStepIndex, [currentStepIndex])
+    
+    // current scope
+    const variableScope = useTimeline<{ [TIMELINE_CURRENT]: Record<string, { isReference: boolean, isPointer: boolean, value: number }> }>('variableScope')
+    useDefineTimelineHandlers(steps, variableScope, () => {
+        console.log('initializing variableScope')
+        steps.on('scope', scope => {
+            variableScope.set(scope)
+            console.log('variableScope', 'set', scope)
+        })
+        registerDependency(steps, variableScope)
+    }, [])
+    const currentScope = useMemo(() => variableScope.current ?? {}, [variableScope.current])
+
+    // active lines
+    const activeLines = useTimeline<{ [TIMELINE_CURRENT]: number[] }>('activeLines')
+    useDefineTimelineHandlers(steps, activeLines, () => {
+        console.log('initializing activeLines')
+        steps.on('line', lines => activeLines.set(lines))
+        registerDependency(steps, activeLines)
+    }, [])
+
+    const currentActiveLines = useMemo(() => activeLines.current ?? [], [activeLines.current])
+    useEffect(() => setActiveLines(currentActiveLines), [setActiveLines, currentActiveLines])
 
     const resetProp = useMemo(() => JSON.stringify(analysis), [analysis])
 
-    useEffect(() => {
-        setCurrentStepIndex(0)
-    }, [resetProp])
-
-    useEffect(() => {
-        setActiveLines(activeLines)
-    }, [activeLines, setActiveLines])
-
-    const steps = useTimeline()
-    useEffect(() => {
-        steps.reset()
-        if (!analysis || analysis.some(step => !step)) {
-            return
+    const setCurrentStepIndex = (index: number) => {
+        console.warn('setCurrentStepIndex needs an overhaul, works partially only')
+        if (index > currentStepIndex) {
+            forward()
+        } else if (index < currentStepIndex) {
+            backward()
         }
-        analysis.forEach((rawStep, rawIndex) => {
-            Object.entries(rawStep).forEach(([collector, data]) => steps.emit(collector, data, { rawIndex }))
-        })
-    }, [analysis, steps])
-
-    if (state === 'unrun') {
-        return (
-            <div className="flex items-center justify-center h-full w-full">
-                Hit {"'Try it out'"} to start the visualization
-            </div>
-        )
     }
-
-    if (state === 'loading') {
-        return (
-            <div className="flex flex-col gap-4 items-center justify-center h-full">
-                <div>{loadingMessage}</div>
-                <InlineLoadingSpinner />
-            </div>
-        )
-    }
-
-    if (state === 'error') {
-        return <div><pre>Error: {errorMessage}</pre></div>
-    }
-
-    if (!analysis || analysis.some(step => !step)) {
-        console.log('Analysis result is malformed', analysis)
-        return (
-            <div>
-                <div>Error: Analysis result is malformed. See console for further information.</div>
-            </div>
-        )
-    }
+    const setPlaybackSpeed = () => console.warn("setPlaybackSpeed currently unsupported")
 
     return (
-        <VisualizationBakingProvider
-            analysis={analysis}
-            timePerStep={vizTimePerStep}
-        >
-            <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 gap-8 items-center justify-center h-full w-full px-12">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Variable</TableHead>
-                            {Object.keys(currentScope).map(name => (
-                                <TableHead key={name}>{name}</TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <TableRow>
-                            <TableHead>Value</TableHead>
-                            {Object.entries(currentScope).map(([key, value]) => {
-                                const cell = value as {
-                                    isPointer?: boolean
-                                    value?: number
-                                }
-                                return (
-                                    <TableCell key={key}>
-                                        {currentStepIndex > 0 && !cell?.isPointer ? cell?.value : '-'}
-                                    </TableCell>
-                                )
-                            })}
-                        </TableRow>
-                    </TableBody>
-                </Table>
-                <TheVisualization key={resetProp} steps={steps as ArrayWatcherStepsTimeline} />
-                <AnimationControlBar
-                    totalSteps={analysis.length}
-                    timePerStep={timePerStep}
-                    currentStepIndex={currentStepIndex}
-                    onStepChange={setCurrentStepIndex}
-                    onSpeedChange={setPlaybackSpeed}
-                    resetProp={resetProp}
-                />
-                <Bake />
-            </div>
-        </VisualizationBakingProvider>
+        <div className="grid grid-rows-[auto_1fr_auto] grid-cols-1 gap-8 items-center justify-center h-full w-full px-12">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Variable</TableHead>
+                        {Object.keys(currentScope).map(name => (
+                            <TableHead key={name}>{name}</TableHead>
+                        ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    <TableRow>
+                        <TableHead>Value</TableHead>
+                        {Object.entries(currentScope).map(([key, value]) => {
+                            const cell = value as {
+                                isPointer?: boolean
+                                value?: number
+                            }
+                            return (
+                                <TableCell key={key}>
+                                    {currentStepIndex > 0 && !cell?.isPointer ? cell?.value : '-'}
+                                </TableCell>
+                            )
+                        })}
+                    </TableRow>
+                </TableBody>
+            </Table>
+            <TheVisualization key={resetProp} steps={steps as ArrayWatcherStepsTimeline} />
+            <AnimationControlBar
+                totalSteps={analysis.length}
+                timePerStep={timePerStep}
+                currentStepIndex={currentStepIndex}
+                onStepChange={setCurrentStepIndex}
+                onSpeedChange={setPlaybackSpeed}
+                resetProp={resetProp}
+            />
+            {/* <Bake /> */}
+        </div>
     )
 }
