@@ -4,10 +4,10 @@ import {
     createContext,
     useCallback,
     useContext,
-    useEffect,
     useMemo,
     useRef,
     useState,
+    type MutableRefObject,
     type ReactNode,
 } from 'react'
 import type { AnalysisResult } from '@/lib/build'
@@ -28,8 +28,8 @@ type VisualizationBakingContextValue = {
     registerBakingRecipe: (recipe: BakingRecipe) => void
     globalSteps: () => Generator<{ globalIndex: number, rawIndex: number, groupSize: number }>
     reset: () => void
-    wrappedIndex: number
-    wrapWithIndex: (rawIndex: number, innerFunction: () => void) => void
+    wrappedIndexRef: MutableRefObject<number>
+    wrapWithIndex: (rawIndex: number, innerFunction: () => unknown) => unknown
     createGroup: (rawIndex: number, groupSize: number) => void
     getGroup: (rawIndex: number) => Group
 }
@@ -61,31 +61,32 @@ export function VisualizationBakingProvider({
 }) {
     const recipesRef = useRef<BakingRecipe[]>([])
     const groupsRef = useRef<Map<number, number>>(new Map()) // rawIndex -> groupSize (if undefined, groupSize is 1)
-    const [cachedGroup, setCachedGroup] = useState<Group | null>(null)
+    const cachedGroupRef = useRef<Group | null>(null)
     const [currentRawIndex, setCurrentRawIndex] = useState<number>(0)
     const [currentStepIndex, setCurrentStepIndex] = useState<number>(0)
-    const [wrappedIndex, setWrappedIndex] = useState<number>(0)
+    const wrappedIndexRef = useRef<number>(0)
 
     const registerBakingRecipe = useCallback((recipe: BakingRecipe) => {
         console.log('recipe has been registered', recipe)
         recipesRef.current.push(recipe)
     }, [recipesRef])
 
-    const getGroup = useCallback((rawIndex: number) => {
-        let i = cachedGroup?.rawIndex < rawIndex ? cachedGroup.rawIndex : 0
-        let stepIndex = cachedGroup?.rawIndex < rawIndex ? cachedGroup.stepIndex : 0
+    const getGroup = useCallback((rawIndex: number): Group => {
+        const cached = cachedGroupRef.current
+        let i = (cached !== null && cached.rawIndex <= rawIndex) ? cached.rawIndex : 0
+        let stepIndex = (cached !== null && cached.rawIndex <= rawIndex) ? cached.stepIndex : 0
         while (i < analysis.length) {
             const groupSize = groupsRef.current.get(i) ?? 1
-            if (i >= rawIndex && rawIndex < i + groupSize) {
+            if (rawIndex >= i && rawIndex < i + groupSize) {
                 const group = { rawIndex: i, stepIndex, size: groupSize }
-                setCachedGroup(group)
+                cachedGroupRef.current = group
                 return group
             }
             stepIndex += 1
             i += groupSize
         }
         throw new Error(`rawIndex ${rawIndex} out of bounds (max value can be ${analysis.length - 1})`)
-    }, [cachedGroup, analysis, groupsRef, setCachedGroup])
+    }, [analysis, groupsRef])
 
     const createGroup = useCallback((rawIndex: number, groupSize: number) => {
         for (let i = rawIndex; i < rawIndex + groupSize; ++i) {
@@ -96,6 +97,7 @@ export function VisualizationBakingProvider({
                 throw new Error(`When creating a group: overlaps aren't allowed.`)
             }
         }
+        console.log('createGroup', rawIndex, groupSize)
         groupsRef.current.set(rawIndex, groupSize)
     }, [groupsRef, getGroup])
 
@@ -103,19 +105,19 @@ export function VisualizationBakingProvider({
         setCurrentStepIndex(prev => prev + 1)
         setCurrentRawIndex(prev => prev + getGroup(prev).size)
     }, [getGroup, setCurrentStepIndex, setCurrentRawIndex])
+
     const backward = useCallback(() => {
         setCurrentStepIndex(prev => prev - 1)
         setCurrentRawIndex(prev => prev - getGroup(prev - 1).size)
     }, [getGroup, setCurrentStepIndex, setCurrentRawIndex])
 
-    const wrapWithIndex = useCallback((rawIndex: number, innerFunction: () => void) => {
-        const tmp = wrappedIndex
-        setWrappedIndex(rawIndex)
-        innerFunction()
-        setWrappedIndex(tmp)
-    }, [wrappedIndex, setWrappedIndex])
-
-    // currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndex, registerTimeline
+    const wrapWithIndex = useCallback(<T = unknown>(rawIndex: number, innerFunction: () => T): T => {
+        const tmp = wrappedIndexRef.current
+        wrappedIndexRef.current = rawIndex
+        const result = innerFunction()
+        wrappedIndexRef.current = tmp
+        return result
+    }, [])
 
     const globalSteps = useCallback(function*() {
         let globalIndex = 0
@@ -132,12 +134,11 @@ export function VisualizationBakingProvider({
 
     const reset = useCallback(() => {
         recipesRef.current.forEach(recipe => recipe.reset())
-        // recipesRef.current = []
         groupsRef.current.clear()
-        setCachedGroup(null)
-        setWrappedIndex(0)
+        cachedGroupRef.current = null
+        wrappedIndexRef.current = 0
         console.log('reset visualization baking')
-    }, [recipesRef, groupsRef, setCachedGroup, setWrappedIndex])
+    }, [recipesRef, groupsRef])
 
     const value = useMemo(
         () => ({
@@ -151,7 +152,7 @@ export function VisualizationBakingProvider({
             registerBakingRecipe,
             globalSteps,
             reset,
-            wrappedIndex,
+            wrappedIndexRef,
             wrapWithIndex,
             createGroup,
             getGroup,
@@ -166,7 +167,7 @@ export function VisualizationBakingProvider({
             registerBakingRecipe,
             globalSteps,
             reset,
-            wrappedIndex,
+            wrappedIndexRef,
             wrapWithIndex,
             createGroup,
             getGroup
@@ -186,23 +187,6 @@ export function VisualizationBakingProvider({
 export function Bake(): null {
     console.log("render Bake")
     const { analysis, recipesRef, reset } = useVisualizationBaking()
-
-
-    useEffect(() => {
-        reset()
-        console.log("start baking!!", recipesRef.current)
-        setTimeout(() => {
-            console.log("new recipes", recipesRef.current)
-        }, 0)
-        for (const recipe of recipesRef.current) {
-            // const lastPossible = currentStepIndex
-            // const to = recipe.getLastProcessableKeyframeIndex
-            //     ? recipe.getLastProcessableKeyframeIndex(lastPossible)
-            //     : lastPossible
-            //     recipe.bake(0, to)
-            recipe.bake()
-        }
-    }, [recipesRef, reset])
 
     return null
 }

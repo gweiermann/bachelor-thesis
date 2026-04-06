@@ -81,7 +81,7 @@ export default function LeftColumn({ task }: LeftColumnProps) {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 {task.title}
             </h2>
-            <Tabs defaultValue="instructions" className="flex flex-col overflow-auto">
+            <Tabs defaultValue="visualization" className="flex flex-col overflow-auto">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="instructions">
                         Instructions

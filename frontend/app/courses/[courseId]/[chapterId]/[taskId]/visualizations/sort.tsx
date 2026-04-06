@@ -28,6 +28,7 @@ export default function SortVisualization({ steps }: SortVisualizationProps) {
                 timeline.swap(comparison.firstIndex, comparison.secondIndex) // swap event references this whole group as one step 
             } else {
                 timeline.replace(comparison.index, comparison.newValue)
+                return false // replace is an individual step — veto the group so both array frames stay separate
             }
         })
     }, [])

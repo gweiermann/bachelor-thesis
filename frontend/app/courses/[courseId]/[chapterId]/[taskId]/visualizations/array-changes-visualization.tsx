@@ -3,7 +3,7 @@
 import { useItemsTimeline } from './use-items-timeline'
 import type { ArrayChangesTimeline } from './use-array-changes-timeline'
 import { ItemsVisualization } from './items-visualization'
-import { registerDependency, useDefineTimelineHandlers } from './use-timeline'
+import { useDefineTimelineHandlers } from './use-timeline'
 
 const swapClass = 'bg-sky-200 animate-wiggle'
 const replaceClass = 'bg-amber-400 animate-wiggle'
@@ -37,8 +37,6 @@ export function ArrayChangesVisualization({ timeline }: { timeline: ArrayChanges
         timeline.after('replace', raw => {
             items.removeClass(raw.index, replaceClass)
         })
-
-        registerDependency(timeline, items)
     }, [])
 
     return <ItemsVisualization timeline={items} />

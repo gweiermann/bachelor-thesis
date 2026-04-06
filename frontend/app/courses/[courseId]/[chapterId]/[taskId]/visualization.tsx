@@ -19,7 +19,7 @@ import {
     Bake,
     useVisualizationBaking,
 } from './visualizations/visualization-baking-context'
-import { registerDependency, TIMELINE_CURRENT, useDefineTimelineHandlers, useTimeline, type Timeline } from './visualizations/use-timeline'
+import { TIMELINE_CURRENT, useDefineTimelineHandlers, useTimeline, type Timeline } from './visualizations/use-timeline'
 
 type ArrayWatcherStepsTimeline = Timeline<{ arrayWatcher: number[] }>
 
@@ -89,11 +89,7 @@ export default function Visualization({ task }: VisualizationProps) {
                 .filter(([, data]) => !!data)
                 .forEach(([collector, data]) => steps.emit(collector as 'scope' | 'line', data, { rawIndex }))
         })
-        // steps.render()
-        setTimeout(() => {
-            steps.render()
-            // steps.debug()
-        }, 100)
+        steps.render()
         return () => {
             steps.reset()
         }
@@ -110,7 +106,6 @@ export default function Visualization({ task }: VisualizationProps) {
             variableScope.set(scope)
             console.log('variableScope', 'set', scope)
         })
-        registerDependency(steps, variableScope)
     }, [])
     const currentScope = useMemo(() => variableScope.current ?? {}, [variableScope.current])
 
@@ -119,7 +114,6 @@ export default function Visualization({ task }: VisualizationProps) {
     useDefineTimelineHandlers(steps, activeLines, () => {
         console.log('initializing activeLines')
         steps.on('line', lines => activeLines.set(lines))
-        registerDependency(steps, activeLines)
     }, [])
 
     const currentActiveLines = useMemo(() => activeLines.current ?? [], [activeLines.current])

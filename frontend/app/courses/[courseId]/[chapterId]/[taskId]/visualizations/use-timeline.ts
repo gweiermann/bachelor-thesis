@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVisualizationBaking } from './visualization-baking-context'
-import { register } from 'module'
 
 /** Channel for payloads exposed as `timeline.current` (not a string event name). */
 export const TIMELINE_CURRENT = Symbol('timeline.current')
@@ -27,7 +26,8 @@ type DispatchPayload = unknown
 
 type RegisteredHandler = {
     eventKey: TimelineEventKey
-    callback: (payload: DispatchPayload) => void
+    /** Chunked handlers may return `false` to veto group creation; all others return void. */
+    callback: (payload: DispatchPayload) => false | void
     options: HandlerOptions
 }
 
@@ -134,7 +134,7 @@ export function useTimeline<
     const nextHandlerIdRef = useRef<number>(0) // for referencing in `onceFiredRef`
     const onceFiredRef = useRef<Set<number>>(new Set()) // handler callbacks
     const dependenciesRef = useRef<Set<AnyTimeline>>(new Set()) // used for building up a dependency graph to recursively render children timelines
-    const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndex, registerBakingRecipe } = useVisualizationBaking()
+    const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndexRef, registerBakingRecipe } = useVisualizationBaking()
     const [triggerRender, setTriggerRender] = useState(0)
     const [parent, setParent] = useState<AnyTimeline | null>(null)
     const handlerCollectorRef = useRef<(() => void)[] | null>(null)
@@ -162,7 +162,7 @@ export function useTimeline<
         if (atRaw !== undefined) {
             return atRaw.payload
         }
-        for (let j = rawIndex; j >= 0; j--) {
+        for (let j = rawIndex - 1; j >= 0; j--) {
             const hit = findKeyframeEntry(keyframesRef.current.get(j), eventKey)
             if (hit !== undefined) {
                 return hit.payload
@@ -173,7 +173,7 @@ export function useTimeline<
 
     const current = useMemo(
         (): TCurrent | null => getPayloadWithFallback(currentRawIndex, TIMELINE_CURRENT) as TCurrent | null,
-        [getPayloadWithFallback, currentRawIndex],
+        [getPayloadWithFallback, currentRawIndex, triggerRender],
     )
 
     /** One entry per keyframe index in the range; payload is only for `eventKey` at that exact index (no fallback). */
@@ -220,7 +220,7 @@ export function useTimeline<
         ((eventName: keyof TEvents & string, callback: (payload: DispatchPayload) => void, options?: Omit<HandlerOptions, 'globalRelativeOffset'>) => {
             register(eventName, callback, { ...options, globalRelativeOffset: -1 })
         }) as TimelineRelative<TEvents>,
-        [register, nextHandlerIdRef, onceFiredRef]
+        [register]
     )
 
     const after = useCallback(
@@ -246,11 +246,16 @@ export function useTimeline<
     )
 
     const chunked = useCallback(
-        <TEventName extends keyof TEvents & string>(eventName: TEventName, chunkSize: number, handler: (payload: TEvents[TEventName][]) => void) => {
+        <TEventName extends keyof TEvents & string>(
+            eventName: TEventName,
+            chunkSize: number,
+            /** Return `false` to veto grouping — keyframes stay as individual steps. */
+            handler: (payload: TEvents[TEventName][]) => false | void
+        ) => {
             if (chunkSize <= 1) {
                 throw new Error("chunkSize must be at least 2")
             }
-            register(eventName, handler as (payload: DispatchPayload) => void, { chunked: chunkSize, grouped: true })
+            register(eventName, handler as (payload: DispatchPayload) => false | void, { chunked: chunkSize, grouped: true })
         },
         [register]
     )
@@ -265,17 +270,21 @@ export function useTimeline<
 
             console.log('render', debugName, { dependencies: dependenciesRef.current.size, handlers: handlersRef.current.size, keyframes: keyframesRef.current.size })
 
-
+            // Reset only keyframes of dependencies, not their handlers
             dependenciesRef.current.forEach((timeline) => {
-                timeline.reset()
+                timeline.resetKeyframes()
             })
-            
+
             type Scheduled = {
-                callback: (payload: DispatchPayload) => void
+                callback: (payload: DispatchPayload) => false | void
                 eventKey: TimelineEventKey
                 placementIndex: number
                 payloadIndex: number
                 isSinglePayload: boolean
+                /** Chunked handlers carry group metadata; createGroup is deferred until the handler runs. */
+                isChunked: boolean
+                chunkGroupStart?: number
+                chunkGroupSize?: number
             }
 
             const lastIndex = Math.max(...keyframesRef.current.keys())
@@ -283,7 +292,7 @@ export function useTimeline<
 
             const fullList: Scheduled[] = []
 
-            for (let i = 0; i < lastIndex; ++i) {
+            for (let i = 0; i <= lastIndex; ++i) {
                 const keyframesAt = keyframesRef.current.get(i)
                 if (!keyframesAt?.length) {
                     continue
@@ -296,37 +305,67 @@ export function useTimeline<
                         if (typeof chunkSize === 'number') {
                             const count = (chunkedHandlers.get(handler) ?? 0) + 1
                             if (count < chunkSize) {
+                                // Accumulate — don't emit yet
                                 chunkedHandlers.set(handler, count)
-                                createGroup(i - chunkSize, chunkSize)
                                 continue
                             } else {
+                                // Chunk is complete: schedule without creating the group yet.
+                                // Group creation is deferred to execution time so the handler
+                                // can veto it by returning false.
                                 chunkedHandlers.set(handler, 0)
+                                const groupStart = i - chunkSize + 1
+                                fullList.push({
+                                    callback: handler.callback,
+                                    eventKey: keyframe.eventKey,
+                                    payloadIndex: groupStart,
+                                    placementIndex: groupStart,
+                                    isSinglePayload: false,
+                                    isChunked: true,
+                                    chunkGroupStart: groupStart,
+                                    chunkGroupSize: chunkSize,
+                                })
+                                continue
                             }
                         }
                         fullList.push({
                             callback: handler.callback,
                             eventKey: keyframe.eventKey,
                             payloadIndex: i,
-                            placementIndex: i + handler.options.globalRelativeOffset,
+                            placementIndex: i + (handler.options.globalRelativeOffset ?? 0),
                             isSinglePayload: !handler.options.grouped,
+                            isChunked: false,
                         })
                     }
                 }
             }
 
             fullList
-                .toSorted((a, b) => a.placementIndex - b.placementIndex)
+                .toSorted((a, b) => {
+                    if (a.placementIndex !== b.placementIndex) return a.placementIndex - b.placementIndex
+                    // Chunked handlers run first within a keyframe so their veto is known
+                    // before non-chunked handlers at the same index execute
+                    return (b.isChunked ? 1 : 0) - (a.isChunked ? 1 : 0)
+                })
                 .forEach(schedule => {
-                    const payloadGroup = getGroup(schedule.payloadIndex)
-                    const payloads = getPayloads(payloadGroup.rawIndex, payloadGroup.size, schedule.eventKey)
-                    if (payloads.length === 0) {
-                        throw new Error('well somethings wrong here')
+                    if (schedule.isChunked) {
+                        // Fetch payloads directly by chunk size — group doesn't exist yet
+                        const payloads = getPayloads(schedule.chunkGroupStart!, schedule.chunkGroupSize!, schedule.eventKey)
+                        const result = wrapWithIndex(schedule.chunkGroupStart!, () => schedule.callback(payloads))
+                        if (result !== false) {
+                            createGroup(schedule.chunkGroupStart!, schedule.chunkGroupSize!)
+                        }
+                    } else {
+                        const payloadGroup = getGroup(schedule.payloadIndex)
+                        const payloads = getPayloads(payloadGroup.rawIndex, payloadGroup.size, schedule.eventKey)
+                        if (payloads.length === 0) {
+                            throw new Error('well somethings wrong here')
+                        }
+                        if (schedule.isSinglePayload && payloads.length > 1) {
+                            console.error(`event handler didn't expect a group at step ${payloadGroup.stepIndex}`)
+                        }
+                        const parameter = schedule.isSinglePayload ? payloads[0] : payloads
+                        wrapWithIndex(schedule.placementIndex, () => schedule.callback(parameter))
                     }
-                    if (schedule.isSinglePayload && payloads.length > 1) {
-                        console.error(`event handler didn't expect a group at step ${payloadGroup.stepIndex}`)
-                    }
-                    const parameter = schedule.isSinglePayload ? payloads[0] : payloads
-                    wrapWithIndex(schedule.placementIndex, () => schedule.callback(parameter))
                 })
 
             console.log('dependencies', dependenciesRef.current.size)
@@ -336,7 +375,10 @@ export function useTimeline<
 
             console.log('rendered', debugName)
             debug()
-        }, [createGroup, getGroup, getPayloads, keyframesRef, handlersRef, wrapWithIndex])
+
+            // Signal React to recompute `current` from the now-populated keyframe refs
+            setTriggerRender(v => v + 1)
+        }, [createGroup, getGroup, getPayloads, keyframesRef, handlersRef, wrapWithIndex, setTriggerRender])
 
     // const render = useCallback(
     //     () => {
@@ -361,7 +403,7 @@ export function useTimeline<
             payloadOrUpdater: TEvents[K] | ((previous: TEvents[K] | null) => TEvents[K]),
             options: { rawIndex?: number } = {}
         ) => {
-            const index = options.rawIndex ?? wrappedIndex
+            const index = options.rawIndex ?? wrappedIndexRef.current
             let payload: TEvents[K]
             if (typeof payloadOrUpdater === 'function') {
                 const updater = payloadOrUpdater as (previous: TEvents[K] | null) => TEvents[K]
@@ -378,7 +420,7 @@ export function useTimeline<
             assertNoDuplicateEventAtIndex(existing, eventName, index)
             keyframesRef.current.set(index, [...existing, { eventKey: eventName, payload }])
         },
-        [wrappedIndex, getPayloadWithFallback, keyframesRef]
+        [getPayloadWithFallback, keyframesRef, wrappedIndexRef]
     )
 
     const set = useCallback(
@@ -386,7 +428,7 @@ export function useTimeline<
             payloadOrUpdater: TCurrent | ((previous: TCurrent | null) => TCurrent),
             options: { rawIndex?: number } = {}
         ) => {
-            const index = options.rawIndex ?? wrappedIndex
+            const index = options.rawIndex ?? wrappedIndexRef.current
             let payload: TCurrent
             if (typeof payloadOrUpdater === 'function') {
                 const updater = payloadOrUpdater as (previous: TCurrent | null) => TCurrent
@@ -404,8 +446,15 @@ export function useTimeline<
             assertNoDuplicateEventAtIndex(existing, TIMELINE_CURRENT, index)
             keyframesRef.current.set(index, [...existing, { eventKey: TIMELINE_CURRENT, payload }])
         },
-        [wrappedIndex, getPayloadWithFallback, keyframesRef]
+        [getPayloadWithFallback, keyframesRef, wrappedIndexRef]
     )
+
+    const resetKeyframes = useCallback(() => {
+        console.log('resetKeyframes', debugName)
+        keyframesRef.current.clear()
+        onceFiredRef.current.clear()
+        nextHandlerIdRef.current = 0
+    }, [keyframesRef, onceFiredRef, nextHandlerIdRef])
 
     const reset = useCallback(() => {
         console.log('reset', debugName)
@@ -417,10 +466,6 @@ export function useTimeline<
 
     const debug = useCallback(() => {
         const steps = Object.fromEntries(keyframesRef.current.entries().map(([index, keyframes]) => [index, Object.fromEntries(keyframes.map(kf => [formatEventKeyForError(kf.eventKey), kf.payload]))]))
-        // keyframesRef.current.forEach((keyframes, index) => {
-        //     console.log('keyframes', index, keyframes)
-        //     steps.push({ index, keyframes })
-        // })
         console.log('debug', debugName, '\n', {
             handlers: handlersRef.current.size,
             steps
@@ -429,7 +474,7 @@ export function useTimeline<
 
     const addDependency = useCallback((timeline: AnyTimeline): void => {
         dependenciesRef.current.add(timeline)
-    }, [dependenciesRef, render])
+    }, [dependenciesRef])
 
     // useEffect(() => {
     //     if (triggerRender > 0) {
@@ -450,6 +495,7 @@ export function useTimeline<
             once,
             chunked,
             reset,
+            resetKeyframes,
             addDependency,
             render,
             setParent,
@@ -467,6 +513,7 @@ export function useTimeline<
             once,
             chunked,
             reset,
+            resetKeyframes,
             debug,
             addDependency,
             render,
