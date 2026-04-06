@@ -77,6 +77,17 @@ export default function Visualization({ task }: VisualizationProps) {
         setActiveLines(activeLines)
     }, [activeLines, setActiveLines])
 
+    const steps = useTimeline()
+    useEffect(() => {
+        steps.reset()
+        if (!analysis || analysis.some(step => !step)) {
+            return
+        }
+        analysis.forEach((rawStep, rawIndex) => {
+            Object.entries(rawStep).forEach(([collector, data]) => steps.emit(collector, data, { rawIndex }))
+        })
+    }, [analysis, steps])
+
     if (state === 'unrun') {
         return (
             <div className="flex items-center justify-center h-full w-full">
@@ -106,14 +117,6 @@ export default function Visualization({ task }: VisualizationProps) {
             </div>
         )
     }
-
-    const steps = useTimeline()
-    useEffect(() => {
-        steps.reset()
-        analysis.forEach((rawStep, rawIndex) => {
-            Object.entries(rawStep).forEach(([collector, data]) => steps.emit(collector, data, { rawIndex }))
-        })
-    }, [analysis, steps])
 
     return (
         <VisualizationBakingProvider
