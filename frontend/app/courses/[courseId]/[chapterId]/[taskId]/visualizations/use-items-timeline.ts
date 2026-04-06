@@ -10,49 +10,60 @@ export type Item = {
     classList: string[]
 }
 
-type ItemsEvents = {
-    set: Item[]
+/** No string-keyed timeline events; displayed state uses `TIMELINE_CURRENT` via `emitCurrent` / `current`. */
+type ItemsStringEvents = Record<string, never>
+
+function mustHaveItems(current: Item[] | null): Item[] {
+    if (current === null) {
+        throw new Error('useItemsTimeline: call seed() before mutating items')
+    }
+    return current
 }
 
 export function useItemsTimeline() {
-    const timeline = useTimeline<ItemsEvents>()
+    const timeline = useTimeline<ItemsStringEvents, Item[]>()
     const nextId = useRef(0)
-    
+
     return useMemo(() => ({
         ...timeline,
-        set: (rawItems: number[]) => {
-            timeline.emit('set', rawItems.map((num, index) => ({
+        /** Initialize items from raw numbers (`timeline.set` registers listeners on `TIMELINE_CURRENT`, not this). */
+        seed: (rawItems: number[]) => {
+            timeline.set(rawItems.map((num, index) => ({
                 value: num,
                 id: nextId.current++,
                 orderId: index,
-                classList: []
+                classList: [] as string[]
             })))
         },
         swap: (firstIndex: number, secondIndex: number) => {
-            timeline.emit('set', (current) => {
-                const temp = current[firstIndex]
-                current[firstIndex] = current[secondIndex]
-                current[secondIndex] = temp
-                return current
+            timeline.set((current) => {
+                const items = mustHaveItems(current)
+                const temp = items[firstIndex]
+                items[firstIndex] = items[secondIndex]
+                items[secondIndex] = temp
+                return items
             })
         },
         replace: (index: number, newValue: number) => {
-            timeline.emit('set', (current) => {
-                current[index].value = newValue
-                current[index].id = nextId.current++
-                return current
+            timeline.set((current) => {
+                const items = mustHaveItems(current)
+                items[index].value = newValue
+                items[index].id = nextId.current++
+                return items
             })
         },
         addClass: (index: number, className: string) => {
-            timeline.emit('set', (current) => {
-                current[index].classList.push(className)
-                return current
+            timeline.set((current) => {
+                const items = mustHaveItems(current)
+                items[index].classList.push(className)
+                return items
             })
         },
         removeClass: (index: number, className: string) => {
-            timeline.emit('set', (current) => {
-                current[index].classList = current[index].classList.filter(cls => cls !== className)
-                return current
+            timeline.set((current) => {
+                const items = mustHaveItems(current)
+                items[index].classList = items[index].classList.filter(cls => cls !== className)
+                return items
             })
         }
     }), [timeline, nextId])

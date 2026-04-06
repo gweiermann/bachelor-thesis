@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useItemsTimeline } from './use-items-timeline'
 import type { ArrayChangesTimeline } from './use-array-changes-timeline'
-import { ItemsVisualization } from './proposal-of-event-based-vis'
+import { ItemsVisualization } from './items-visualization'
 
 const swapClass = 'bg-sky-200 animate-wiggle'
 const replaceClass = 'bg-amber-400 animate-wiggle'
@@ -13,29 +13,29 @@ export function ArrayChangesVisualization({ timeline }: { timeline: ArrayChanges
 
     useEffect(() => {
         timeline.on('set', raw => {
-            items.set(raw)
+            items.seed(raw)
         })
         timeline.on('swap', raw => {
-            items.swap({ index1: raw.firstIndex, index2: raw.secondIndex })
+            items.swap(raw.firstIndex, raw.secondIndex)
         })
         timeline.on('replace', raw => {
-            items.replace({ index: raw.index, newValue: raw.newValue })
+            items.replace(raw.index, raw.newValue)
         })
 
         timeline.before('swap', raw => {
-            items.addClass({ index: raw.firstIndex, className: swapClass })
-            items.addClass({ index: raw.secondIndex, className: swapClass })
+            items.addClass(raw.firstIndex, swapClass)
+            items.addClass(raw.secondIndex, swapClass)
         })
         timeline.after('swap', raw => {
-            items.removeClass({ index: raw.firstIndex, className: swapClass })
-            items.removeClass({ index: raw.secondIndex, className: swapClass })
+            items.removeClass(raw.firstIndex, swapClass)
+            items.removeClass(raw.secondIndex, swapClass)
         })
 
         timeline.before('replace', raw => {
-            items.addClass({ index: raw.index, className: replaceClass })
+            items.addClass(raw.index, replaceClass)
         })
         timeline.after('replace', raw => {
-            items.removeClass({ index: raw.index, className: replaceClass })
+            items.removeClass(raw.index, replaceClass)
         })
     }, [
         timeline, items

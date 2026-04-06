@@ -19,7 +19,9 @@ import {
     Bake,
     VisualizationBakingProvider,
 } from './visualizations/visualization-baking-context'
-import { useTimeline } from './visualizations/use-timeline'
+import { useTimeline, type Timeline } from './visualizations/use-timeline'
+
+type ArrayWatcherStepsTimeline = Timeline<{ arrayWatcher: number[] }>
 
 function getLineNumberFromStepAsArray(step: AnalysisResultStep | null) {
     if (!step) {
@@ -145,7 +147,7 @@ export default function Visualization({ task }: VisualizationProps) {
                         </TableRow>
                     </TableBody>
                 </Table>
-                <TheVisualization key={resetProp} steps={steps} />
+                <TheVisualization key={resetProp} steps={steps as ArrayWatcherStepsTimeline} />
                 <AnimationControlBar
                     totalSteps={analysis.length}
                     timePerStep={timePerStep}

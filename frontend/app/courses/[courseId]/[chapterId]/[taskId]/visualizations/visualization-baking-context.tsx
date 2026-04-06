@@ -156,6 +156,7 @@ export function VisualizationBakingProvider({
             wrapWithIndex,
             createGroup,
             getGroup,
+            timePerStep
         }),
         [analysis, currentStepIndex, timePerStep, registerBakingRecipe, globalSteps, reset, wrappedIndex, wrapWithIndex, createGroup, getGroup]
     )

@@ -2,16 +2,16 @@
 
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'motion/react'
-import type { ItemsVisualizationTimeline } from './use-items-timeline'
+import { useVisualizationBaking } from './visualization-baking-context'
+import { ItemsTimeline } from './use-items-timeline'
 
 export function ItemsVisualization({
-    timeline,
-    timePerStep,
+    timeline
 }: {
-    timeline: ItemsVisualizationTimeline
-    timePerStep: number
+    timeline: ItemsTimeline
 }) {
-    const list = timeline.current
+    const list = timeline.current ?? []
+    const { timePerStep } = useVisualizationBaking()
 
     return (
         <ul className="flex space-x-4">

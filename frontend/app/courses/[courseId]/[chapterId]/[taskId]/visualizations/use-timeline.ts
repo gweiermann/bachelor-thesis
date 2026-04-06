@@ -3,8 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useVisualizationBaking } from './visualization-baking-context'
 
+/** Channel for payloads exposed as `timeline.current` (not a string event name). */
+export const TIMELINE_CURRENT = Symbol('timeline.current')
+
+export type TimelineEventKey = string | typeof TIMELINE_CURRENT
+
 export type TimelineKeyframe = {
-    eventName: string
+    eventKey: TimelineEventKey
     payload: unknown
 }
 
@@ -20,7 +25,7 @@ export type HandlerOptions = {
 type DispatchPayload = unknown
 
 type RegisteredHandler = {
-    eventName: string
+    eventKey: TimelineEventKey
     callback: (payload: DispatchPayload) => void
     options: HandlerOptions
 }
@@ -39,6 +44,11 @@ type TimelineOn<TEvents extends Record<string, unknown>> = {
         callback: (payload: TEvents[E][]) => void,
         options: OnGroupedOptions
     ): void
+}
+
+type TimelineSet<TCurrent> = {
+    (callback: (payload: TCurrent) => void, options?: OnUngroupedOptions): void
+    (callback: (payload: TCurrent[]) => void, options: OnGroupedOptions): void
 }
 
 type RelativeUngroupedOptions = Omit<HandlerOptions, 'grouped' | 'globalRelativeOffset'> & { grouped?: false }
@@ -70,49 +80,86 @@ type TimelineOnce<TEvents extends Record<string, unknown>> = {
     ): void
 }
 
-export function useTimeline<TEvents extends Record<string, unknown> = Record<string, unknown>>() {
+function formatEventKeyForError(eventKey: TimelineEventKey): string {
+    return typeof eventKey === 'string' ? eventKey : eventKey.description ?? 'timeline.current'
+}
+
+function findKeyframeEntry(
+    keyframes: TimelineKeyframe[] | undefined,
+    eventKey: TimelineEventKey,
+): TimelineKeyframe | undefined {
+    return keyframes?.find(k => k.eventKey === eventKey)
+}
+
+function assertNoDuplicateEventAtIndex(
+    existing: TimelineKeyframe[],
+    eventKey: TimelineEventKey,
+    index: number,
+): void {
+    if (existing.some(k => k.eventKey === eventKey)) {
+        throw new Error(
+            `Timeline: duplicate event key "${formatEventKeyForError(eventKey)}" at keyframe index ${index}. Each index may hold at most one keyframe per event key.`,
+        )
+    }
+}
+
+export function useTimeline<
+    TEvents extends Record<string, unknown> = Record<string, unknown>,
+    TCurrent = unknown,
+>() {
     const keyframesRef = useRef<Map<number, TimelineKeyframe[]>>(new Map()) // keyframeIndex -> keyframes at that step
-    const handlersRef = useRef<Map<string, RegisteredHandler[]>>(new Map()) // eventName -> handlers
+    const handlersRef = useRef<Map<TimelineEventKey, RegisteredHandler[]>>(new Map())
     const onceFiredRef = useRef<Set<Function>>(new Set()) // handler callbacks
     const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndex, registerBakingRecipe } = useVisualizationBaking()
 
-    const getPayloadWithFallback = useCallback((rawIndex: number): TEvents[string] | null => {
+    const getPayloadWithFallback = useCallback((rawIndex: number, eventKey: TimelineEventKey): unknown | null => {
         // fixme: performance of sorting each time is not optimal
-        const keyframesAt = keyframesRef.current.get(rawIndex)
-        if (keyframesAt?.length) {
-            return Object.assign({}, ...keyframesAt.map(k => k.payload)) as TEvents[string]
+        const atRaw = findKeyframeEntry(keyframesRef.current.get(rawIndex), eventKey)
+        if (atRaw !== undefined) {
+            return atRaw.payload
         }
-        const indices = [...keyframesRef.current.keys()].toSorted((a, b) => a - b)
-        const ind = indices.findLastIndex(i => i < rawIndex)
-        if (ind === -1) {
-            return null
+        for (let j = rawIndex; j >= 0; j--) {
+            const hit = findKeyframeEntry(keyframesRef.current.get(j), eventKey)
+            if (hit !== undefined) {
+                return hit.payload
+            }
         }
-        const payloads = keyframesRef.current.get(indices[ind])?.map(k => k.payload)
-        return Object.assign({}, ...payloads)
+        return null
     }, [keyframesRef])
 
-    const current = useMemo(() => getPayloadWithFallback(currentRawIndex), [getPayloadWithFallback, currentRawIndex])
+    const current = useMemo(
+        (): TCurrent | null => getPayloadWithFallback(currentRawIndex, TIMELINE_CURRENT) as TCurrent | null,
+        [getPayloadWithFallback, currentRawIndex],
+    )
 
-    const getPayloads = useCallback((rawIndex: number, groupSize: number): TEvents[string][] => {
-        const payloads: TEvents[string][] = []
+    /** One entry per keyframe index in the range; payload is only for `eventKey` at that exact index (no fallback). */
+    const getPayloads = useCallback((rawIndex: number, groupSize: number, eventKey: TimelineEventKey): unknown[] => {
+        const payloads: unknown[] = []
         for (let i = 0; i < groupSize; i++) {
-            const keyframesAt = keyframesRef.current.get(rawIndex + i) ?? []
-            payloads.push(Object.assign({}, ...keyframesAt.map(k => k.payload)))
+            const hit = findKeyframeEntry(keyframesRef.current.get(rawIndex + i), eventKey)
+            payloads.push(hit !== undefined ? hit.payload : null)
         }
         return payloads
     }, [keyframesRef])
-    
-    const register = useCallback(
-        (eventName: keyof TEvents & string, callback: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
-            const handlers = handlersRef.current.get(eventName) ?? []
+
+    const registerByKey = useCallback(
+        (eventKey: TimelineEventKey, callback: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
+            const handlers = handlersRef.current.get(eventKey) ?? []
             handlers.push({
-                eventName,
+                eventKey,
                 callback,
                 options: options ?? {}
             })
-            handlersRef.current.set(eventName, handlers)
+            handlersRef.current.set(eventKey, handlers)
         },
         [handlersRef]
+    )
+
+    const register = useCallback(
+        (eventName: keyof TEvents & string, callback: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
+            registerByKey(eventName, callback, options)
+        },
+        [registerByKey]
     )
 
     const on = register as unknown as TimelineOn<TEvents>
@@ -158,6 +205,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
         () => {
             type Scheduled = {
                 callback: (payload: DispatchPayload) => void
+                eventKey: TimelineEventKey
                 placementIndex: number
                 payloadIndex: number
                 isSinglePayload: boolean
@@ -175,7 +223,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
                 }
 
                 for (const keyframe of keyframesAt) {
-                    const handlers = handlersRef.current.get(keyframe.eventName) ?? []
+                    const handlers = handlersRef.current.get(keyframe.eventKey) ?? []
                     for (const handler of handlers) {
                         const chunkSize = handler.options.chunked
                         if (typeof chunkSize === 'number') {
@@ -190,6 +238,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
                         }
                         fullList.push({
                             callback: handler.callback,
+                            eventKey: keyframe.eventKey,
                             payloadIndex: i,
                             placementIndex: i + handler.options.globalRelativeOffset,
                             isSinglePayload: !handler.options.grouped,
@@ -202,7 +251,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
                 .toSorted((a, b) => a.placementIndex - b.placementIndex)
                 .forEach(schedule => {
                     const payloadGroup = getGroup(schedule.payloadIndex)
-                    const payloads = getPayloads(payloadGroup.rawIndex, payloadGroup.size)
+                    const payloads = getPayloads(payloadGroup.rawIndex, payloadGroup.size, schedule.eventKey)
                     if (payloads.length === 0) {
                         throw new Error('well somethings wrong here')
                     }
@@ -212,7 +261,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
                     const parameter = schedule.isSinglePayload ? payloads[0] : payloads
                     wrapWithIndex(schedule.placementIndex, () => schedule.callback(parameter))
                 })
-        }, [handlersRef])
+        }, [createGroup, getGroup, getPayloads, handlersRef, wrapWithIndex])
 
     const emit = useCallback(
         <K extends keyof TEvents & string>(
@@ -224,7 +273,7 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
             let payload: TEvents[K]
             if (typeof payloadOrUpdater === 'function') {
                 const updater = payloadOrUpdater as (previous: TEvents[K] | null) => TEvents[K]
-                const previousRaw = getPayloadWithFallback(index)
+                const previousRaw = getPayloadWithFallback(index, eventName)
                 const previous =
                     previousRaw === null
                         ? null
@@ -234,8 +283,33 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
                 payload = payloadOrUpdater
             }
             const existing = keyframesRef.current.get(index) ?? []
-            existing.push({ eventName, payload })
-            keyframesRef.current.set(index, existing)
+            assertNoDuplicateEventAtIndex(existing, eventName, index)
+            keyframesRef.current.set(index, [...existing, { eventKey: eventName, payload }])
+        },
+        [wrappedIndex, getPayloadWithFallback]
+    )
+
+    const set = useCallback(
+        (
+            payloadOrUpdater: TCurrent | ((previous: TCurrent | null) => TCurrent),
+            options: { rawIndex?: number } = {}
+        ) => {
+            const index = options.rawIndex ?? wrappedIndex
+            let payload: TCurrent
+            if (typeof payloadOrUpdater === 'function') {
+                const updater = payloadOrUpdater as (previous: TCurrent | null) => TCurrent
+                const previousRaw = getPayloadWithFallback(index, TIMELINE_CURRENT)
+                const previous =
+                    previousRaw === null
+                        ? null
+                        : (structuredClone(previousRaw) as TCurrent)
+                payload = updater(previous)
+            } else {
+                payload = payloadOrUpdater
+            }
+            const existing = keyframesRef.current.get(index) ?? []
+            assertNoDuplicateEventAtIndex(existing, TIMELINE_CURRENT, index)
+            keyframesRef.current.set(index, [...existing, { eventKey: TIMELINE_CURRENT, payload }])
         },
         [wrappedIndex, getPayloadWithFallback]
     )
@@ -252,12 +326,13 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
             bake: runEventHandlers
         })
     }, [reset, runEventHandlers, registerBakingRecipe])
-    
+
 
     return useMemo(
         () => ({
             current,
             emit,
+            set,
             before,
             on,
             after,
@@ -266,7 +341,9 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
             reset,
         }),
         [
+            current,
             emit,
+            set,
             before,
             on,
             after,
@@ -277,6 +354,12 @@ export function useTimeline<TEvents extends Record<string, unknown> = Record<str
     )
 }
 
-export type Timeline<TEvents extends Record<string, unknown> = Record<string, unknown>> = ReturnType<typeof useTimeline<TEvents>>
+export type Timeline<
+    TEvents extends Record<string, unknown> = Record<string, unknown>,
+    TCurrent = unknown,
+> = ReturnType<typeof useTimeline<TEvents, TCurrent>>
 
-export type TimelineApi<TEvents extends Record<string, unknown> = Record<string, unknown>> = Timeline<TEvents>
+export type TimelineApi<
+    TEvents extends Record<string, unknown> = Record<string, unknown>,
+    TCurrent = unknown,
+> = Timeline<TEvents, TCurrent>
