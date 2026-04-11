@@ -178,15 +178,3 @@ export function VisualizationBakingProvider({
         <VisualizationBakingContext.Provider value={value}>{children}</VisualizationBakingContext.Provider>
     )
 }
-
-/**
- * Runs after viz subtree commits so timeline handlers are registered (proposal baking outline).
- * useEffect (not useLayoutEffect) ensures child useEffect registrations run first.
- * With fully received analysis, baking uses lastPossibleKeyframeIndex without chunk blockers (proposal ~90–96).
- */
-export function Bake(): null {
-    console.log("render Bake")
-    const { analysis, recipesRef, reset } = useVisualizationBaking()
-
-    return null
-}
