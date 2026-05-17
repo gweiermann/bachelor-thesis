@@ -66,7 +66,7 @@ function VisualizationPlaceholder() {
 
 type VariableScope = Record<string, { isReference: boolean, isPointer: boolean, value: number }>
 type VariableScopeCollector = Record<'scope', VariableScope>
-type ActiveLinesCollector = Record<'line', number[]>
+type ActiveLinesCollector = Record<'line', number>
 
 type Step = VariableScopeCollector & ActiveLinesCollector
 
@@ -99,21 +99,21 @@ export default function Visualization({ task }: VisualizationProps) {
     const currentStep = useMemo(() => currentStepIndex, [currentStepIndex])
     
     // current scope
-    const variableScope = useTimeline<{ [TIMELINE_CURRENT]: Record<string, { isReference: boolean, isPointer: boolean, value: number }> }>('variableScope')
+    const variableScope = useTimeline<{ [TIMELINE_CURRENT]: Record<string, { isReference: boolean, isPointer: boolean, value: number }> }>('variableScope', { order: 'post' })
     useDefineTimelineHandlers(steps, variableScope, () => {
         console.log('initializing variableScope')
-        steps.on('scope', scope => {
-            variableScope.set(scope)
-            console.log('variableScope', 'set', scope)
-        })
+        steps.on('scope', scopes => {
+            variableScope.set(scopes[scopes.length - 1])
+            console.log('variableScope', 'set', scopes[scopes.length - 1])
+        }, { grouped: true })
     }, [])
     const currentScope = useMemo(() => variableScope.current ?? {}, [variableScope.current])
 
     // active lines
-    const activeLines = useTimeline<{ [TIMELINE_CURRENT]: number[] }>('activeLines')
+    const activeLines = useTimeline<{ [TIMELINE_CURRENT]: number[] }>('activeLines', { order: 'post' })
     useDefineTimelineHandlers(steps, activeLines, () => {
         console.log('initializing activeLines')
-        steps.on('line', lines => activeLines.set(lines))
+        steps.on('line', lines => activeLines.set(lines), { grouped: true })
     }, [])
 
     const currentActiveLines = useMemo(() => activeLines.current ?? [], [activeLines.current])

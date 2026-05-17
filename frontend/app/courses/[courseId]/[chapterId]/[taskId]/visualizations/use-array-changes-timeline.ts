@@ -10,7 +10,8 @@ export type ArrayChangesEvents = {
 }
 
 export function useArrayChangesTimeline(): ArrayChangesTimeline {
-    const timeline = useTimeline<ArrayChangesEvents>('arrayChanges')
+    // 'pre' so groups are created before 'post' siblings (variableScope, activeLines) run
+    const timeline = useTimeline<ArrayChangesEvents>('arrayChanges', { order: 'pre' })
 
     return useMemo(
         (): ArrayChangesTimeline => ({

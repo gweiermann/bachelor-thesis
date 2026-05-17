@@ -32,6 +32,8 @@ type VisualizationBakingContextValue = {
     wrapWithIndex: (rawIndex: number, innerFunction: () => unknown) => unknown
     createGroup: (rawIndex: number, groupSize: number) => void
     getGroup: (rawIndex: number) => Group
+    /** rawIndex -> groupSize; only entries with groupSize > 1 are stored */
+    groupsRef: MutableRefObject<Map<number, number>>
 }
 
 const VisualizationBakingContext = createContext<VisualizationBakingContextValue | null>(null)
@@ -156,6 +158,7 @@ export function VisualizationBakingProvider({
             wrapWithIndex,
             createGroup,
             getGroup,
+            groupsRef,
         }),
         [analysis,
             currentStepIndex,
@@ -170,7 +173,8 @@ export function VisualizationBakingProvider({
             wrappedIndexRef,
             wrapWithIndex,
             createGroup,
-            getGroup
+            getGroup,
+            groupsRef,
         ]
     )
 

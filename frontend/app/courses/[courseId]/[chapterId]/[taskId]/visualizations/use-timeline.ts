@@ -29,6 +29,8 @@ type RegisteredHandler = {
     /** Chunked handlers may return `false` to veto group creation; all others return void. */
     callback: (payload: DispatchPayload) => false | void
     options: HandlerOptions
+    /** Inherited from the wrapTimelineHandlers call that registered this handler. */
+    order: 'pre' | 'post'
 }
 
 type OnUngroupedOptions = Omit<HandlerOptions, 'grouped'> & { grouped?: false }
@@ -110,7 +112,9 @@ type AnyTimeline = any
 export function useDefineTimelineHandlers<T extends AnyTimeline>(inputTimeline: T, outputTimeline: T, effect: (timeline: T) => void, dependencies: unknown[]) {
     useEffect(() => {
         console.log('useDefineTimelineHandlers', inputTimeline.debugName, '->', outputTimeline.debugName)
-        const cleanup = inputTimeline.wrapTimelineHandlers(() => effect(outputTimeline))
+        // Pass the output timeline's order so every handler collected inside `effect`
+        // is tagged with that order (pre/post) for two-pass render dispatch.
+        const cleanup = inputTimeline.wrapTimelineHandlers(() => effect(outputTimeline), { order: outputTimeline.order })
         registerDependency(inputTimeline, outputTimeline)
         return () => {
             cleanup()
@@ -128,24 +132,35 @@ export function registerDependency(parentTimeline: AnyTimeline, childTimeline: A
 export function useTimeline<
     TEvents extends Partial<Record<TimelineEventKey, unknown>> = Record<TimelineEventKey, unknown>,
     TCurrent = TEvents[typeof TIMELINE_CURRENT],
->(debugName: string = 'unnamed') {
+>(debugName: string = 'unnamed', opts?: { order?: 'pre' | 'post' }) {
     const keyframesRef = useRef<Map<number, TimelineKeyframe[]>>(new Map()) // keyframeIndex -> keyframes at that step
     const handlersRef = useRef<Map<TimelineEventKey, RegisteredHandler[]>>(new Map())
     const nextHandlerIdRef = useRef<number>(0) // for referencing in `onceFiredRef`
     const onceFiredRef = useRef<Set<number>>(new Set()) // handler callbacks
     const dependenciesRef = useRef<Set<AnyTimeline>>(new Set()) // used for building up a dependency graph to recursively render children timelines
-    const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndexRef, registerBakingRecipe } = useVisualizationBaking()
+    const { currentRawIndex, createGroup, getGroup, wrapWithIndex, wrappedIndexRef, registerBakingRecipe, groupsRef } = useVisualizationBaking()
     const [triggerRender, setTriggerRender] = useState(0)
     const [parent, setParent] = useState<AnyTimeline | null>(null)
     const handlerCollectorRef = useRef<(() => void)[] | null>(null)
 
-    const wrapTimelineHandlers = useCallback((handlerRegistrations: () => void) => {
+    // 'post' is the default; 'pre' marks group-creating timelines (e.g. arrayChanges).
+    // addDependency can promote this to 'pre' when a 'pre' child is registered.
+    const orderRef = useRef<'pre' | 'post'>(opts?.order ?? 'post')
+    // Tracks whether the caller explicitly passed `order`, used to warn on override.
+    const orderExplicitRef = useRef<boolean>(opts?.order !== undefined)
+    // Set by wrapTimelineHandlers so registerByKey can tag each handler with the correct order.
+    const currentWrapOrderRef = useRef<'pre' | 'post'>('post')
+
+    const wrapTimelineHandlers = useCallback((handlerRegistrations: () => void, wrapOpts?: { order?: 'pre' | 'post' }) => {
         if (handlerCollectorRef.current !== null) {
             throw new Error('wrapTimelineHandlers can only be called once')
         }
         handlerCollectorRef.current = []
 
+        // Set the order tag so every registerByKey call inside handlerRegistrations() inherits it.
+        currentWrapOrderRef.current = wrapOpts?.order ?? 'post'
         handlerRegistrations()
+        currentWrapOrderRef.current = 'post' // reset to default after collection
 
         const handlers = handlerCollectorRef.current
         const cleanup = () => {
@@ -188,10 +203,11 @@ export function useTimeline<
 
     const registerByKey = useCallback(
         (eventKey: TimelineEventKey, callback: (payload: DispatchPayload) => void, options?: HandlerOptions) => {
-            const handler = {
+            const handler: RegisteredHandler = {
                 eventKey,
                 callback,
-                options: options ?? {}
+                options: options ?? {},
+                order: currentWrapOrderRef.current,
             }
 
             if (handlerCollectorRef.current === null) {
@@ -260,6 +276,30 @@ export function useTimeline<
         [register]
     )
 
+    const assertRenderOrder = useCallback(() => {
+        // For each group of size > 1, count how many TIMELINE_CURRENT keyframes exist
+        // across all raw indices in the group. More than one means a handler wrote
+        // at multiple slots without group knowledge — a render-ordering violation.
+        for (const [rawIndex, groupSize] of groupsRef.current.entries()) {
+            let count = 0
+            for (let i = rawIndex; i < rawIndex + groupSize; i++) {
+                const keyframes = keyframesRef.current.get(i) ?? []
+                if (keyframes.some(kf => kf.eventKey === TIMELINE_CURRENT)) {
+                    count++
+                }
+            }
+            if (count > 1) {
+                console.error(
+                    `Timeline '${debugName}': group at rawIndex ${rawIndex} (size ${groupSize})`
+                    + ` has ${count} TIMELINE_CURRENT entries — expected at most 1.`
+                    + ` A handler wrote without group knowledge (render-ordering violation).`
+                )
+            }
+        }
+        // Recurse into dependencies
+        dependenciesRef.current.forEach(dep => dep.assertRenderOrder?.())
+    }, [groupsRef, keyframesRef, dependenciesRef, debugName])
+
     const render = useCallback(
         () => {
             // TODO: remove this once its working
@@ -285,6 +325,7 @@ export function useTimeline<
                 isChunked: boolean
                 chunkGroupStart?: number
                 chunkGroupSize?: number
+                order: 'pre' | 'post'
             }
 
             const lastIndex = Math.max(...keyframesRef.current.keys())
@@ -323,6 +364,7 @@ export function useTimeline<
                                     isChunked: true,
                                     chunkGroupStart: groupStart,
                                     chunkGroupSize: chunkSize,
+                                    order: handler.order,
                                 })
                                 continue
                             }
@@ -334,18 +376,25 @@ export function useTimeline<
                             placementIndex: i + (handler.options.globalRelativeOffset ?? 0),
                             isSinglePayload: !handler.options.grouped,
                             isChunked: false,
+                            order: handler.order,
                         })
                     }
                 }
             }
 
+            const sortScheduled = (a: Scheduled, b: Scheduled) => {
+                if (a.placementIndex !== b.placementIndex) return a.placementIndex - b.placementIndex
+                // Chunked handlers run first within a keyframe so their veto is known
+                // before non-chunked handlers at the same index execute
+                return (b.isChunked ? 1 : 0) - (a.isChunked ? 1 : 0)
+            }
+
+            // --- Pass 1 (pre): execute pre-tagged handlers, then render pre deps ---
+            // Pre-pass uses the simple execution path — groups are being created here,
+            // so grouped dedup is not yet applicable.
             fullList
-                .toSorted((a, b) => {
-                    if (a.placementIndex !== b.placementIndex) return a.placementIndex - b.placementIndex
-                    // Chunked handlers run first within a keyframe so their veto is known
-                    // before non-chunked handlers at the same index execute
-                    return (b.isChunked ? 1 : 0) - (a.isChunked ? 1 : 0)
-                })
+                .filter(s => s.order === 'pre')
+                .toSorted(sortScheduled)
                 .forEach(schedule => {
                     if (schedule.isChunked) {
                         // Fetch payloads directly by chunk size — group doesn't exist yet
@@ -357,28 +406,60 @@ export function useTimeline<
                     } else {
                         const payloadGroup = getGroup(schedule.payloadIndex)
                         const payloads = getPayloads(payloadGroup.rawIndex, payloadGroup.size, schedule.eventKey)
-                        if (payloads.length === 0) {
-                            throw new Error('well somethings wrong here')
-                        }
-                        if (schedule.isSinglePayload && payloads.length > 1) {
-                            console.error(`event handler didn't expect a group at step ${payloadGroup.stepIndex}`)
-                        }
                         const parameter = schedule.isSinglePayload ? payloads[0] : payloads
                         wrapWithIndex(schedule.placementIndex, () => schedule.callback(parameter))
                     }
                 })
 
-            console.log('dependencies', dependenciesRef.current.size)
-            dependenciesRef.current.forEach((timeline) => {
-                timeline.render()
+            dependenciesRef.current.forEach(dep => {
+                if (dep.order !== 'post') dep.render()
             })
 
+            // --- Pass 2 (post): execute post-tagged handlers with grouped dedup, then render post deps ---
+            // Groups are fully established; use execution-time grouped dedup so grouped
+            // handlers fire once per group and non-grouped handlers are warned when inside a group.
+            fullList
+                .filter(s => s.order === 'post')
+                .toSorted(sortScheduled)
+                .forEach(schedule => {
+                    const group = getGroup(schedule.payloadIndex)
+
+                    if (!schedule.isSinglePayload) {
+                        // Grouped handler: fires ONCE per group, at groupStart only.
+                        // Skip if this entry is for a non-groupStart index of a multi-element group.
+                        if (group.size > 1 && schedule.payloadIndex !== group.rawIndex) {
+                            return
+                        }
+                        const payloads = getPayloads(group.rawIndex, group.size, schedule.eventKey)
+                        wrapWithIndex(group.rawIndex, () => schedule.callback(payloads))
+                    } else {
+                        // Non-grouped handler: asserts the group is actually size 1.
+                        // If not, the handler is inside a multi-element group without knowing it —
+                        // it should have been registered with { grouped: true } instead.
+                        if (group.size > 1) {
+                            console.warn(
+                                `Handler for "${formatEventKeyForError(schedule.eventKey)}" at rawIndex ${schedule.payloadIndex}`
+                                + ` is not grouped but is inside a group of size ${group.size}.`
+                                + ` Consider { grouped: true } if this handler writes TIMELINE_CURRENT.`
+                            )
+                        }
+                        // group.size === 1: unwrap — pass the single payload value directly (not an array)
+                        const payload = getPayloads(schedule.payloadIndex, 1, schedule.eventKey)[0]
+                        wrapWithIndex(schedule.placementIndex, () => schedule.callback(payload))
+                    }
+                })
+
+            dependenciesRef.current.forEach(dep => {
+                if (dep.order === 'post') dep.render()
+            })
+
+            assertRenderOrder()
             console.log('rendered', debugName)
             debug()
 
             // Signal React to recompute `current` from the now-populated keyframe refs
             setTriggerRender(v => v + 1)
-        }, [createGroup, getGroup, getPayloads, keyframesRef, handlersRef, wrapWithIndex, setTriggerRender])
+        }, [assertRenderOrder, createGroup, getGroup, getPayloads, keyframesRef, handlersRef, wrapWithIndex, setTriggerRender])
 
     // const render = useCallback(
     //     () => {
@@ -472,9 +553,20 @@ export function useTimeline<
         })
     }, [debugName])
 
-    const addDependency = useCallback((timeline: AnyTimeline): void => {
-        dependenciesRef.current.add(timeline)
-    }, [dependenciesRef])
+    const addDependency = useCallback((childTimeline: AnyTimeline): void => {
+        dependenciesRef.current.add(childTimeline)
+        // If the child is 'pre', this timeline must also become 'pre' so that its own
+        // parent (if any) will render it before 'post' siblings — propagating upward.
+        if (childTimeline.order === 'pre' && orderRef.current !== 'pre') {
+            if (orderExplicitRef.current) {
+                console.warn(
+                    `Timeline '${debugName}' was explicitly set to 'post' but child `
+                    + `'${childTimeline.debugName}' is 'pre'. Overriding to 'pre'.`
+                )
+            }
+            orderRef.current = 'pre'
+        }
+    }, [dependenciesRef, debugName])
 
     // useEffect(() => {
     //     if (triggerRender > 0) {
@@ -483,25 +575,36 @@ export function useTimeline<
     // }, [triggerRender, internalRender])
 
     return useMemo(
-        () => ({
-            fullRender,
-            debug,
-            current,
-            emit,
-            set,
-            before,
-            on,
-            after,
-            once,
-            chunked,
-            reset,
-            resetKeyframes,
-            addDependency,
-            render,
-            setParent,
-            wrapTimelineHandlers,
-            debugName
-        }),
+        () => {
+            const obj = {
+                fullRender,
+                debug,
+                current,
+                emit,
+                set,
+                before,
+                on,
+                after,
+                once,
+                chunked,
+                reset,
+                resetKeyframes,
+                addDependency,
+                render,
+                assertRenderOrder,
+                setParent,
+                wrapTimelineHandlers,
+                debugName,
+            }
+            // `order` is mutable (addDependency can propagate 'pre' upward), so expose
+            // it as a live getter that always reads from the ref rather than a snapshot.
+            Object.defineProperty(obj, 'order', {
+                get: () => orderRef.current,
+                enumerable: true,
+                configurable: true,
+            })
+            return obj
+        },
         [
             wrapTimelineHandlers,
             current,
@@ -517,9 +620,10 @@ export function useTimeline<
             debug,
             addDependency,
             render,
+            assertRenderOrder,
             setParent,
             fullRender,
-            debugName
+            debugName,
         ]
     )
 }
