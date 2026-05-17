@@ -11,6 +11,45 @@ interface LeftColumnProps {
     task: Task
 }
 
+const VisualizationLoadingWrapper = ({ children }) => {
+    const state = useVisualization(s => s.state)
+    const loadingMessage = useVisualization(s => s.loadingMessage)
+    const errorMessage = useVisualization(s => s.errorMessage)
+    const analysis = useVisualization(s => s.result)
+    
+    if (state === 'unrun') {
+        return (
+            <div className="flex items-center justify-center h-full w-full">
+                Hit {"'Try it out'"} to start the visualization
+            </div>
+        )
+    }
+
+    if (state === 'loading') {
+        return (
+            <div className="flex flex-col gap-4 items-center justify-center h-full">
+                <div>{loadingMessage}</div>
+                <InlineLoadingSpinner />
+            </div>
+        )
+    }
+
+    if (state === 'error') {
+        return <div><pre>Error: {errorMessage}</pre></div>
+    }
+
+    if (!analysis || analysis.some(step => !step)) {
+        console.log('Analysis result is malformed', analysis)
+        return (
+            <div>
+                <div>Error: Analysis result is malformed. See console for further information.</div>
+            </div>
+        )
+    }
+
+    return children
+}
+
 export default function LeftColumn({ task }: LeftColumnProps) {
     // set explicit height so that the content can scroll
     // FIXME: can be done with css only
@@ -42,7 +81,7 @@ export default function LeftColumn({ task }: LeftColumnProps) {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 {task.title}
             </h2>
-            <Tabs defaultValue="instructions" className="flex flex-col overflow-auto">
+            <Tabs defaultValue="visualization" className="flex flex-col overflow-auto">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="instructions">
                         Instructions
@@ -59,7 +98,9 @@ export default function LeftColumn({ task }: LeftColumnProps) {
                         <Instructions description={task.description} />
                     </TabsContent>
                     <TabsContent value="visualization">
-                        <Visualization task={task} />
+                        <VisualizationLoadingWrapper>
+                            <Visualization task={task} />
+                        </VisualizationLoadingWrapper>
                     </TabsContent>
                     <TabsContent value="tests">
                         <TestCases />
